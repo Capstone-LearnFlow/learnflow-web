@@ -51,6 +51,7 @@
   }
 } */
 
+
 body {
   margin: 0;
   padding: 0;
@@ -59,12 +60,21 @@ body {
   font-family: "Pretendard GOV Variable", "Pretendard GOV", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
 }
 
+input,
+textarea,
+button {
+  outline: none;
+  border: none;
+  user-select: none;
+}
+
+
 .navigation {
   position: fixed;
   top: 0;
   display: flex;
   justify-content: center;
-  align-items: center;  
+  align-items: center;
   width: 100%;
   max-width: 100%;
   height: 52px;
@@ -73,6 +83,7 @@ body {
   background: rgba(255, 255, 252, 0.80);
   backdrop-filter: saturate(180%) blur(20px);
 }
+
 .navigation__content {
   display: flex;
   justify-content: space-between;
@@ -81,9 +92,11 @@ body {
   max-width: 944px;
   padding: 0px 6px;
 }
+
 .navigation__content--large {
   max-width: 100%;
 }
+
 .navigation__menu {
   display: flex;
   align-items: center;
@@ -94,19 +107,23 @@ body {
   font-weight: 600;
   line-height: 140%;
 }
+
 .navigation__menu--logo {
   font-size: 20px;
   font-weight: 900;
 }
+
 .navigation__menu--inactive {
   color: var(--c-glyph-gray-secondary-alpha);
 }
+
 .navigation__menu_container {
   display: flex;
   justify-content: flex-start;
   align-items: center;
   gap: 8px;
 }
+
 .navigation__menu_container .navigation__menu:not(:last-child)::after {
   content: "";
   display: block;
@@ -115,22 +132,27 @@ body {
   background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="10" viewBox="0 0 6 10" fill="none"><path d="M6 5C6 5.26747 5.90608 5.49127 5.67403 5.70961L1.49724 9.75437C1.33149 9.91812 1.12707 10 0.883978 10C0.39779 10 0 9.61245 0 9.1321C0 8.88646 0.0994475 8.66812 0.281768 8.48799L3.92265 4.99454L0.281768 1.50655C0.0994475 1.33188 0 1.10808 0 0.867904C0 0.393013 0.39779 0 0.883978 0C1.12707 0 1.33149 0.0818777 1.49724 0.245633L5.67403 4.29039C5.90055 4.50327 6 4.72707 6 5Z" fill="%233C3C43" fill-opacity="0.6"/></svg>') no-repeat center;
 }
 
+
 .section {
   margin-left: auto;
   margin-right: auto;
   width: 80%;
   max-width: 944px;
 }
+
 .section--large {
   width: 90%;
   max-width: 1024px;
 }
+
 .section--scroll {
   width: 100%;
   max-width: 100%;
   overflow-x: scroll;
   scrollbar-width: none;
 }
+
+
 .header {
   width: 100%;
   padding-top: 192px;
@@ -154,6 +176,36 @@ body {
   border-radius: 28px;
   background: var(--c-fill-tertiary);
 }
+
+.btn {
+  display: flex;
+  padding: 15px 24px;
+  justify-content: center;
+  align-items: center;
+  /* gap: 10px; */
+  color: var(--c-glyph-gray-secondary-alpha);
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 140%;
+  border-radius: 28px;
+  background: var(--c-fill);
+}
+
+
+
+/* signin */
+.card--signin {
+  max-width: 480px;
+  padding: 12px;
+}
+
+.btn--signin {
+  align-self: stretch;
+}
+
+
+/* chat */
 .card--chat {
   width: 480px;
   height: calc(100% - 70px - 24px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
@@ -174,7 +226,9 @@ body {
   gap: 20px;
   flex-shrink: 0;
   overflow-y: scroll;
+  scrollbar-width: none;
 }
+
 .chat__stack__item {
   color: var(--c-glyph-gray);
   font-size: 14px;
@@ -182,6 +236,7 @@ body {
   font-weight: 400;
   line-height: 140%;
 }
+
 .chat__stack__item--bubble {
   display: flex;
   padding: 12px 19px;
@@ -191,6 +246,7 @@ body {
   background-color: var(--c-fill);
   border-radius: 28px;
 }
+
 .chat__input {
   position: absolute;
   left: 12px;
@@ -205,11 +261,7 @@ body {
   border-radius: 28px;
   background: var(--c-fill);
 }
-input, textarea, button {
-  outline: none;
-  border: none;
-  user-select: none;
-}
+
 .chat__input__text {
   flex: 1 0 0;
   color: var(--c-glyph-gray);
@@ -218,12 +270,18 @@ input, textarea, button {
   font-weight: 400;
   line-height: 140%;
 }
+
 .chat__input__text::placeholder {
   color: var(--c-glyph-gray-secondary-alpha);
 }
+
 .chat__input__button {
   width: 36px;
   height: 36px;
   border-radius: 18px;
   background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M36 18.0069C36 27.9156 27.9156 36 17.9931 36C8.08445 36 0 27.9156 0 18.0069C0 8.08445 8.08445 0 17.9931 0C27.9156 0 36 8.08445 36 18.0069ZM17.0948 9.27296L11.0419 15.1601C10.7931 15.395 10.6687 15.6576 10.6687 15.9892C10.6687 16.625 11.1386 17.0948 11.7881 17.0948C12.0922 17.0948 12.4376 16.9705 12.6587 16.7079L15.6576 13.5709L16.8461 12.3409L16.7493 15.0357V25.9255C16.7493 26.5889 17.3159 27.1555 18.0069 27.1555C18.6841 27.1555 19.2645 26.5889 19.2645 25.9255V15.0357L19.1678 12.3409L20.3424 13.5709L23.3413 16.7079C23.5624 16.9705 23.894 17.0948 24.1981 17.0948C24.8477 17.0948 25.3451 16.625 25.3451 15.9892C25.3451 15.6576 25.2069 15.395 24.972 15.1601L18.9052 9.27296C18.6011 8.95509 18.3248 8.85833 18.0069 8.85833C17.6753 8.85833 17.4127 8.95509 17.0948 9.27296Z" fill="%233C3C43" fill-opacity="0.6"/></svg>') no-repeat center;
+}
+
+.chat__input__button--active {
+  background: url('data:image/svg+xml,<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M36 18.0069C36 27.9156 27.9156 36 17.9931 36C8.08445 36 0 27.9156 0 18.0069C0 8.08445 8.08445 0 17.9931 0C27.9156 0 36 8.08445 36 18.0069ZM17.0948 9.27296L11.0419 15.1601C10.7931 15.395 10.6687 15.6576 10.6687 15.9892C10.6687 16.625 11.1386 17.0948 11.7881 17.0948C12.0922 17.0948 12.4376 16.9705 12.6587 16.7079L15.6576 13.5709L16.8461 12.3409L16.7493 15.0357V25.9255C16.7493 26.5889 17.3159 27.1555 18.0069 27.1555C18.6841 27.1555 19.2645 26.5889 19.2645 25.9255V15.0357L19.1678 12.3409L20.3424 13.5709L23.3413 16.7079C23.5624 16.9705 23.894 17.0948 24.1981 17.0948C24.8477 17.0948 25.3451 16.625 25.3451 15.9892C25.3451 15.6576 25.2069 15.395 24.972 15.1601L18.9052 9.27296C18.6011 8.95509 18.3248 8.85833 18.0069 8.85833C17.6753 8.85833 17.4127 8.95509 17.0948 9.27296Z" fill="%23007AFF"/></svg>') no-repeat center;
 }
