@@ -711,5 +711,4 @@ const Chat = (p: ChatProps) => {
         </div>
     );
 }
-                    white-space: nowrap;
 export default Chat;
