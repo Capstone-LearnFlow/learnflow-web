@@ -576,11 +576,12 @@ const Chat = (p: ChatProps) => {
                     font-size: 14px;
                     transition: all 0.2s;
                 }
-                    font-weight: bold;
+                
                 .chat__mode-button--active {
                     background-color: #0078ff;
                     color: white;
                     border-color: #0078ff;
+                    font-weight: bold;
                 }
                 
                 /* Status indicator */
