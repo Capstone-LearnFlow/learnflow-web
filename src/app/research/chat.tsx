@@ -83,7 +83,7 @@ const Chat = (p: ChatProps) => {
     const chatContainerRef = useRef<HTMLDivElement>(null);
     
     // Form state
-    const [showForm, setShowForm] = useState<boolean>(false);
+    const [activeFormMessageId, setActiveFormMessageId] = useState<number | null>(null);
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -329,7 +329,7 @@ const Chat = (p: ChatProps) => {
             // Reset form state
             setAssertion('');
             setEvidence('');
-            setShowForm(false);
+            setActiveFormMessageId(null);
             
         } catch (error) {
             console.error('Error calling OpenAI API:', error);
@@ -352,6 +352,8 @@ const Chat = (p: ChatProps) => {
         e.preventDefault();
         if (assertion.trim() && evidence.trim() && !isSubmitting) {
             sendAssertionToOpenAI(assertion, evidence);
+            // Clear active form after submission
+            setActiveFormMessageId(null);
         }
     };
 
@@ -373,13 +375,14 @@ const Chat = (p: ChatProps) => {
         if (mode === 'create') {
             // Add AI message with form to chat log
             const formMessageIndex = chatLog.length + 1; // +1 for the user message we just added
-            setFormMessageId(formMessageIndex);
+            setActiveFormMessageId(formMessageIndex);
             
             const aiFormMessage: ChatItem = {
                 sender: "AI",
                 message: "주장과 근거를 작성해주세요:", // "Please write your assertion and evidence:"
                 created_at: Date.now(),
                 mode: 'create',
+                hasForm: true,
             };
             
             setChatLog((prev) => [...prev, aiFormMessage]);
@@ -441,6 +444,47 @@ const Chat = (p: ChatProps) => {
                         {item.sender === "AI" ? (
                             <>
                                 {renderMarkdown(item.message)}
+                                
+                                {/* Show the assertion form inside AI message */}
+                                {item.hasForm && (
+                                    <div className="chat__inline-form">
+                                        <form onSubmit={handleFormSubmit}>
+                                            <div className="assertion-form__field">
+                                                <label htmlFor="assertion">주장</label>
+                                                <textarea 
+                                                    id="assertion"
+                                                    value={assertion}
+                                                    onChange={(e) => setAssertion(e.target.value)}
+                                                    placeholder="주장을 입력해주세요..."
+                                                    rows={3}
+                                                    required
+                                                    disabled={isSubmitting}
+                                                />
+                                            </div>
+                                            <div className="assertion-form__field">
+                                                <label htmlFor="evidence">근거</label>
+                                                <textarea 
+                                                    id="evidence"
+                                                    value={evidence}
+                                                    onChange={(e) => setEvidence(e.target.value)}
+                                                    placeholder="근거를 입력해주세요..."
+                                                    rows={5}
+                                                    required
+                                                    disabled={isSubmitting}
+                                                />
+                                            </div>
+                                            <div className="assertion-form__actions">
+                                                <button 
+                                                    type="submit" 
+                                                    className="assertion-form__button assertion-form__button--submit"
+                                                    disabled={isSubmitting || !assertion.trim() || !evidence.trim()}
+                                                >
+                                                    {isSubmitting ? '제출 중...' : '확인'}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                )}
                                 
                                 {/* Show citations if available */}
                                 {item.citations && item.citations.length > 0 && (
@@ -518,57 +562,6 @@ const Chat = (p: ChatProps) => {
                     </div>
                 )}
             </div>
-            {/* Assertion Form Modal */}
-            {showForm && (
-                <div className="assertion-form__overlay">
-                    <div className="assertion-form__modal">
-                        <h3 className="assertion-form__title">주장과 근거 작성</h3>
-                        <form onSubmit={handleFormSubmit}>
-                            <div className="assertion-form__field">
-                                <label htmlFor="assertion">주장</label>
-                                <textarea 
-                                    id="assertion"
-                                    value={assertion}
-                                    onChange={(e) => setAssertion(e.target.value)}
-                                    placeholder="주장을 입력해주세요..."
-                                    rows={3}
-                                    required
-                                    disabled={isSubmitting}
-                                />
-                            </div>
-                            <div className="assertion-form__field">
-                                <label htmlFor="evidence">근거</label>
-                                <textarea 
-                                    id="evidence"
-                                    value={evidence}
-                                    onChange={(e) => setEvidence(e.target.value)}
-                                    placeholder="근거를 입력해주세요..."
-                                    rows={5}
-                                    required
-                                    disabled={isSubmitting}
-                                />
-                            </div>
-                            <div className="assertion-form__actions">
-                                <button 
-                                    type="button" 
-                                    className="assertion-form__button assertion-form__button--cancel"
-                                    onClick={() => setShowForm(false)}
-                                    disabled={isSubmitting}
-                                >
-                                    취소
-                                </button>
-                                <button 
-                                    type="submit" 
-                                    className="assertion-form__button assertion-form__button--submit"
-                                    disabled={isSubmitting || !assertion.trim() || !evidence.trim()}
-                                >
-                                    {isSubmitting ? '제출 중...' : '확인'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
 
             <div className="chat__input-container">
                 <div className="chat__input-stack">
@@ -611,37 +604,13 @@ const Chat = (p: ChatProps) => {
             </div>
 
             <style jsx>{`
-                /* Assertion Form Modal Styles */
-                .assertion-form__overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background-color: rgba(0, 0, 0, 0.5);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 100;
-                }
-                
-                .assertion-form__modal {
-                    background-color: white;
+                /* In-chat form styles */
+                .chat__inline-form {
+                    margin-top: 16px;
+                    padding: 16px;
+                    background-color: #f9f9f9;
                     border-radius: 12px;
-                    padding: 24px;
-                    width: 90%;
-                    max-width: 600px;
-                    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
-                    max-height: 90vh;
-                    overflow-y: auto;
-                }
-                
-                .assertion-form__title {
-                    margin-top: 0;
-                    margin-bottom: 20px;
-                    color: #333;
-                    font-size: 20px;
-                    text-align: center;
+                    border: 1px solid #e0e0e0;
                 }
                 
                 .assertion-form__field {
