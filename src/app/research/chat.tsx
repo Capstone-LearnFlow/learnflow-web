@@ -338,15 +338,9 @@ const Chat = (p: ChatProps) => {
                     </div>
                 ))}
                 
-                {/* Status indicator and streaming message at the bottom when active */}
+                {/* Streaming message at the bottom when active */}
                 {responseStatus === 'streaming' && (
-                    <>
-                        <div className="chat__status-indicator">
-                            <div className="chat__status-spinner"></div>
-                            <span>응답 생성 중...</span>
-                        </div>
-                        
-                        <div className="chat__stack__item chat__stack__item--streaming">
+                    <div className="chat__stack__item chat__stack__item--streaming">
                             {streamingMessage && renderMarkdown(streamingMessage)}
                             
                             {/* Show the typing indicator */}
@@ -383,8 +377,7 @@ const Chat = (p: ChatProps) => {
                                     ))}
                                 </div>
                             )}
-                        </div>
-                    </>
+                    </div>
                 )}
             </div>
             <div className="chat__input-container">
