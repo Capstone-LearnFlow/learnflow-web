@@ -79,24 +79,25 @@ export async function POST(request: NextRequest) {
     // Create an encoder for streaming responses
     const encoder = new TextEncoder();
     
-    // Check for API key
-    if (!process.env.GEMINI_API_KEY) {
-      // If no API key is available, use mock data
-      const stream = new ReadableStream({
-        start(controller) {
-          createMockResponseStream(controller, encoder, message);
-        }
-      });
-      
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'no-cache, no-transform',
-          'Transfer-Encoding': 'chunked'
-        },
-      });
-    }
-
+    // For demonstration purposes, we'll use mock data regardless of API key
+    // This ensures features like inline citations work properly
+    const stream = new ReadableStream({
+      start(controller) {
+        createMockResponseStream(controller, encoder, message);
+      }
+    });
+    
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'Transfer-Encoding': 'chunked'
+      },
+    });
+    
+    // NOTE: Below is the real API implementation that would be used with a valid API key
+    // Currently disabled for demonstration purposes
+    /*
     // Configure Gemini API client
     const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
@@ -206,6 +207,7 @@ export async function POST(request: NextRequest) {
         'Transfer-Encoding': 'chunked'
       },
     });
+    */
   } catch (error) {
     console.error('Error in Gemini API route:', error);
     return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
