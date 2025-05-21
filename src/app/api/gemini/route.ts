@@ -43,53 +43,48 @@ export async function POST(request: NextRequest) {
       parts: [{ text: message }]
     });
 
-    // Create transform stream for parsing JSON chunks
-    const transformStream = new TransformStream({
-      start(controller) {},
-      transform(chunk, controller) {
-        controller.enqueue(chunk);
-      }
-    });
-
-    // Use standard Response with ReadableStream for streaming
+    // Create transform stream for parsing chunks
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          let fullResponse = '';
-          let suggestions = [];
-          let lastResponse = null;
-
           const response = await ai.models.generateContentStream({
             model,
             config,
             contents,
           });
 
+          // Track the accumulated full response to extract citations at the end
+          let fullText = '';
+          let lastChunk = null;
+          let citationData = null;
+
           for await (const chunk of response) {
-            // Store the raw JSON response for potential suggestions
-            lastResponse = chunk;
+            // Send the raw chunk as JSON for client-side processing
+            controller.enqueue(encoder.encode(JSON.stringify(chunk) + '\n'));
             
+            // Store the last chunk to extract grounding metadata
+            lastChunk = chunk;
+            
+            // Accumulate the text for full response
             if (chunk.text) {
-              fullResponse += chunk.text;
-              controller.enqueue(encoder.encode(JSON.stringify({
-                type: 'text',
-                content: chunk.text
-              }) + '\n'));
+              fullText += chunk.text;
             }
           }
 
-          // After all text is streamed, check if we have suggestions to send
-          if (lastResponse && 
-              lastResponse.candidates && 
-              lastResponse.candidates[0] && 
-              lastResponse.candidates[0].groundingMetadata &&
-              lastResponse.candidates[0].groundingMetadata.webSearchQueries) {
-            suggestions = lastResponse.candidates[0].groundingMetadata.webSearchQueries;
-            controller.enqueue(encoder.encode(JSON.stringify({
-              type: 'suggestions',
-              content: suggestions
-            }) + '\n'));
+          // After all chunks are processed, check if we have citation data
+          if (lastChunk && 
+              lastChunk.candidates && 
+              lastChunk.candidates[0] && 
+              lastChunk.candidates[0].groundingMetadata) {
+            
+            // Send a special chunk with citation data
+            citationData = {
+              type: 'citations',
+              groundingMetadata: lastChunk.candidates[0].groundingMetadata
+            };
+            
+            controller.enqueue(encoder.encode(JSON.stringify(citationData) + '\n'));
           }
 
           controller.close();
