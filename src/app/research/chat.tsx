@@ -243,12 +243,14 @@ const Chat = (p: ChatProps) => {
         );
     };
 
-    // Render markdown content
+    // Render markdown content with proper citation display
     const renderMarkdown = (message: string) => {
         return (
-            <ReactMarkdown>
-                {message}
-            </ReactMarkdown>
+            <div className="chat__markdown-content">
+                <ReactMarkdown>
+                    {message}
+                </ReactMarkdown>
+            </div>
         );
     };
 
