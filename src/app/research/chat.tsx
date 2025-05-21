@@ -51,6 +51,7 @@ type ChatItem = {
     mode: ChatMode;
     suggestions?: string[];
     citations?: Citation[];
+    hasForm?: boolean; // To identify if this message should contain a form
 };
 
 // Type for API history items
