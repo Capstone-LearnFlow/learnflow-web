@@ -208,12 +208,12 @@ button {
 /* chat */
 .card--chat {
   width: 480px;
-  height: 85vh; /* Set a fixed height based on viewport height */
+  height: 90vh; /* Increase height to fill more vertical space */
   position: fixed;
   top: 70px;
   right: 22px;
-  padding-top: 0px;
-  padding-bottom: 64px; /* Add padding at the bottom for the input area */
+  padding-top: 16px;
+  padding-bottom: 76px; /* Increased padding at the bottom for the input area */
   display: flex;
   flex-direction: column;
 }
