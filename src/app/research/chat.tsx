@@ -560,12 +560,11 @@ const Chat = (p: ChatProps) => {
                     gap: 8px;
                     margin-bottom: 12px;
                 }
-                    padding: 8px 16px;
                 .chat__mode-button {
                     border: 1px solid #ddd;
                     background-color: white;
                     border-radius: 20px;
-                    padding: 6px 16px;
+                    padding: 8px 16px;
                     cursor: pointer;
                     font-size: 14px;
                     transition: all 0.2s;
