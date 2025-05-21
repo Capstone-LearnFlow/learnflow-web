@@ -404,24 +404,8 @@ const Chat = (p: ChatProps) => {
                 )}
             </div>
             <div className="chat__input-container">
-                {/* Mode toggle */}
-                <div className="chat__mode-toggle">
-                    <button 
-                        className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
-                        onClick={() => setMode('ask')}
-                        disabled={responseStatus === 'streaming'}
-                    >
-                        질문하기
-                    </button>
-                    <button 
-                        className={`chat__mode-button ${mode === 'edit' ? 'chat__mode-button--active' : ''}`}
-                        onClick={() => setMode('edit')}
-                        disabled={responseStatus === 'streaming'}
-                    >
-                        수정하기
-                    </button>
-                </div>
-                <div className="chat__input">
+                <div className="chat__input-wrapper">
+                    <div className="chat__input">
                     <input 
                         type="text" 
                         className="chat__input__text" 
@@ -436,10 +420,34 @@ const Chat = (p: ChatProps) => {
                         onClick={() => sendMessage()}
                         disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
                     ></button>
+                    </div>
+                    {/* Mode toggle repositioned */}
+                    <div className="chat__mode-toggle">
+                        <button 
+                            className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
+                            onClick={() => setMode('ask')}
+                            disabled={responseStatus === 'streaming'}
+                        >
+                            질문하기
+                        </button>
+                        <button 
+                            className={`chat__mode-button ${mode === 'edit' ? 'chat__mode-button--active' : ''}`}
+                            onClick={() => setMode('edit')}
+                            disabled={responseStatus === 'streaming'}
+                        >
+                            수정하기
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <style jsx>{`
+                /* Input wrapper - new container for input and toggle buttons */
+                .chat__input-wrapper {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
                 /* Main chat container */
                 .card.card--chat {
                     border-radius: 12px;
@@ -521,6 +529,7 @@ const Chat = (p: ChatProps) => {
                     overflow: hidden;
                     padding: 8px 16px;
                     background-color: white;
+                    flex: 1;
                 }
                 
                 .chat__input__text {
@@ -551,8 +560,8 @@ const Chat = (p: ChatProps) => {
                 /* Mode toggle */
                 .chat__mode-toggle {
                     display: flex;
+                    flex-direction: column;
                     gap: 8px;
-                    margin-bottom: 12px;
                 }
                 
                 .chat__mode-button {
