@@ -73,12 +73,20 @@ const Chat = (p: ChatProps) => {
     const [streamingCitations, setStreamingCitations] = useState<Citation[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
     const apiHistoryRef = useRef<ApiContentItem[]>([]);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
 
     // Function to handle citation data without inserting inline citations
     const insertInlineCitations = (text: string, segmentMappings: SegmentMapping[]): string => {
         // No longer inserting inline citations, just return the original text
         return text;
     };
+    
+    // Function to scroll to the bottom of the chat
+    const scrollToBottom = useCallback(() => {
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+    }, []);
 
     useEffect(() => {
         // Clean up any ongoing fetch request when component unmounts
@@ -88,6 +96,18 @@ const Chat = (p: ChatProps) => {
             }
         };
     }, []);
+    
+    // Scroll to bottom when chat log changes
+    useEffect(() => {
+        scrollToBottom();
+    }, [chatLog, scrollToBottom]);
+    
+    // Scroll to bottom when streaming message changes
+    useEffect(() => {
+        if (streamingMessage) {
+            scrollToBottom();
+        }
+    }, [streamingMessage, scrollToBottom]);
 
     const fetchGeminiResponse = async (message: string) => {
         try {
@@ -156,12 +176,14 @@ const Chat = (p: ChatProps) => {
                             // Direct text property (simplified format)
                             fullText += data.text;
                             setStreamingMessage(fullText);
+                            // Scroll happens via useEffect
                         } else if (data.candidates && data.candidates[0] && data.candidates[0].content) {
                             // Handle the full raw response format
                             const candidateContent = data.candidates[0].content;
                             if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
                                 fullText += candidateContent.parts[0].text;
                                 setStreamingMessage(fullText);
+                                // Scroll happens via useEffect
                             }
                         }
                         
@@ -192,6 +214,7 @@ const Chat = (p: ChatProps) => {
                                     // Process the text to add inline citations
                                     fullText = insertInlineCitations(fullText, segmentMapping);
                                     setStreamingMessage(fullText);
+                                    // Scroll happens via useEffect
                                 }
                             }
                         }
@@ -296,7 +319,7 @@ const Chat = (p: ChatProps) => {
 
     return (
         <div className="card card--chat">
-            <div className="chat__stack">
+            <div className="chat__stack" ref={chatContainerRef}>
                 {/* Existing chat log */}
                 {chatLog.map((item, i) => (
                     <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
