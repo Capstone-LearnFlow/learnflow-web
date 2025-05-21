@@ -524,16 +524,17 @@ const Chat = (p: ChatProps) => {
                 /* Input field */
                 .chat__input {
                     display: flex;
+                    align-items: center;
                     border: 1px solid #ddd;
                     border-radius: 24px;
                     overflow: hidden;
                     padding: 8px 16px;
                     background-color: white;
-                    flex: 1;
+                    position: relative;
                 }
                 
                 .chat__input__text {
-                    flex-grow: 1;
+                    flex: 1;
                     border: none;
                     outline: none;
                     font-size: 15px;
@@ -562,6 +563,9 @@ const Chat = (p: ChatProps) => {
                     display: flex;
                     flex-direction: column;
                     gap: 8px;
+                    position: absolute;
+                    right: -100px;
+                    bottom: 0;
                 }
                 
                 .chat__mode-button {
@@ -707,5 +711,5 @@ const Chat = (p: ChatProps) => {
         </div>
     );
 }
-
+                    white-space: nowrap;
 export default Chat;
