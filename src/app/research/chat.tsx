@@ -63,6 +63,12 @@ interface ChatProps {
     nodeId: string;
 };
 
+// Type for the assertion form response
+interface AssertionResponse {
+    assertion: string;
+    evidences: string[];
+}
+
 const Chat = (p: ChatProps) => {
     const [mode, setMode] = useState<ChatMode>('ask');
     const [chatLog, setChatLog] = useState<ChatItem[]>([]);
@@ -74,6 +80,12 @@ const Chat = (p: ChatProps) => {
     const abortControllerRef = useRef<AbortController | null>(null);
     const apiHistoryRef = useRef<ApiContentItem[]>([]);
     const chatContainerRef = useRef<HTMLDivElement>(null);
+    
+    // Form state
+    const [showForm, setShowForm] = useState<boolean>(false);
+    const [assertion, setAssertion] = useState<string>('');
+    const [evidence, setEvidence] = useState<string>('');
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     // Function to handle citation data without inserting inline citations
     const insertInlineCitations = (text: string, segmentMappings: SegmentMapping[]): string => {
