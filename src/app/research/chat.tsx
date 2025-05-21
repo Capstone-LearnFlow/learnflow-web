@@ -516,11 +516,13 @@ const Chat = (p: ChatProps) => {
                     font-size: 16px;
                 }
                 
-                /* Input container */
+                /* Input container with reduced padding */
                 .chat__input-container {
-                    padding: 12px 24px 16px;
+                    padding: 12px 12px 16px;
                     background-color: #f9f9f9;
                     margin-top: 0;
+                    width: 100%;
+                    box-sizing: border-box;
                 }
                 
                 /* Input area with full width */
