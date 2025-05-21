@@ -415,11 +415,11 @@ const Chat = (p: ChatProps) => {
                             질문하기
                         </button>
                         <button 
-                            className={`chat__mode-button ${mode === 'edit' ? 'chat__mode-button--active' : ''}`}
-                            onClick={() => setMode('edit')}
+                            className={`chat__mode-button ${mode === 'create' ? 'chat__mode-button--active' : ''}`}
+                            onClick={() => setMode('create')}
                             disabled={responseStatus === 'streaming'}
                         >
-                            수정하기
+                            생성하기
                         </button>
                     </div>
                     
