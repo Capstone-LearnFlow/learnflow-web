@@ -441,9 +441,11 @@ const Chat = (p: ChatProps) => {
                     display: flex;
                     flex-direction: column;
                     gap: 16px;
-                    padding: 20px 20px 12px;
+                    padding: 24px 24px 16px;
                     overflow-y: auto;
-                    max-height: 600px;
+                    max-height: 80vh;
+                    min-height: 600px;
+                    flex-grow: 1;
                 }
                 
                 /* Basic message item styling */
