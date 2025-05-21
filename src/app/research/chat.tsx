@@ -297,56 +297,6 @@ const Chat = (p: ChatProps) => {
     return (
         <div className="card card--chat">
             <div className="chat__stack">
-                {/* Status indicator at the top */}
-                {responseStatus === 'streaming' && (
-                    <div className="chat__status-indicator">
-                        <div className="chat__status-spinner"></div>
-                        <span>응답 생성 중...</span>
-                    </div>
-                )}
-
-                {/* Streaming message at the top when active */}
-                {responseStatus === 'streaming' && (
-                    <div className="chat__stack__item chat__stack__item--streaming">
-                        {streamingMessage && renderMarkdown(streamingMessage)}
-                        
-                        {/* Show the typing indicator */}
-                        <div className="typing-indicator">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                        
-                        {/* Show citations if available */}
-                        {streamingCitations.length > 0 && (
-                            <div className="chat__citations">
-                                <span className="chat__citations-title">출처:</span>
-                                {streamingCitations.map((citation, idx) => (
-                                    <span key={idx} className="chat__citation">
-                                        {renderCitation(citation)}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-                        
-                        {/* Show suggestions if available */}
-                        {streamingSuggestions.length > 0 && (
-                            <div className="chat__suggestions">
-                                {streamingSuggestions.map((suggestion, idx) => (
-                                    <button 
-                                        key={idx} 
-                                        className="chat__suggestion-button"
-                                        onClick={() => handleSuggestionClick(suggestion)}
-                                        disabled={true}
-                                    >
-                                        {suggestion}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-                
                 {/* Existing chat log */}
                 {chatLog.map((item, i) => (
                     <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
@@ -387,6 +337,55 @@ const Chat = (p: ChatProps) => {
                         )}
                     </div>
                 ))}
+                
+                {/* Status indicator and streaming message at the bottom when active */}
+                {responseStatus === 'streaming' && (
+                    <>
+                        <div className="chat__status-indicator">
+                            <div className="chat__status-spinner"></div>
+                            <span>응답 생성 중...</span>
+                        </div>
+                        
+                        <div className="chat__stack__item chat__stack__item--streaming">
+                            {streamingMessage && renderMarkdown(streamingMessage)}
+                            
+                            {/* Show the typing indicator */}
+                            <div className="typing-indicator">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            
+                            {/* Show citations if available */}
+                            {streamingCitations.length > 0 && (
+                                <div className="chat__citations">
+                                    <span className="chat__citations-title">출처:</span>
+                                    {streamingCitations.map((citation, idx) => (
+                                        <span key={idx} className="chat__citation">
+                                            {renderCitation(citation)}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            {/* Show suggestions if available */}
+                            {streamingSuggestions.length > 0 && (
+                                <div className="chat__suggestions">
+                                    {streamingSuggestions.map((suggestion, idx) => (
+                                        <button 
+                                            key={idx} 
+                                            className="chat__suggestion-button"
+                                            onClick={() => handleSuggestionClick(suggestion)}
+                                            disabled={true}
+                                        >
+                                            {suggestion}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
             <div className="chat__input-container">
                 <div className="chat__mode-toggle">
