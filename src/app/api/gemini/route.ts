@@ -66,9 +66,16 @@ export async function POST(request: NextRequest) {
             // Store the last chunk to extract grounding metadata
             lastChunk = chunk;
             
-            // Accumulate the text for full response
+            // Accumulate the text for full response - handle different response formats
             if (chunk.text) {
+              // Direct text property (simplified format)
               fullText += chunk.text;
+            } else if (chunk.candidates && chunk.candidates[0] && chunk.candidates[0].content) {
+              // Extract text from nested candidate structure (full response format)
+              const candidateContent = chunk.candidates[0].content;
+              if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
+                fullText += candidateContent.parts[0].text;
+              }
             }
           }
 
