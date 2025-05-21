@@ -273,8 +273,95 @@ const Chat = (p: ChatProps) => {
         }
     };
 
+    // Function to send an assertion to OpenAI API
+    const sendAssertionToOpenAI = async (assertionText: string, evidenceText: string) => {
+        try {
+            setIsSubmitting(true);
+            setResponseStatus('streaming');
+            setStreamingMessage('생성 중...');
+
+            // Combine the texts for display in chat
+            const displayText = `주장: ${assertionText}\n\n근거: ${evidenceText}`;
+            
+            // Add user message to chat
+            const newChatItem: ChatItem = {
+                sender: "USER",
+                message: displayText,
+                created_at: Date.now(),
+                mode: 'create',
+            };
+            setChatLog((prev) => [...prev, newChatItem]);
+
+            // Call OpenAI API
+            const response = await fetch('/api/openai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: `${displayText}\n\n${apiHistoryRef.current.map(item => `${item.role === 'user' ? '사용자' : 'AI'}: ${item.parts[0].text}`).join('\n\n')}`
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`OpenAI API error: ${response.status}`);
+            }
+
+            const data: AssertionResponse = await response.json();
+            
+            // Format response for display
+            let formattedResponse = `**주장**\n\n${data.assertion}\n\n**근거**\n\n`;
+            data.evidences.forEach((evidence, index) => {
+                formattedResponse += `${index + 1}. ${evidence}\n\n`;
+            });
+
+            // Add the AI response to the chat log
+            const aiResponse: ChatItem = {
+                sender: "AI",
+                message: formattedResponse,
+                created_at: Date.now(),
+                mode: 'create',
+            };
+            
+            setChatLog((prev) => [...prev, aiResponse]);
+            
+            // Reset form state
+            setAssertion('');
+            setEvidence('');
+            setShowForm(false);
+            
+        } catch (error) {
+            console.error('Error calling OpenAI API:', error);
+            // Show error message in chat
+            setChatLog((prev) => [...prev, {
+                sender: "AI",
+                message: "죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.",
+                created_at: Date.now(),
+                mode: 'create',
+            }]);
+        } finally {
+            setIsSubmitting(false);
+            setResponseStatus('success');
+            setStreamingMessage('');
+        }
+    };
+
+    // Handle form submission
+    const handleFormSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        if (assertion.trim() && evidence.trim() && !isSubmitting) {
+            sendAssertionToOpenAI(assertion, evidence);
+        }
+    };
+
     const sendMessage = useCallback((text: string = inputValue) => {
         if (text.trim() === '' || responseStatus === 'streaming') return;
+
+        // For create mode, show the form instead of sending message
+        if (mode === 'create') {
+            setShowForm(true);
+            return;
+        }
 
         const newChatItem: ChatItem = {
             sender: "USER",
