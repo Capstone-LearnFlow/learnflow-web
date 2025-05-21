@@ -416,7 +416,7 @@ const Chat = (p: ChatProps) => {
                     display: flex;
                     flex-direction: column;
                     gap: 16px;
-                    padding: 20px;
+                    padding: 20px 20px 12px;
                     overflow-y: auto;
                     max-height: 600px;
                 }
@@ -467,6 +467,7 @@ const Chat = (p: ChatProps) => {
                 .chat__input-container {
                     padding: 0 16px 8px;
                     background-color: #f9f9f9;
+                    margin-top: -8px;
                 }
                 
                 /* Input field */
