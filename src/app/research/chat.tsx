@@ -404,8 +404,8 @@ const Chat = (p: ChatProps) => {
                 )}
             </div>
             <div className="chat__input-container">
-                <div className="chat__input-with-buttons">
-                    {/* Combined input and toggle buttons in a row */}
+                <div className="chat__input-container-flex">
+                    {/* Input field on the left */}
                     <div className="chat__input">
                         <input 
                             type="text" 
@@ -423,7 +423,7 @@ const Chat = (p: ChatProps) => {
                         ></button>
                     </div>
                     
-                    {/* Mode toggle buttons next to input */}
+                    {/* Toggle buttons on the right */}
                     <div className="chat__mode-toggle">
                         <button 
                             className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
@@ -444,12 +444,13 @@ const Chat = (p: ChatProps) => {
             </div>
 
             <style jsx>{`
-                /* Input with buttons container */
-                .chat__input-with-buttons {
+                /* Input container with flexbox */
+                .chat__input-container-flex {
                     display: flex;
-                    width: 100%;
                     align-items: center;
-                    gap: 12px;
+                    justify-content: space-between;
+                    width: 100%;
+                    gap: 10px;
                 }
                 /* Main chat container */
                 .card.card--chat {
@@ -525,7 +526,7 @@ const Chat = (p: ChatProps) => {
                 
                 /* Input field */
                 .chat__input {
-                    flex: 1;
+                    flex: 0.75;
                     display: flex;
                     align-items: center;
                     border: 1px solid #ddd;
@@ -533,6 +534,7 @@ const Chat = (p: ChatProps) => {
                     overflow: hidden;
                     padding: 8px 16px;
                     background-color: white;
+                    min-width: 0; /* Prevent flex item from overflowing */
                 }
                 
                 .chat__input__text {
@@ -562,21 +564,23 @@ const Chat = (p: ChatProps) => {
                 
                 /* Mode toggle */
                 .chat__mode-toggle {
-                    display: flex; 
+                    flex: 0.25;
+                    display: flex;
                     flex-direction: row;
                     gap: 4px;
-                    margin-left: 4px;
+                    min-width: fit-content; /* Ensure toggle doesn't shrink too small */
                 }
                 .chat__mode-button {
                     border: 1px solid #ddd;
                     background-color: #f5f5f5;
                     border-radius: 18px;
-                    padding: 8px 16px;
+                    padding: 8px 12px;
                     font-weight: 500;
                     cursor: pointer;
                     font-size: 14px;
                     transition: all 0.2s;
                     white-space: nowrap;
+                    flex: 1;
                 }
                 
                 .chat__mode-button--active {
