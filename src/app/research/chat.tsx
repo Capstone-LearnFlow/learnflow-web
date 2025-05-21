@@ -428,7 +428,7 @@ const Chat = (p: ChatProps) => {
                         <input 
                             type="text" 
                             className="chat__input__text" 
-                            placeholder={mode === 'ask' ? "질문하기..." : "요청할 수정사항 입력..."} 
+                            placeholder={mode === 'ask' ? "질문하기..." : "생성할 내용 입력..."}
                             value={inputValue || ''} 
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyDown={handleKeyDown}
