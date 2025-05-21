@@ -5,6 +5,21 @@ import ReactMarkdown from 'react-markdown';
 type ChatMode = 'ask' | 'edit';
 type ChatItemSender = "USER" | "AI";
 
+// Define types for Gemini API responses
+interface WebSource {
+  uri: string;
+  title: string;
+}
+
+interface GroundingChunk {
+  web: WebSource;
+}
+
+interface GroundingMetadata {
+  groundingChunks?: GroundingChunk[];
+  webSearchQueries?: string[];
+}
+
 interface Citation {
   text: string;
   url: string;
