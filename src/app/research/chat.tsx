@@ -411,21 +411,39 @@ const Chat = (p: ChatProps) => {
                     </div>
                 ))}
             </div>
-            <div className="chat__input">
-                <input 
-                    type="text" 
-                    className="chat__input__text" 
-                    placeholder="질문하기..." 
-                    value={inputValue || ''} 
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    disabled={responseStatus === 'streaming'}
-                />
-                <button 
-                    className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`} 
-                    onClick={() => sendMessage()}
-                    disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
-                ></button>
+            <div className="chat__input-container">
+                <div className="chat__mode-toggle">
+                    <button 
+                        className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
+                        onClick={() => setMode('ask')}
+                        disabled={responseStatus === 'streaming'}
+                    >
+                        질문
+                    </button>
+                    <button 
+                        className={`chat__mode-button ${mode === 'edit' ? 'chat__mode-button--active' : ''}`}
+                        onClick={() => setMode('edit')}
+                        disabled={responseStatus === 'streaming'}
+                    >
+                        수정
+                    </button>
+                </div>
+                <div className="chat__input">
+                    <input 
+                        type="text" 
+                        className="chat__input__text" 
+                        placeholder={mode === 'ask' ? "질문하기..." : "요청할 수정사항 입력..."} 
+                        value={inputValue || ''} 
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        disabled={responseStatus === 'streaming'}
+                    />
+                    <button 
+                        className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`} 
+                        onClick={() => sendMessage()}
+                        disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
+                    ></button>
+                </div>
             </div>
 
             <style jsx>{`
