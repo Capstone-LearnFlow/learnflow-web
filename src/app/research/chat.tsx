@@ -346,16 +346,11 @@ const Chat = (p: ChatProps) => {
         }
     };
 
-    // Form specific message ID to identify which message contains the form
-    const [formMessageId, setFormMessageId] = useState<number | null>(null);
-    
-    // Handle form submission within chat
-    const handleFormSubmit = (e: FormEvent, messageId: number) => {
+    // Handle form submission
+    const handleFormSubmit = (e: FormEvent) => {
         e.preventDefault();
         if (assertion.trim() && evidence.trim() && !isSubmitting) {
             sendAssertionToOpenAI(assertion, evidence);
-            // Reset form message ID after submission
-            setFormMessageId(null);
         }
     };
 
