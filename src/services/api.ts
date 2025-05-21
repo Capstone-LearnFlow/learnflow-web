@@ -21,27 +21,6 @@ interface Phase {
     [key: string]: any;
 }
 
-interface AssignmentData {
-    subject: string;
-    chapter: string;
-    topic: string;
-    student_ids: string[];
-    phases?: Phase[];
-    [key: string]: any;
-}
-
-interface Assignment {
-    id: string;
-    subject: string;
-    chapter: string;
-    topic: string;
-    students: Student[];
-    phases: Phase[];
-    status: string;
-    createdAt: string;
-    [key: string]: any;
-}
-
 interface ApiResponse<T> {
     success: boolean;
     message?: string;
@@ -49,23 +28,23 @@ interface ApiResponse<T> {
 }
 
 // Student API Types
-interface StudentAssignment {
+export interface StudentAssignment {
     id: number;
     subject: string;
     chapter: string;
     topic: string;
-    assignment_status: string;
-    teacher_name: string;
-    current_phase: number;
-    student_status: string;
-    phase_end_date: string;
+    assignmentStatus: string;
+    teacherName: string;
+    currentPhase: number;
+    studentStatus: string;
+    phaseEndDate: string;
 }
 
 interface AssignmentPhase {
-    phase_number: number;
+    phaseNumber: number;
     status: string;
-    start_date: string;
-    end_date: string;
+    startDate: string;
+    endDate: string;
 }
 
 interface StudentAssignmentDetail {
@@ -74,7 +53,7 @@ interface StudentAssignmentDetail {
     chapter: string;
     topic: string;
     description: string;
-    teacher_name: string;
+    teacherName: string;
     phases: AssignmentPhase[];
 }
 
@@ -92,6 +71,7 @@ export const authAPI = {
             });
 
             const data: AuthResponse = await response.json();
+            console.log('Login API response:', data);
             return data;
         } catch (error) {
             console.error('Login API error:', error);

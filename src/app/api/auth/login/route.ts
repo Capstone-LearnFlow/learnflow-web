@@ -26,17 +26,17 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 백엔드에서 보낸 쿠키를 클라이언트에도 설정
-        const responseCookies = response.headers.getSetCookie();
-        if (responseCookies) {
-            responseCookies.forEach(cookie => {
-                const cookieResponse = NextResponse.json({ success: true, data: data.data });
-                cookieResponse.headers.set('Set-Cookie', cookie);
-                return cookieResponse;
+        // 백엔드에서 보낸 쿠키를 클라이언트 응답에 설정
+        const clientResponse = NextResponse.json({ success: true, data: data.data });
+        const backendSetCookieHeaders = response.headers.getSetCookie();
+
+        if (backendSetCookieHeaders && backendSetCookieHeaders.length > 0) {
+            backendSetCookieHeaders.forEach(cookieHeaderString => {
+                clientResponse.headers.append('Set-Cookie', cookieHeaderString);
             });
         }
 
-        return NextResponse.json({ success: true, data: data.data });
+        return clientResponse;
     } catch (error) {
         console.error('Login error:', error);
         return NextResponse.json(

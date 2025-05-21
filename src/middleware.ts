@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
     // 세션 쿠키 또는 인증 토큰 확인
-    const sessionCookie = request.cookies.get('session_token')?.value;
+    const sessionCookie = request.cookies.get('user')?.value;
 
     // 보호된 경로 패턴
-    const protectedPaths = ['/dashboard', '/research'];
+    const protectedPaths = ['/', '/research'];
 
     // 현재 경로가 보호된 경로인지 확인
     const isProtectedPath = protectedPaths.some(path =>

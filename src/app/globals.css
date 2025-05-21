@@ -169,6 +169,7 @@ button {
 }
 
 .card {
+  position: relative;
   display: flex;
   padding: 40px;
   box-sizing: border-box;
@@ -244,16 +245,91 @@ button {
   background-color: var(--c-fill-gray-secondary-alpha);
 } */
 
+/* dashboard */
+.card--assignment {
+  width: fit-content;
+}
+
+.assignment__container {
+  display: flex;
+  min-height: 150px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.assignment__subtitle_container {
+  display: flex;
+  padding-bottom: 8px;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.assignment__subtitle {
+  color: var(--c-glyph-gray);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.assignment__subtitle--bold {
+  font-weight: 700;
+}
+
+.assignment__title {
+  width: 400px;
+  /* height: 45px; */
+  flex-shrink: 0;
+  color: var(--c-glyph-gray);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.assignment__schedule_container {
+  display: flex;
+  padding-top: 22px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.assignment__schedule {
+  color: var(--c-glyph-gray-secondary-alpha);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.assignment__btn {
+  width: 36px;
+  height: 36px;
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+
+  transition: all 150ms ease-out;
+}
+
+.assignment__btn svg {
+  fill: var(--c-glyph-gray);
+}
+
+.assignment__btn:active {
+  transform: scale(0.95);
+}
+
+.assignment__btn:active svg {
+  fill: var(--c-glyph-gray-secondary-alpha);
+}
 
 /* chat */
 .card--chat {
   width: 480px;
-  height: 90vh; /* Increase height to fill more vertical space */
+  height: 90vh;
+  /* Increase height to fill more vertical space */
   position: fixed;
   top: 70px;
   right: 22px;
   padding-top: 16px;
-  padding-bottom: 76px; /* Increased padding at the bottom for the input area */
+  padding-bottom: 76px;
+  /* Increased padding at the bottom for the input area */
   display: flex;
   flex-direction: column;
 }
