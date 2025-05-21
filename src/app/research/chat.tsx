@@ -493,9 +493,9 @@ const Chat = (p: ChatProps) => {
                 
                 /* Input container */
                 .chat__input-container {
-                    padding: 0 16px 8px;
+                    padding: 12px 24px 16px;
                     background-color: #f9f9f9;
-                    margin-top: -8px;
+                    margin-top: 0;
                 }
                 
                 /* Input field */
