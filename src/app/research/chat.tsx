@@ -728,6 +728,14 @@ const Chat = (p: ChatProps) => {
                     margin-bottom: 12px;
                 }
                 
+                /* Special styling for chat items with forms */
+                .chat__stack__item:has(.chat__inline-form) {
+                    max-width: 98%;
+                    width: 98%;
+                    padding-left: 12px;
+                    padding-right: 12px;
+                }
+                
                 /* User message styling */
                 .chat__stack__item--bubble {
                     align-self: flex-end;
