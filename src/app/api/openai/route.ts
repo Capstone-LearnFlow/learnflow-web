@@ -1,21 +1,24 @@
 import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
 
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 export async function POST(request: NextRequest) {
   try {
+    // Get the text from the request body
     const { text } = await request.json();
 
     if (!text) {
       return NextResponse.json(
-        { error: "Missing required text parameter" },
+        { error: "Missing required 'text' parameter" },
         { status: 400 }
       );
     }
 
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
+    // Call OpenAI API with the specified parameters
     const response = await openai.chat.completions.create({
       model: "gpt-4.1",
       messages: [
@@ -74,10 +77,12 @@ export async function POST(request: NextRequest) {
       presence_penalty: 0
     });
 
-    // Return the API response as JSON
-    return NextResponse.json(response.choices[0]?.message?.content ? JSON.parse(response.choices[0].message.content) : {});
+    // Return the response
+    return NextResponse.json(response.choices[0].message.content, {
+      status: 200,
+    });
   } catch (error) {
-    console.error("OpenAI API error:", error);
+    console.error("Error calling OpenAI API:", error);
     return NextResponse.json(
       { error: "Failed to process request" },
       { status: 500 }
