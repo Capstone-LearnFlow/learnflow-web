@@ -127,10 +127,18 @@ const Chat = (p: ChatProps) => {
                     try {
                         const data = JSON.parse(jsonStr);
                         
-                        // Handle regular text chunks
+                        // Handle regular text chunks from various formats of API response
                         if (data.text) {
+                            // Direct text property (simplified format)
                             fullText += data.text;
                             setStreamingMessage(fullText);
+                        } else if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+                            // Handle the full raw response format
+                            const candidateContent = data.candidates[0].content;
+                            if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
+                                fullText += candidateContent.parts[0].text;
+                                setStreamingMessage(fullText);
+                            }
                         }
                         
                         // Handle citation data (sent after all text chunks)
