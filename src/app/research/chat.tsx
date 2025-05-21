@@ -487,14 +487,66 @@ const Chat = (p: ChatProps) => {
                     background-color: #e6e6e6;
                 }
                 
-                .cursor-blink {
-                    animation: blink 1s infinite;
-                    font-weight: bold;
+                .chat__status-indicator {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 8px;
+                    margin-bottom: 12px;
+                    background-color: #f5f5f5;
+                    border-radius: 8px;
+                    color: #555;
+                    font-size: 14px;
                 }
                 
-                @keyframes blink {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0; }
+                .chat__status-spinner {
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    border: 2px solid #ccc;
+                    border-top-color: #333;
+                    margin-right: 8px;
+                    animation: spin 1s linear infinite;
+                }
+                
+                .chat__stack__item--streaming {
+                    border-left: 3px solid #0066cc;
+                    padding-left: 12px;
+                    background-color: #f7f7f7;
+                }
+                
+                .typing-indicator {
+                    display: inline-flex;
+                    align-items: center;
+                    margin-top: 4px;
+                }
+                
+                .typing-indicator span {
+                    height: 8px;
+                    width: 8px;
+                    margin: 0 2px;
+                    background-color: #888;
+                    border-radius: 50%;
+                    display: inline-block;
+                    animation: bounce 1.4s infinite ease-in-out both;
+                }
+                
+                .typing-indicator span:nth-child(1) {
+                    animation-delay: -0.32s;
+                }
+                
+                .typing-indicator span:nth-child(2) {
+                    animation-delay: -0.16s;
+                }
+                
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                
+                @keyframes bounce {
+                    0%, 80%, 100% { transform: scale(0); }
+                    40% { transform: scale(1); }
                 }
             `}</style>
         </div>
