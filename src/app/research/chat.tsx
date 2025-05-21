@@ -15,6 +15,17 @@ interface GroundingChunk {
   web: WebSource;
 }
 
+interface TextSegment {
+  startIndex?: number;
+  endIndex?: number;
+  text: string;
+}
+
+interface SegmentMapping {
+  segment: TextSegment;
+  citationIndices: number[];
+}
+
 interface GroundingMetadata {
   groundingChunks?: GroundingChunk[];
   webSearchQueries?: string[];
@@ -24,6 +35,13 @@ interface Citation {
   text: string;
   url: string;
   title: string;
+  index?: number;
+}
+
+// Type for inline citation references
+interface InlineCitation {
+  index: number;
+  position: number;
 }
 
 type ChatItem = {
