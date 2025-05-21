@@ -208,7 +208,8 @@ button {
 /* chat */
 .card--chat {
   width: 480px;
-  height: calc(100% - 70px - 24px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+  height: calc(100vh - 70px - 24px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+  min-height: 80vh;
   position: fixed;
   top: 70px;
   right: 22px;
@@ -227,6 +228,7 @@ button {
   flex-shrink: 0;
   overflow-y: scroll;
   scrollbar-width: none;
+  min-height: calc(80vh - 80px);
 }
 
 .chat__stack__item {
