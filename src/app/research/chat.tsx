@@ -404,8 +404,26 @@ const Chat = (p: ChatProps) => {
                 )}
             </div>
             <div className="chat__input-container">
-                <div className="chat__input-container-inner">
-                    {/* Mode toggle buttons positioned above input field */}
+                <div className="chat__input-with-toggle">
+                    {/* Input field */}
+                    <div className="chat__input">
+                        <input 
+                            type="text" 
+                            className="chat__input__text" 
+                            placeholder={mode === 'ask' ? "질문하기..." : "요청할 수정사항 입력..."} 
+                            value={inputValue || ''} 
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            disabled={responseStatus === 'streaming'}
+                        />
+                        <button 
+                            className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`} 
+                            onClick={() => sendMessage()}
+                            disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
+                        ></button>
+                    </div>
+                    
+                    {/* Mode toggle buttons positioned inline with input */}
                     <div className="chat__mode-toggle">
                         <button 
                             className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
@@ -422,34 +440,16 @@ const Chat = (p: ChatProps) => {
                             수정하기
                         </button>
                     </div>
-                    
-                    {/* Input field */}
-                    <div className="chat__input">
-                    <input 
-                        type="text" 
-                        className="chat__input__text" 
-                        placeholder={mode === 'ask' ? "질문하기..." : "요청할 수정사항 입력..."} 
-                        value={inputValue || ''} 
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        disabled={responseStatus === 'streaming'}
-                    />
-                    <button 
-                        className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`} 
-                        onClick={() => sendMessage()}
-                        disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
-                    ></button>
-                    </div>
                 </div>
             </div>
 
             <style jsx>{`
-                /* Input container inner */
-                .chat__input-container-inner {
+                /* Input with toggle container */
+                .chat__input-with-toggle {
                     display: flex;
-                    flex-direction: column;
                     width: 100%;
-                    gap: 8px;
+                    align-items: center;
+                    gap: 12px;
                 }
                 /* Main chat container */
                 .card.card--chat {
@@ -564,20 +564,18 @@ const Chat = (p: ChatProps) => {
                 .chat__mode-toggle {
                     display: flex; 
                     flex-direction: row;
-                    gap: 8px;
-                    width: 100%;
+                    gap: 4px;
                 }
                 .chat__mode-button {
                     border: 1px solid #ddd;
                     background-color: #f5f5f5;
                     border-radius: 18px;
-                    padding: 8px 16px;
+                    padding: 8px 12px;
                     font-weight: 500;
                     cursor: pointer;
                     font-size: 14px;
                     transition: all 0.2s;
-                    flex: 1;
-                    text-align: center;
+                    white-space: nowrap;
                 }
                 
                 .chat__mode-button--active {
