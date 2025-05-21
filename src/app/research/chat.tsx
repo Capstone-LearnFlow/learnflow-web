@@ -502,6 +502,58 @@ const Chat = (p: ChatProps) => {
                     </div>
                 )}
             </div>
+            {/* Assertion Form Modal */}
+            {showForm && (
+                <div className="assertion-form__overlay">
+                    <div className="assertion-form__modal">
+                        <h3 className="assertion-form__title">주장과 근거 작성</h3>
+                        <form onSubmit={handleFormSubmit}>
+                            <div className="assertion-form__field">
+                                <label htmlFor="assertion">주장</label>
+                                <textarea 
+                                    id="assertion"
+                                    value={assertion}
+                                    onChange={(e) => setAssertion(e.target.value)}
+                                    placeholder="주장을 입력해주세요..."
+                                    rows={3}
+                                    required
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                            <div className="assertion-form__field">
+                                <label htmlFor="evidence">근거</label>
+                                <textarea 
+                                    id="evidence"
+                                    value={evidence}
+                                    onChange={(e) => setEvidence(e.target.value)}
+                                    placeholder="근거를 입력해주세요..."
+                                    rows={5}
+                                    required
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                            <div className="assertion-form__actions">
+                                <button 
+                                    type="button" 
+                                    className="assertion-form__button assertion-form__button--cancel"
+                                    onClick={() => setShowForm(false)}
+                                    disabled={isSubmitting}
+                                >
+                                    취소
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    className="assertion-form__button assertion-form__button--submit"
+                                    disabled={isSubmitting || !assertion.trim() || !evidence.trim()}
+                                >
+                                    {isSubmitting ? '제출 중...' : '확인'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             <div className="chat__input-container">
                 <div className="chat__input-stack">
                     {/* Mode toggle buttons positioned horizontally above input */}
