@@ -280,7 +280,6 @@ const Chat = (p: ChatProps) => {
         try {
             setIsSubmitting(true);
             setResponseStatus('streaming');
-            setStreamingMessage('생성 중...');
 
             // Combine the texts for display in chat
             const displayText = `주장: ${assertionText}\n\n근거: ${evidenceText}`;
@@ -615,6 +614,9 @@ const Chat = (p: ChatProps) => {
                     background-color: #f9f9f9;
                     border-radius: 12px;
                     border: 1px solid #e0e0e0;
+                    width: 100%;
+                    box-sizing: border-box;
+                    max-width: 100%;
                 }
                 
                 .assertion-form__field {
@@ -637,6 +639,7 @@ const Chat = (p: ChatProps) => {
                     font-family: inherit;
                     font-size: 15px;
                     background-color: #f9f9f9;
+                    box-sizing: border-box;
                 }
                 
                 .assertion-form__field textarea:focus {
