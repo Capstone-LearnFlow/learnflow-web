@@ -432,6 +432,8 @@ const Chat = (p: ChatProps) => {
                     background-color: #f9f9f9;
                     display: flex;
                     flex-direction: column;
+                    height: 100%;
+                    min-height: 700px;
                 }
                 
                 /* Chat messages container */
