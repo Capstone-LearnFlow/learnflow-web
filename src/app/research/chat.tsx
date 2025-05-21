@@ -404,53 +404,65 @@ const Chat = (p: ChatProps) => {
                 )}
             </div>
             <div className="chat__input-container">
-                <div className="chat__input-container-flex">
-                    {/* Input field on the left */}
-                    <div className="chat__input">
-                        <input 
-                            type="text" 
-                            className="chat__input__text" 
-                            placeholder={mode === 'ask' ? "질문하기..." : "요청할 수정사항 입력..."} 
-                            value={inputValue || ''} 
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            disabled={responseStatus === 'streaming'}
-                        />
-                        <button 
-                            className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`} 
-                            onClick={() => sendMessage()}
-                            disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
-                        ></button>
-                    </div>
-                    
-                    {/* Toggle buttons on the right */}
-                    <div className="chat__mode-toggle">
-                        <button 
-                            className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
-                            onClick={() => setMode('ask')}
-                            disabled={responseStatus === 'streaming'}
-                        >
-                            질문하기
-                        </button>
-                        <button 
-                            className={`chat__mode-button ${mode === 'edit' ? 'chat__mode-button--active' : ''}`}
-                            onClick={() => setMode('edit')}
-                            disabled={responseStatus === 'streaming'}
-                        >
-                            수정하기
-                        </button>
-                    </div>
-                </div>
+                <table className="chat__layout-table">
+                    <tbody>
+                        <tr>
+                            <td className="chat__input-cell">
+                                <div className="chat__input">
+                                    <input 
+                                        type="text" 
+                                        className="chat__input__text" 
+                                        placeholder={mode === 'ask' ? "질문하기..." : "요청할 수정사항 입력..."} 
+                                        value={inputValue || ''} 
+                                        onChange={(e) => setInputValue(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        disabled={responseStatus === 'streaming'}
+                                    />
+                                    <button 
+                                        className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`} 
+                                        onClick={() => sendMessage()}
+                                        disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
+                                    ></button>
+                                </div>
+                            </td>
+                            <td className="chat__toggle-cell">
+                                <div className="chat__mode-toggle">
+                                    <button 
+                                        className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
+                                        onClick={() => setMode('ask')}
+                                        disabled={responseStatus === 'streaming'}
+                                    >
+                                        질문하기
+                                    </button>
+                                    <button 
+                                        className={`chat__mode-button ${mode === 'edit' ? 'chat__mode-button--active' : ''}`}
+                                        onClick={() => setMode('edit')}
+                                        disabled={responseStatus === 'streaming'}
+                                    >
+                                        수정하기
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <style jsx>{`
-                /* Input container with flexbox */
-                .chat__input-container-flex {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
+                /* Table layout for input and toggle */
+                .chat__layout-table {
                     width: 100%;
-                    gap: 10px;
+                    table-layout: fixed;
+                    border-collapse: separate;
+                    border-spacing: 10px 0;
+                }
+                
+                .chat__input-cell {
+                    width: 70%;
+                }
+                
+                .chat__toggle-cell {
+                    width: 30%;
                 }
                 /* Main chat container */
                 .card.card--chat {
@@ -526,7 +538,6 @@ const Chat = (p: ChatProps) => {
                 
                 /* Input field */
                 .chat__input {
-                    flex: 0.75;
                     display: flex;
                     align-items: center;
                     border: 1px solid #ddd;
@@ -534,7 +545,7 @@ const Chat = (p: ChatProps) => {
                     overflow: hidden;
                     padding: 8px 16px;
                     background-color: white;
-                    min-width: 0; /* Prevent flex item from overflowing */
+                    width: 100%;
                 }
                 
                 .chat__input__text {
@@ -564,11 +575,10 @@ const Chat = (p: ChatProps) => {
                 
                 /* Mode toggle */
                 .chat__mode-toggle {
-                    flex: 0.25;
                     display: flex;
                     flex-direction: row;
                     gap: 4px;
-                    min-width: fit-content; /* Ensure toggle doesn't shrink too small */
+                    width: 100%;
                 }
                 .chat__mode-button {
                     border: 1px solid #ddd;
