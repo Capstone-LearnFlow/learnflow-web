@@ -479,10 +479,10 @@ const Chat = (p: ChatProps) => {
                 /* Streaming message */
                 .chat__stack__item--streaming {
                     border-left: 3px solid #0066cc;
-                    padding-left: 16px;
+                    padding: 16px 20px 16px 20px;
                     background-color: #f0f7ff;
-                    border-radius: 8px;
-                    max-width: 100%;
+                    border-radius: 12px;
+                    max-width: 95%;
                 }
                 
                 /* Markdown content in AI messages */
