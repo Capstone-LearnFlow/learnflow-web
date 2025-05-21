@@ -595,6 +595,105 @@ const Chat = (p: ChatProps) => {
             </div>
 
             <style jsx>{`
+                /* Assertion Form Modal Styles */
+                .assertion-form__overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 100;
+                }
+                
+                .assertion-form__modal {
+                    background-color: white;
+                    border-radius: 12px;
+                    padding: 24px;
+                    width: 90%;
+                    max-width: 600px;
+                    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+                    max-height: 90vh;
+                    overflow-y: auto;
+                }
+                
+                .assertion-form__title {
+                    margin-top: 0;
+                    margin-bottom: 20px;
+                    color: #333;
+                    font-size: 20px;
+                    text-align: center;
+                }
+                
+                .assertion-form__field {
+                    margin-bottom: 16px;
+                }
+                
+                .assertion-form__field label {
+                    display: block;
+                    margin-bottom: 8px;
+                    font-weight: bold;
+                    color: #444;
+                }
+                
+                .assertion-form__field textarea {
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    resize: vertical;
+                    font-family: inherit;
+                    font-size: 15px;
+                    background-color: #f9f9f9;
+                }
+                
+                .assertion-form__field textarea:focus {
+                    outline: none;
+                    border-color: #0078ff;
+                    background-color: white;
+                }
+                
+                .assertion-form__actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
+                    margin-top: 24px;
+                }
+                
+                .assertion-form__button {
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    border: none;
+                    transition: all 0.2s;
+                }
+                
+                .assertion-form__button--cancel {
+                    background-color: #f0f0f0;
+                    color: #666;
+                }
+                
+                .assertion-form__button--cancel:hover {
+                    background-color: #e0e0e0;
+                }
+                
+                .assertion-form__button--submit {
+                    background-color: #0078ff;
+                    color: white;
+                }
+                
+                .assertion-form__button--submit:hover {
+                    background-color: #0065d9;
+                }
+                
+                .assertion-form__button:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
                 /* Vertical stack for input and toggle */
                 .chat__input-stack {
                     display: flex;
