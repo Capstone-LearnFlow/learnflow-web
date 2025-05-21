@@ -221,7 +221,7 @@ const Chat = (p: ChatProps) => {
                 citations
             };
             
-            setChatLog((prev) => [aiResponse, ...prev]);
+            setChatLog((prev) => [...prev, aiResponse]);
             setStreamingMessage('');
             setStreamingSuggestions([]);
             setStreamingCitations([]);
