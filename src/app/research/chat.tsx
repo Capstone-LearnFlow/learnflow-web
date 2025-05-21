@@ -346,23 +346,23 @@ const Chat = (p: ChatProps) => {
         }
     };
 
-    // Handle form submission
-    const handleFormSubmit = (e: FormEvent) => {
+    // Form specific message ID to identify which message contains the form
+    const [formMessageId, setFormMessageId] = useState<number | null>(null);
+    
+    // Handle form submission within chat
+    const handleFormSubmit = (e: FormEvent, messageId: number) => {
         e.preventDefault();
         if (assertion.trim() && evidence.trim() && !isSubmitting) {
             sendAssertionToOpenAI(assertion, evidence);
+            // Reset form message ID after submission
+            setFormMessageId(null);
         }
     };
 
     const sendMessage = useCallback((text: string = inputValue) => {
         if (text.trim() === '' || responseStatus === 'streaming') return;
 
-        // For create mode, show the form instead of sending message
-        if (mode === 'create') {
-            setShowForm(true);
-            return;
-        }
-
+        // Create user message (for both modes)
         const newChatItem: ChatItem = {
             sender: "USER",
             message: text.trim(),
@@ -373,9 +373,29 @@ const Chat = (p: ChatProps) => {
         setChatLog((prev) => [...prev, newChatItem]);
         setInputValue('');
 
-        // Send the message to the Gemini API
+        // For create mode, send form as AI message
+        if (mode === 'create') {
+            // Add AI message with form to chat log
+            const formMessageIndex = chatLog.length + 1; // +1 for the user message we just added
+            setFormMessageId(formMessageIndex);
+            
+            const aiFormMessage: ChatItem = {
+                sender: "AI",
+                message: "주장과 근거를 작성해주세요:", // "Please write your assertion and evidence:"
+                created_at: Date.now(),
+                mode: 'create',
+            };
+            
+            setChatLog((prev) => [...prev, aiFormMessage]);
+            // Reset form fields
+            setAssertion('');
+            setEvidence('');
+            return;
+        }
+
+        // Otherwise send to Gemini API (for ask mode)
         fetchGeminiResponse(text.trim());
-    }, [inputValue, mode, responseStatus]);
+    }, [inputValue, mode, responseStatus, chatLog.length]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue.trim() !== '' && responseStatus !== 'streaming') {
