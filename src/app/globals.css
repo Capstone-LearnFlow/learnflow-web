@@ -248,24 +248,27 @@ button {
 /* chat */
 .card--chat {
   width: 480px;
-  height: calc(100% - 70px - 24px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+  height: 90vh; /* Increase height to fill more vertical space */
   position: fixed;
   top: 70px;
   right: 22px;
-  padding-top: 0px;
+  padding-top: 16px;
+  padding-bottom: 76px; /* Increased padding at the bottom for the input area */
+  display: flex;
+  flex-direction: column;
 }
 
 .chat__stack {
   display: flex;
-  width: 400px;
+  width: 100%;
+  flex: 1;
   height: 100%;
-  padding: 40px 0px 64px 0px;
+  padding: 40px 0px 0px 0px;
   box-sizing: border-box;
   flex-direction: column-reverse;
   align-items: flex-start;
   gap: 20px;
-  flex-shrink: 0;
-  overflow-y: scroll;
+  overflow-y: auto;
   scrollbar-width: none;
 }
 
