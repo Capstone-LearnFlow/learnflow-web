@@ -248,7 +248,7 @@ const Chat = (p: ChatProps) => {
             mode: mode,
         };
 
-        setChatLog((prev) => [newChatItem, ...prev]);
+        setChatLog((prev) => [...prev, newChatItem]);
         setInputValue('');
 
         // Send the message to the Gemini API
