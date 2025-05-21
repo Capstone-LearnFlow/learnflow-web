@@ -1,0 +1,243 @@
+/* ----------------------------------- error ----------------------------------- */
+
+.text--error {
+    display: none !important;
+    position: relative;
+    font-size: 14px;
+    font-weight: 400;
+    color: #ff3b30;
+    line-height: 1;
+    text-align: left;
+    padding: 6px 0px 6px 24px;
+    margin: 0px;
+}
+
+.text--error::after {
+    box-sizing: border-box;
+    display: flex;
+    position: absolute;
+    content: '!';
+    height: 12px;
+    width: 12px;
+    padding: 0px;
+    margin: 0px;
+    border-radius: 6px;
+    border: solid 1px #ff3b30;
+    font-size: 9px;
+    font-weight: 500;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    top: 50%;
+    left: 8px;
+    transform: translateY(-50%);
+}
+
+.text--error--active {
+    display: block !important;
+}
+
+/* ------------------- lineInput ------------------- */
+
+.container--line-input {
+    position: relative;
+    height: auto;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+
+.text--line-input--placeholder {
+    position: relative;
+    font-size: 14px;
+    font-weight: 500;
+    color: #a4a6af;
+    line-height: 26px;
+    padding: 0px;
+    margin: 0px;
+}
+
+.unit--line-input {
+    display: flex;
+    position: relative;
+    height: auto;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+
+.input--line-input {
+    box-sizing: border-box;
+    position: relative;
+    font-family: inherit;
+    font-size: 24px;
+    font-weight: 500;
+    color: #1d1d1d;
+    height: 34px;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+    background-color: transparent;
+    border-radius: 0px;
+    border: none;
+    outline: none !important;
+    border-bottom: solid 2px #efefef;
+}
+
+.input--line-input--center {
+    text-align: center;
+}
+
+.span--line-input {
+    display: block;
+    position: absolute;
+    height: 2px;
+    width: 100%;
+    background-color: var(--color-brand);
+    bottom: 0px;
+    left: 0px;
+    width: 0px;
+    transition-property: width;
+    transition-duration: 0.24s;
+    transition-timing-function: cubic-bezier(0, 0, 0.4, 1);
+}
+/* input이 입력 중인 경우 */
+input.input--line-input:focus + .span--line-input {
+    width: 100%;
+    transition-duration: 0.4s;
+}
+
+.button--line-input--cancel {
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    padding: 0px;
+    margin: 0px;
+    background-color: transparent;
+    top: 50%;
+    right: 0px;
+    transform: translateY(-50%);
+    transition-property: transform;
+    transition-duration: 0.4s;
+    transition-timing-function: cubic-bezier(0, 0, 0.4, 1);
+}
+
+.button--line-input--cancel--clicked {
+    transform: translateY(-50%) scale(0.94);
+    transition-duration: 0.14s;
+}
+
+/* ------------------- lineTextarea ------------------- */
+
+.input--line-textarea {
+    box-sizing: border-box;
+    position: relative;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 400;
+    color: #1d1d1d;
+    min-height: 22px;
+    height: auto;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+    background-color: transparent;
+    border: none;
+    border-radius: 0px;
+    border-bottom: solid 2px #efefef;
+    outline: none !important;
+    resize: none;
+}
+/* textarea가 입력 중인 경우 */
+textarea.input--line-textarea:focus + .span--line-input {
+    width: 100%;
+    transition-duration: 0.4s;
+}
+
+/* ------------------- checkbox ------------------- */
+
+.container--checkbox {
+    display: block;
+    position: relative;
+    height: auto;
+    width: auto;
+    padding: 0px 8px;
+    margin: 8px 0px 6px;
+    justify-content: center;
+}
+
+.label--checkbox {
+    display: block;
+    box-sizing: border-box;
+    position: relative;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--color-text-head);
+    line-height: 1.4;
+    height: auto;
+    width: auto;
+    padding: 0px 0px 0px 24px;
+    margin: 0px;
+    background-color: transparent;
+    border: none;
+    outline: none !important;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.label--checkbox a {
+    color: var(--color-brand);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.input--checkbox {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+    opacity: 0;
+    top: 0px;
+    left: 0px;
+    cursor: pointer;
+    pointer-events: none;
+}
+
+.span--checkbox {
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    background-color: transparent;
+    border-radius: 3px;
+    box-shadow: inset 0px 0px 0px 1px #d6d6d6;
+    top: 2px;
+    left: 0px;
+    pointer-events: none;
+    transition-property: background-color;
+    transition-duration: 0.2s !important;
+    -webkit-appearance: none;
+}
+
+.span--checkbox::after {
+    content: '';
+    display: block;
+    position: relative;
+    height: 5px;
+    width: 8px;
+    background-color: transparent;
+    border-bottom: solid 2px var(--color-bg-realwhite);
+    border-left: solid 2px var(--color-bg-realwhite);
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.input--checkbox:checked + .span--checkbox {
+    box-shadow: inset 0px 0px 0px 0px #333333;
+    background-color: var(--color-brand);
+}
