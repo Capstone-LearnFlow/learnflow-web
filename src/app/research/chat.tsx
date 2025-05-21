@@ -404,25 +404,8 @@ const Chat = (p: ChatProps) => {
                 )}
             </div>
             <div className="chat__input-container">
-                <div className="chat__input-wrapper">
-                    <div className="chat__input">
-                    <input 
-                        type="text" 
-                        className="chat__input__text" 
-                        placeholder={mode === 'ask' ? "질문하기..." : "요청할 수정사항 입력..."} 
-                        value={inputValue || ''} 
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        disabled={responseStatus === 'streaming'}
-                    />
-                    <button 
-                        className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`} 
-                        onClick={() => sendMessage()}
-                        disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
-                    ></button>
-                    </div>
-                    {/* Mode toggle repositioned */}
-                    <div className="chat__mode-toggle">
+                {/* Add toggle buttons above input */}
+                <div className="chat__mode-toggle">
                         <button 
                             className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
                             onClick={() => setMode('ask')}
@@ -437,16 +420,28 @@ const Chat = (p: ChatProps) => {
                         >
                             수정하기
                         </button>
-                    </div>
+                </div>
+                
+                {/* Input field */}
+                <div className="chat__input">
+                    <input 
+                        type="text" 
+                        className="chat__input__text" 
+                        placeholder={mode === 'ask' ? "질문하기..." : "요청할 수정사항 입력..."} 
+                        value={inputValue || ''} 
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        disabled={responseStatus === 'streaming'}
+                    />
+                    <button 
+                        className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`} 
+                        onClick={() => sendMessage()}
+                        disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
+                    ></button>
                 </div>
             </div>
 
             <style jsx>{`
-                /* Input wrapper - new container for input and toggle buttons */
-                .chat__input-wrapper {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
                 }
                 /* Main chat container */
                 .card.card--chat {
@@ -530,7 +525,6 @@ const Chat = (p: ChatProps) => {
                     overflow: hidden;
                     padding: 8px 16px;
                     background-color: white;
-                    position: relative;
                 }
                 
                 .chat__input__text {
@@ -561,11 +555,9 @@ const Chat = (p: ChatProps) => {
                 /* Mode toggle */
                 .chat__mode-toggle {
                     display: flex;
-                    flex-direction: column;
+                    justify-content: flex-end;
                     gap: 8px;
-                    position: absolute;
-                    right: -100px;
-                    bottom: 0;
+                    margin-bottom: 12px;
                 }
                 
                 .chat__mode-button {
