@@ -71,7 +71,30 @@ interface AssertionResponse {
 }
 
 const Chat = (p: ChatProps) => {
+    // Function to add form message to chat
+    const addFormMessageToChat = useCallback(() => {
+        const aiFormMessage: ChatItem = {
+            sender: "AI",
+            message: "주장과 근거를 작성해주세요:", // "Please write your assertion and evidence:"
+            created_at: Date.now(),
+            mode: 'create',
+            hasForm: true,
+        };
+        
+        setChatLog((prev) => [...prev, aiFormMessage]);
+        // Reset form fields
+        setAssertion('');
+        setEvidence('');
+    }, []);
+
     const [mode, setMode] = useState<ChatMode>('ask');
+    
+    // Add form message when mode changes to 'create'
+    useEffect(() => {
+        if (mode === 'create' && responseStatus === 'success') {
+            addFormMessageToChat();
+        }
+    }, [mode, addFormMessageToChat, responseStatus]);
     const [chatLog, setChatLog] = useState<ChatItem[]>([]);
     const [inputValue, setInputValue] = useState<string>('');
     const [responseStatus, setResponseStatus] = useState<'streaming' | 'success' | 'error'>('success');
@@ -371,26 +394,7 @@ const Chat = (p: ChatProps) => {
         setChatLog((prev) => [...prev, newChatItem]);
         setInputValue('');
 
-        // For create mode, send form as AI message
-        if (mode === 'create') {
-            // Add AI message with form to chat log
-            const formMessageIndex = chatLog.length + 1; // +1 for the user message we just added
-            setActiveFormMessageId(formMessageIndex);
-            
-            const aiFormMessage: ChatItem = {
-                sender: "AI",
-                message: "주장과 근거를 작성해주세요:", // "Please write your assertion and evidence:"
-                created_at: Date.now(),
-                mode: 'create',
-                hasForm: true,
-            };
-            
-            setChatLog((prev) => [...prev, aiFormMessage]);
-            // Reset form fields
-            setAssertion('');
-            setEvidence('');
-            return;
-        }
+        // For ask mode, send to Gemini API
 
         // Otherwise send to Gemini API (for ask mode)
         fetchGeminiResponse(text.trim());
