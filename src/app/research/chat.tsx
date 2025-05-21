@@ -74,6 +74,35 @@ const Chat = (p: ChatProps) => {
     const abortControllerRef = useRef<AbortController | null>(null);
     const apiHistoryRef = useRef<ApiContentItem[]>([]);
 
+    // Function to insert inline citations into text
+    const insertInlineCitations = (text: string, segmentMappings: SegmentMapping[]): string => {
+        if (!segmentMappings || segmentMappings.length === 0) return text;
+        
+        // Sort mappings by endIndex to process them from end to beginning
+        // This prevents position shifts when inserting citations
+        const sortedMappings = [...segmentMappings]
+            .filter(mapping => mapping.segment && mapping.segment.endIndex != null && mapping.citationIndices?.length)
+            .sort((a, b) => (b.segment.endIndex || 0) - (a.segment.endIndex || 0));
+        
+        let result = text;
+        
+        // Process each segment mapping
+        for (const mapping of sortedMappings) {
+            if (!mapping.segment.endIndex || !mapping.citationIndices.length) continue;
+            
+            // Create citation reference string
+            const citationRefs = mapping.citationIndices.map(index => `[${index + 1}]`).join('');
+            
+            // Insert the citation reference at the end of the segment
+            const endIndex = mapping.segment.endIndex;
+            result = result.substring(0, endIndex) + 
+                    ` ${citationRefs}` + 
+                    result.substring(endIndex);
+        }
+        
+        return result;
+    };
+
     useEffect(() => {
         // Clean up any ongoing fetch request when component unmounts
         return () => {
