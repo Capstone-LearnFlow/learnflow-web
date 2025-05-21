@@ -432,8 +432,8 @@ const Chat = (p: ChatProps) => {
                     background-color: #f9f9f9;
                     display: flex;
                     flex-direction: column;
-                    height: auto;
-                    min-height: initial;
+                    height: 100%;
+                    min-height: 80vh;
                 }
                 
                 /* Chat messages container */
@@ -443,8 +443,8 @@ const Chat = (p: ChatProps) => {
                     gap: 16px;
                     padding: 24px 24px 16px;
                     overflow-y: auto;
-                    max-height: 80vh;
-                    min-height: 600px;
+                    height: 100%;
+                    min-height: calc(80vh - 80px); /* Subtract input container height */
                     flex-grow: 1;
                 }
                 
