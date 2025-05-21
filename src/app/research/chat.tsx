@@ -381,24 +381,7 @@ const Chat = (p: ChatProps) => {
                 )}
             </div>
             <div className="chat__input-container">
-                <div className="chat__mode-toggle">
-                    {/* 
-                    <button 
-                        className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
-                        onClick={() => setMode('ask')}
-                        disabled={responseStatus === 'streaming'}
-                    >
-                        질문
-                    </button>
-                    <button 
-                        className={`chat__mode-button ${mode === 'edit' ? 'chat__mode-button--active' : ''}`}
-                        onClick={() => setMode('edit')}
-                        disabled={responseStatus === 'streaming'}
-                    >
-                        수정
-                    </button>
-                    */}
-                </div>
+                {/* Mode toggle hidden completely */}
                 <div className="chat__input">
                     <input 
                         type="text" 
