@@ -71,30 +71,8 @@ interface AssertionResponse {
 }
 
 const Chat = (p: ChatProps) => {
-    // Function to add form message to chat
-    const addFormMessageToChat = useCallback(() => {
-        const aiFormMessage: ChatItem = {
-            sender: "AI",
-            message: "주장과 근거를 작성해주세요:", // "Please write your assertion and evidence:"
-            created_at: Date.now(),
-            mode: 'create',
-            hasForm: true,
-        };
-        
-        setChatLog((prev) => [...prev, aiFormMessage]);
-        // Reset form fields
-        setAssertion('');
-        setEvidence('');
-    }, []);
-
+    // Initialize all state variables first
     const [mode, setMode] = useState<ChatMode>('ask');
-    
-    // Add form message when mode changes to 'create'
-    useEffect(() => {
-        if (mode === 'create' && responseStatus === 'success') {
-            addFormMessageToChat();
-        }
-    }, [mode, addFormMessageToChat, responseStatus]);
     const [chatLog, setChatLog] = useState<ChatItem[]>([]);
     const [inputValue, setInputValue] = useState<string>('');
     const [responseStatus, setResponseStatus] = useState<'streaming' | 'success' | 'error'>('success');
@@ -380,10 +358,32 @@ const Chat = (p: ChatProps) => {
         }
     };
 
+    // Function to add form message to chat
+    const addFormMessageToChat = useCallback(() => {
+        const aiFormMessage: ChatItem = {
+            sender: "AI",
+            message: "주장과 근거를 작성해주세요:", // "Please write your assertion and evidence:"
+            created_at: Date.now(),
+            mode: 'create',
+            hasForm: true,
+        };
+        
+        setChatLog((prev) => [...prev, aiFormMessage]);
+        // Reset form fields
+        setAssertion('');
+        setEvidence('');
+    }, [setChatLog, setAssertion, setEvidence]);
+    
+    // Add form message when mode changes to 'create'
+    useEffect(() => {
+        if (mode === 'create' && responseStatus === 'success') {
+            addFormMessageToChat();
+        }
+    }, [mode, addFormMessageToChat, responseStatus]);
     const sendMessage = useCallback((text: string = inputValue) => {
         if (text.trim() === '' || responseStatus === 'streaming') return;
 
-        // Create user message (for both modes)
+        // Create user message
         const newChatItem: ChatItem = {
             sender: "USER",
             message: text.trim(),
@@ -394,12 +394,12 @@ const Chat = (p: ChatProps) => {
         setChatLog((prev) => [...prev, newChatItem]);
         setInputValue('');
 
-        // For ask mode, send to Gemini API
-
-        // Otherwise send to Gemini API (for ask mode)
-        fetchGeminiResponse(text.trim());
-    }, [inputValue, mode, responseStatus, chatLog.length]);
-
+        // Only send to Gemini API in 'ask' mode
+        // In 'create' mode, the form is already visible via useEffect
+        if (mode === 'ask') {
+            fetchGeminiResponse(text.trim());
+        }
+    }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue.trim() !== '' && responseStatus !== 'streaming') {
             sendMessage();
