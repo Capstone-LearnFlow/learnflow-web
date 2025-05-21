@@ -404,27 +404,9 @@ const Chat = (p: ChatProps) => {
                 )}
             </div>
             <div className="chat__input-container">
-                {/* Input field with toggle buttons on the right */}
-                {/* Mode toggle buttons */}
-                <div className="chat__mode-toggle">
-                    <button 
-                        className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
-                        onClick={() => setMode('ask')}
-                        disabled={responseStatus === 'streaming'}
-                    >
-                        질문하기
-                    </button>
-                    <button 
-                        className={`chat__mode-button ${mode === 'edit' ? 'chat__mode-button--active' : ''}`}
-                        onClick={() => setMode('edit')}
-                        disabled={responseStatus === 'streaming'}
-                    >
-                        수정하기
-                    </button>
-                </div>
-                
-                {/* Input field */}
-                <div className="chat__input">
+                <div className="chat__input-with-toggle">
+                    {/* Input field with integrated mode toggle */}
+                    <div className="chat__input">
                     <input 
                         type="text" 
                         className="chat__input__text" 
@@ -439,10 +421,35 @@ const Chat = (p: ChatProps) => {
                         onClick={() => sendMessage()}
                         disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
                     ></button>
+                    </div>
+                    
+                    {/* Mode toggle buttons positioned to the right */}
+                    <div className="chat__mode-toggle">
+                        <button 
+                            className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
+                            onClick={() => setMode('ask')}
+                            disabled={responseStatus === 'streaming'}
+                        >
+                            질문하기
+                        </button>
+                        <button 
+                            className={`chat__mode-button ${mode === 'edit' ? 'chat__mode-button--active' : ''}`}
+                            onClick={() => setMode('edit')}
+                            disabled={responseStatus === 'streaming'}
+                        >
+                            수정하기
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <style jsx>{`
+                /* Input with toggle container */
+                .chat__input-with-toggle {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    width: 100%;
                 }
                 /* Main chat container */
                 .card.card--chat {
@@ -518,7 +525,7 @@ const Chat = (p: ChatProps) => {
                 
                 /* Input field */
                 .chat__input {
-                    flex: 1;
+                    flex-grow: 1;
                     display: flex;
                     align-items: center;
                     border: 1px solid #ddd;
@@ -555,21 +562,21 @@ const Chat = (p: ChatProps) => {
                 
                 /* Mode toggle */
                 .chat__mode-toggle {
-                    display: flex;
-                    justify-content: flex-end;
+                    display: flex; 
+                    flex-direction: column;
                     gap: 8px;
-                    margin-bottom: 12px;
                 }
                 .chat__mode-button {
                     border: 1px solid #ddd;
-                    background-color: white;
-                    border-radius: 20px;
+                    background-color: #f5f5f5;
+                    border-radius: 18px;
                     padding: 8px 16px;
+                    font-weight: 500;
                     cursor: pointer;
                     font-size: 14px;
                     transition: all 0.2s;
                 }
-                
+                    font-weight: bold;
                 .chat__mode-button--active {
                     background-color: #0078ff;
                     color: white;
