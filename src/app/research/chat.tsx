@@ -466,8 +466,8 @@ const Chat = (p: ChatProps) => {
                 /* Input container */
                 .chat__input-container {
                     border-top: 1px solid #e0e0e0;
-                    padding: 16px;
-                    background-color: white;
+                    padding: 8px 16px;
+                    background-color: #f9f9f9;
                 }
                 
                 /* Input field */
