@@ -146,8 +146,8 @@ const Chat = (p: ChatProps) => {
                             // Extract citations if available
                             if (groundingMetadata.groundingChunks && groundingMetadata.groundingChunks.length > 0) {
                                 citations = groundingMetadata.groundingChunks
-                                    .filter(chunk => chunk.web && chunk.web.uri && chunk.web.title)
-                                    .map((chunk, index) => ({
+                                    .filter((chunk: GroundingChunk) => chunk.web && chunk.web.uri && chunk.web.title)
+                                    .map((chunk: GroundingChunk, index: number) => ({
                                         text: `[${index + 1}]`,
                                         url: chunk.web.uri,
                                         title: chunk.web.title
