@@ -450,11 +450,11 @@ const Chat = (p: ChatProps) => {
                 
                 /* Basic message item styling */
                 .chat__stack__item {
-                    padding: 12px 16px;
+                    padding: 16px 20px;
                     border-radius: 10px;
-                    max-width: 85%;
+                    max-width: 95%;
                     position: relative;
-                    margin-bottom: 8px;
+                    margin-bottom: 12px;
                 }
                 
                 /* User message styling */
