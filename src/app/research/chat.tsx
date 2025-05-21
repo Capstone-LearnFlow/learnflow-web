@@ -5,14 +5,22 @@ import ReactMarkdown from 'react-markdown';
 type ChatMode = 'ask' | 'edit';
 type ChatItemSender = "USER" | "AI";
 
+interface Citation {
+  text: string;
+  url: string;
+  title: string;
+}
+
 type ChatItem = {
     sender: ChatItemSender;
     message: string;
-    created_at: number; // timestamp
+    created_at: number;
     mode: ChatMode;
-    suggestions?: string[]; // For storing suggestion buttons
+    suggestions?: string[];
+    citations?: Citation[];
 };
 
+// Type for API history items
 type ApiContentItem = {
     role: 'user' | 'model';
     parts: { text: string }[];
@@ -29,6 +37,7 @@ const Chat = (p: ChatProps) => {
     const [responseStatus, setResponseStatus] = useState<'streaming' | 'success' | 'error'>('success');
     const [streamingMessage, setStreamingMessage] = useState<string>('');
     const [streamingSuggestions, setStreamingSuggestions] = useState<string[]>([]);
+    const [streamingCitations, setStreamingCitations] = useState<Citation[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
     const apiHistoryRef = useRef<ApiContentItem[]>([]);
 
@@ -50,6 +59,7 @@ const Chat = (p: ChatProps) => {
             setResponseStatus('streaming');
             setStreamingMessage('');
             setStreamingSuggestions([]);
+            setStreamingCitations([]);
             
             // Add the new user message to API history
             apiHistoryRef.current = [
@@ -83,6 +93,8 @@ const Chat = (p: ChatProps) => {
             
             const decoder = new TextDecoder();
             let fullText = '';
+            let citations: Citation[] = [];
+            let suggestions: string[] = [];
             
             while (true) {
                 const { done, value } = await reader.read();
@@ -100,12 +112,33 @@ const Chat = (p: ChatProps) => {
                     try {
                         const data = JSON.parse(jsonStr);
                         
-                        if (data.type === 'text' && data.content) {
-                            fullText += data.content;
+                        // Handle regular text chunks
+                        if (data.text) {
+                            fullText += data.text;
                             setStreamingMessage(fullText);
-                        } 
-                        else if (data.type === 'suggestions' && Array.isArray(data.content)) {
-                            setStreamingSuggestions(data.content);
+                        }
+                        
+                        // Handle citation data (sent after all text chunks)
+                        if (data.type === 'citations' && data.groundingMetadata) {
+                            const { groundingMetadata } = data;
+                            
+                            // Extract suggestions
+                            if (groundingMetadata.webSearchQueries && groundingMetadata.webSearchQueries.length > 0) {
+                                suggestions = groundingMetadata.webSearchQueries;
+                                setStreamingSuggestions(suggestions);
+                            }
+                            
+                            // Extract citations if available
+                            if (groundingMetadata.groundingChunks && groundingMetadata.groundingChunks.length > 0) {
+                                citations = groundingMetadata.groundingChunks
+                                    .filter(chunk => chunk.web && chunk.web.uri && chunk.web.title)
+                                    .map((chunk, index) => ({
+                                        text: `[${index + 1}]`,
+                                        url: chunk.web.uri,
+                                        title: chunk.web.title
+                                    }));
+                                setStreamingCitations(citations);
+                            }
                         }
                     } catch (e) {
                         // Handle parse errors (could be partial chunks)
@@ -129,12 +162,14 @@ const Chat = (p: ChatProps) => {
                 message: fullText,
                 created_at: Date.now(),
                 mode: mode,
-                suggestions: streamingSuggestions
+                suggestions,
+                citations
             };
             
             setChatLog((prev) => [aiResponse, ...prev]);
             setStreamingMessage('');
             setStreamingSuggestions([]);
+            setStreamingCitations([]);
             setResponseStatus('success');
         } catch (error) {
             if (error instanceof DOMException && error.name === 'AbortError') {
@@ -178,8 +213,23 @@ const Chat = (p: ChatProps) => {
         }
     };
 
-    // Render markdown or plain text based on the content
-    const renderMessage = (message: string) => {
+    // Render a citation link
+    const renderCitation = (citation: Citation) => {
+        return (
+            <a 
+                href={citation.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="chat__citation-link"
+                title={citation.title}
+            >
+                {citation.text}
+            </a>
+        );
+    };
+
+    // Render markdown content
+    const renderMarkdown = (message: string) => {
         return (
             <ReactMarkdown>
                 {message}
@@ -193,11 +243,39 @@ const Chat = (p: ChatProps) => {
                 {/* Streaming message at the top when active */}
                 {responseStatus === 'streaming' && streamingMessage && (
                     <div className="chat__stack__item">
-                        {renderMessage(streamingMessage)}
+                        {renderMarkdown(streamingMessage)}
                         
                         {/* Show the placeholder while streaming */}
                         {streamingMessage.length > 0 && (
                             <span className="cursor-blink">_</span>
+                        )}
+                        
+                        {/* Show citations if available */}
+                        {streamingCitations.length > 0 && (
+                            <div className="chat__citations">
+                                <span className="chat__citations-title">출처:</span>
+                                {streamingCitations.map((citation, idx) => (
+                                    <span key={idx} className="chat__citation">
+                                        {renderCitation(citation)}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                        
+                        {/* Show suggestions if available */}
+                        {streamingSuggestions.length > 0 && (
+                            <div className="chat__suggestions">
+                                {streamingSuggestions.map((suggestion, idx) => (
+                                    <button 
+                                        key={idx} 
+                                        className="chat__suggestion-button"
+                                        onClick={() => handleSuggestionClick(suggestion)}
+                                        disabled={true}
+                                    >
+                                        {suggestion}
+                                    </button>
+                                ))}
+                            </div>
                         )}
                     </div>
                 )}
@@ -207,9 +285,21 @@ const Chat = (p: ChatProps) => {
                     <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
                         {item.sender === "AI" ? (
                             <>
-                                {renderMessage(item.message)}
+                                {renderMarkdown(item.message)}
                                 
-                                {/* Suggestion buttons */}
+                                {/* Show citations if available */}
+                                {item.citations && item.citations.length > 0 && (
+                                    <div className="chat__citations">
+                                        <span className="chat__citations-title">출처:</span>
+                                        {item.citations.map((citation, idx) => (
+                                            <span key={idx} className="chat__citation">
+                                                {renderCitation(citation)}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                {/* Show suggestions */}
                                 {item.suggestions && item.suggestions.length > 0 && (
                                     <div className="chat__suggestions">
                                         {item.suggestions.map((suggestion, idx) => (
@@ -273,6 +363,38 @@ const Chat = (p: ChatProps) => {
                 .chat__suggestion-button:disabled {
                     opacity: 0.5;
                     cursor: not-allowed;
+                }
+                
+                .chat__citations {
+                    margin-top: 16px;
+                    font-size: 14px;
+                    color: #555;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    align-items: center;
+                }
+                
+                .chat__citations-title {
+                    font-weight: bold;
+                    margin-right: 4px;
+                }
+                
+                .chat__citation {
+                    margin-right: 8px;
+                }
+                
+                .chat__citation-link {
+                    color: #0066cc;
+                    text-decoration: none;
+                    background-color: #f0f0f0;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                }
+                
+                .chat__citation-link:hover {
+                    text-decoration: underline;
+                    background-color: #e6e6e6;
                 }
                 
                 .cursor-blink {
