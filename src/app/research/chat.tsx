@@ -389,6 +389,7 @@ const Chat = (p: ChatProps) => {
                     >
                         질문
                     </button>
+                    {/* 
                     <button 
                         className={`chat__mode-button ${mode === 'edit' ? 'chat__mode-button--active' : ''}`}
                         onClick={() => setMode('edit')}
@@ -396,6 +397,7 @@ const Chat = (p: ChatProps) => {
                     >
                         수정
                     </button>
+                    */}
                 </div>
                 <div className="chat__input">
                     <input 
