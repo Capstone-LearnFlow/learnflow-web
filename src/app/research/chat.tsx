@@ -320,15 +320,25 @@ const Chat = (p: ChatProps) => {
     return (
         <div className="card card--chat">
             <div className="chat__stack">
+                {/* Status indicator at the top */}
+                {responseStatus === 'streaming' && (
+                    <div className="chat__status-indicator">
+                        <div className="chat__status-spinner"></div>
+                        <span>응답 생성 중...</span>
+                    </div>
+                )}
+
                 {/* Streaming message at the top when active */}
-                {responseStatus === 'streaming' && streamingMessage && (
-                    <div className="chat__stack__item">
-                        {renderMarkdown(streamingMessage)}
+                {responseStatus === 'streaming' && (
+                    <div className="chat__stack__item chat__stack__item--streaming">
+                        {streamingMessage && renderMarkdown(streamingMessage)}
                         
-                        {/* Show the placeholder while streaming */}
-                        {streamingMessage.length > 0 && (
-                            <span className="cursor-blink">_</span>
-                        )}
+                        {/* Show the typing indicator */}
+                        <div className="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
                         
                         {/* Show citations if available */}
                         {streamingCitations.length > 0 && (
