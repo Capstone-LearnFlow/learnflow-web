@@ -463,14 +463,16 @@ const Chat = (p: ChatProps) => {
                     padding-bottom: 76px; /* Add padding for the input area */
                 }
                 
-                /* Chat messages container */
+                /* Chat messages container with reduced padding */
                 .chat__stack {
                     display: flex;
                     flex-direction: column;
                     gap: 16px;
-                    padding: 24px 24px 16px;
+                    padding: 24px 4px 16px;
                     overflow-y: auto;
                     height: 100%;
+                    width: 100%;
+                    box-sizing: border-box;
                 }
                 
                 /* Basic message item styling */
@@ -516,13 +518,14 @@ const Chat = (p: ChatProps) => {
                     font-size: 16px;
                 }
                 
-                /* Input container with reduced padding */
+                /* Input container with minimal padding */
                 .chat__input-container {
-                    padding: 12px 12px 16px;
+                    padding: 12px 4px 16px;
                     background-color: #f9f9f9;
                     margin-top: 0;
                     width: 100%;
                     box-sizing: border-box;
+                    max-width: 100%;
                 }
                 
                 /* Input area with full width */
