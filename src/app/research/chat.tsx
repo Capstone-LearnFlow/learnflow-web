@@ -161,7 +161,7 @@ const Chat = (p: ChatProps) => {
                         
                         // Handle citation data (sent after all text chunks)
                         if (data.type === 'citations' && data.groundingMetadata) {
-                            const { groundingMetadata } = data;
+                            const { groundingMetadata, segmentMapping } = data;
                             
                             // Extract suggestions
                             if (groundingMetadata.webSearchQueries && groundingMetadata.webSearchQueries.length > 0) {
@@ -176,9 +176,17 @@ const Chat = (p: ChatProps) => {
                                     .map((chunk: GroundingChunk, index: number) => ({
                                         text: `[${index + 1}]`,
                                         url: chunk.web.uri,
-                                        title: chunk.web.title
+                                        title: chunk.web.title,
+                                        index: index
                                     }));
                                 setStreamingCitations(citations);
+                                
+                                // If we have segment mapping, insert citation references into the text
+                                if (segmentMapping && segmentMapping.length > 0) {
+                                    // Process the text to add inline citations
+                                    fullText = insertInlineCitations(fullText, segmentMapping);
+                                    setStreamingMessage(fullText);
+                                }
                             }
                         }
                     } catch (e) {
