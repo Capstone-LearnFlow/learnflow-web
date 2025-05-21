@@ -487,7 +487,8 @@ const Chat = (p: ChatProps) => {
                 
                 /* Markdown content in AI messages */
                 .chat__markdown-content {
-                    line-height: 1.5;
+                    line-height: 1.6;
+                    font-size: 16px;
                 }
                 
                 /* Input container */
