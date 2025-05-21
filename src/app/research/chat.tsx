@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 
-type ChatMode = 'ask' | 'edit';
+type ChatMode = 'ask' | 'create';
 type ChatItemSender = "USER" | "AI";
 
 // Define types for Gemini API responses
