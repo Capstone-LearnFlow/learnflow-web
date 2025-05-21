@@ -85,10 +85,16 @@ export async function POST(request: NextRequest) {
               lastChunk.candidates[0] && 
               lastChunk.candidates[0].groundingMetadata) {
             
-            // Send a special chunk with citation data
+            // Send a special chunk with citation data including grounding supports for inline citations
+            const groundingMetadata = lastChunk.candidates[0].groundingMetadata;
             citationData = {
               type: 'citations',
-              groundingMetadata: lastChunk.candidates[0].groundingMetadata
+              groundingMetadata: groundingMetadata,
+              // Include segment mapping to enable inline citations
+              segmentMapping: groundingMetadata.groundingSupports?.map(support => ({
+                segment: support.segment,
+                citationIndices: support.groundingChunkIndices
+              })) || []
             };
             
             controller.enqueue(encoder.encode(JSON.stringify(citationData) + '\n'));
