@@ -1,8 +1,7 @@
 .Research {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-    max-height: 100vh;
+    height: 100vh;
     background-color: #ffffff;
     overflow: hidden;
 }
@@ -10,32 +9,35 @@
 .research-container {
     display: flex;
     width: 100%;
-    flex: 1;
-    min-height: 0; /* Important for flex containers */
+    height: calc(100vh - 60px); /* Subtract navbar height */
     background-color: #ffffff;
-    padding: 0;
+    padding: 16px; /* Add some padding */
     box-sizing: border-box;
-    gap: 0;
+    gap: 16px;
     justify-content: flex-end; /* Align content to the right */
 }
 
 .create-section {
     width: 45%;
     height: 100%;
+    overflow: hidden;
     background-color: #ffffff;
     flex-shrink: 0; /* Prevent shrinking */
+    border-radius: 12px; /* Add rounded corners */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Light shadow */
 }
 
 .chat-section {
     width: 650px; /* Fixed width */
-    height: auto;
-    min-height: 0; /* Important for flex containers */
+    height: calc(100vh - 92px); /* Fixed height with calculation */
     transition: width 0.3s ease;
+    overflow: hidden;
     background-color: #ffffff;
     display: flex;
     flex-direction: column;
     margin-left: auto; /* Push to the right */
-    padding-bottom: 80px; /* Extra padding to ensure input is visible */
+    border-radius: 12px; /* Add rounded corners */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Light shadow */
 }
 
 .chat-section--with-create {
@@ -87,36 +89,37 @@
     display: flex;
     flex-direction: column;
     background-color: #ffffff;
-    border-radius: 0;
-    box-shadow: none;
+    border-radius: 12px; /* Match parent border radius */
+    overflow: hidden; /* Hide overflow */
 }
 
 .chat-section :global(.chat-container) {
     flex: 1;
-    min-height: 0; /* Important for flex containers */
     display: flex;
     flex-direction: column;
-    position: relative; /* For absolute positioning of input */
+    overflow: hidden; /* Hide overflow */
 }
 
 .chat-section :global(.chat__stack) {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 20px 4px 100px; /* Extra padding at bottom to prevent content being hidden behind input */
+    padding: 16px;
     margin-bottom: 0;
     box-sizing: border-box;
+    height: calc(100% - 120px); /* Fixed height calculation */
 }
 
 .chat-section :global(.chat__input-container) {
-    padding: 8px 4px 16px;
+    padding: 12px 16px;
     border-top: 1px solid #e0e0e0;
     background-color: #ffffff;
-    position: absolute; /* Position at bottom of container */
-    bottom: 0;
-    left: 0;
     width: 100%;
-    z-index: 10;
+    box-sizing: border-box;
+    height: 120px; /* Fixed height */
+    display: flex;
+    flex-direction: column;
+    border-radius: 0 0 12px 12px; /* Rounded corners at bottom */
 }
 
 .chat-section :global(.chat__stack__item) {
@@ -154,11 +157,15 @@
 /* iPad specific adjustments */
 @media (max-width: 1024px) {
     .chat-section {
-        padding-bottom: 100px; /* More padding for iPad */
+        height: calc(100vh - 108px); /* Adjusted for iPad */
     }
     
     .chat-section :global(.chat__stack) {
-        padding-bottom: 120px; /* More padding for content */
+        height: calc(100% - 140px); /* Adjusted for iPad */
+    }
+    
+    .chat-section :global(.chat__input-container) {
+        height: 140px; /* More space for input on iPad */
     }
 }
 
