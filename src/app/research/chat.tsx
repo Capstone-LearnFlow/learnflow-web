@@ -1108,6 +1108,19 @@ const Chat = ({
                 .chat__markdown-content {
                     line-height: 1.6;
                     font-size: 16px;
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
+                    word-break: break-word;
+                    max-width: 100%;
+                    overflow-x: hidden;
+                    white-space: normal;
+                }
+                
+                /* Ensure content doesn't cause horizontal scrolling */
+                .chat__markdown-content * {
+                    max-width: 100%;
+                    overflow-wrap: break-word;
+                    white-space: normal;
                 }
                 
                 /* Input container with minimal padding */
