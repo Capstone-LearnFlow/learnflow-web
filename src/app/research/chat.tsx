@@ -148,47 +148,55 @@ const Chat = ({
     // Reference for the scroll anchor element
     const scrollAnchorRef = useRef<HTMLDivElement>(null);
     
-    // Enhanced scroll function that ensures immediate scrolling during streaming
-    // and when container has overflow
+    // Enhanced scroll function for new messages and streaming
+    // but allows manual scrolling by the user
     const scrollToBottomImmediate = useCallback(() => {
         if (chatContainerRef.current) {
             // Use requestAnimationFrame to ensure this runs after paint
             requestAnimationFrame(() => {
                 const container = chatContainerRef.current;
-                // Force scroll to absolute bottom with null check
                 if (container) {
-                    // Force scroll to absolute bottom
-                    container.scrollTop = container.scrollHeight * 2;
+                    // Get current scroll position
+                    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
                     
-                    // Use a series of delayed checks to ensure scroll happens
-                    // even if content is still being rendered or images are loading
-                    [10, 50, 100, 300, 500].forEach(delay => {
+                    // Only auto-scroll if user is already near the bottom
+                    // This allows manual scrolling up to view history
+                    if (isNearBottom) {
+                        container.scrollTop = container.scrollHeight;
+                        
+                        // Single delayed check to handle slow rendering
                         setTimeout(() => {
-                            if (container) {
-                                container.scrollTop = container.scrollHeight * 2;
+                            if (container && isNearBottom) {
+                                container.scrollTop = container.scrollHeight;
                             }
-                        }, delay);
-                    });
+                        }, 100);
+                    }
                 }
             });
         }
     }, []);
     
-    // Set up MutationObserver to detect changes to chat container
+    // Set up MutationObserver to detect new messages being added
     useEffect(() => {
         if (!chatContainerRef.current) return;
         
         // Create a MutationObserver to detect DOM changes
-        const observer = new MutationObserver(() => {
-            // When mutations occur, scroll to bottom
-            scrollToBottomImmediate();
+        const observer = new MutationObserver((mutations) => {
+            // Only auto-scroll for added nodes or when streaming is active
+            const shouldScroll = mutations.some(mutation => 
+                mutation.type === 'childList' && mutation.addedNodes.length > 0
+            ) || responseStatus === 'streaming';
+            
+            if (shouldScroll) {
+                scrollToBottomImmediate();
+            }
         });
         
         // Observe changes to the chat container's children
         observer.observe(chatContainerRef.current, {
             childList: true,       // Observe direct children additions/removals
-            subtree: true,         // Observe all descendants
-            characterData: true,   // Observe text changes
+            subtree: false,        // Don't observe all descendants (less aggressive)
+            characterData: false,  // Don't observe text changes (less aggressive)
             attributes: false      // Don't observe attribute changes
         });
         
@@ -238,18 +246,25 @@ const Chat = ({
     }, [chatLog.length, scrollToBottomImmediate]);
     
     // Scroll to bottom when streaming message changes or during streaming
+    // but with less aggressive interval to allow manual scrolling
     useEffect(() => {
         if (responseStatus === 'streaming') {
             scrollToBottomImmediate();
             
-            // Set up interval to keep scrolling during streaming
+            // Set up interval with longer delay and checking if user has scrolled up
             const scrollInterval = setInterval(() => {
-                if (responseStatus === 'streaming') {
-                    scrollToBottomImmediate();
+                if (responseStatus === 'streaming' && chatContainerRef.current) {
+                    const container = chatContainerRef.current;
+                    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+                    
+                    // Only auto-scroll if user is already at/near the bottom
+                    if (isNearBottom) {
+                        container.scrollTop = container.scrollHeight;
+                    }
                 } else {
                     clearInterval(scrollInterval);
                 }
-            }, 100);
+            }, 500); // Longer interval (less aggressive)
             
             return () => clearInterval(scrollInterval);
         }
@@ -1106,12 +1121,14 @@ const Chat = ({
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                 }
                 
-                /* Streaming message */
+                /* Streaming message - styled like regular AI messages with subtle differences */
                 .chat__stack__item--streaming {
-                    border-left: 3px solid #0066cc;
-                    padding: 16px 20px 16px 20px;
-                    background-color: #f0f7ff;
-                    border-radius: 12px;
+                    align-self: flex-start;
+                    background-color: white;
+                    border-radius: 18px 18px 18px 4px;
+                    border: 1px solid #e0e0e0;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                    border-left: 3px solid #0078ff; /* Blue accent to indicate streaming */
                     max-width: 95%;
                     min-height: 60px;
                     height: auto;
