@@ -78,7 +78,12 @@ const Create = ({
           
           <div className={styles['create-panel__actions']}>
             <button className={styles['create-panel__button']} onClick={onCancelEdit}>취소</button>
-            <button className={`${styles['create-panel__button']} ${styles['create-panel__button--primary']}`} onClick={onSaveEdit}>등록하기</button>
+            <button 
+              className={`${styles['create-panel__button']} ${styles['create-panel__button--primary']}`} 
+              onClick={onSaveEdit}
+            >
+              등록하기
+            </button>
           </div>
         </div>
       </div>
