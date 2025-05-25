@@ -322,20 +322,50 @@ const Chat = (p: ChatProps) => {
 
             // Parse the response data with error handling
             const responseText = await response.text();
+            console.log("Raw OpenAI response:", responseText);
+            
             let data: AssertionResponse;
             
             try {
-                data = JSON.parse(responseText);
+                // Try to parse the response - it might be a string representation of JSON
+                let parsedData;
                 
-                if (!data || typeof data !== 'object') {
-                    throw new Error('Invalid response format');
+                try {
+                    // First attempt to parse the response text
+                    parsedData = JSON.parse(responseText);
+                    
+                    // If parsedData is a string (doubly stringified JSON), parse it again
+                    if (typeof parsedData === 'string') {
+                        try {
+                            parsedData = JSON.parse(parsedData);
+                        } catch (innerErr) {
+                            console.error("Error parsing inner JSON string:", innerErr);
+                        }
+                    }
+                } catch (parseErr) {
+                    console.error("Error in initial JSON parsing:", parseErr);
+                    throw new Error("Failed to parse response");
                 }
                 
-                // Ensure the data has the expected properties
+                // Validate the structure
+                if (!parsedData || typeof parsedData !== 'object') {
+                    console.error("Invalid data format after parsing:", parsedData);
+                    throw new Error('Invalid response format - not an object');
+                }
+                
+                // Check if expected properties exist
+                if (!('assertion' in parsedData) || !('evidences' in parsedData)) {
+                    console.error("Missing required fields in response:", parsedData);
+                    throw new Error('Invalid response format - missing required fields');
+                }
+                
+                // Create a safe data object with proper defaults
                 const safeData: AssertionResponse = {
-                    assertion: data.assertion || '주장 내용이 없습니다.',
-                    evidences: Array.isArray(data.evidences) ? data.evidences : []
+                    assertion: parsedData.assertion || '주장 내용이 없습니다.',
+                    evidences: Array.isArray(parsedData.evidences) ? parsedData.evidences : []
                 };
+                
+                console.log("Successfully parsed response data:", safeData);
                 
                 // Store JSON response for editing
                 setEditData(safeData);
