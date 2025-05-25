@@ -145,6 +145,23 @@ const Chat = ({
         }
     }, [streamingMessage, scrollToBottom]);
 
+    // Enhanced scroll function that ensures immediate scrolling during streaming
+    const scrollToBottomImmediate = useCallback(() => {
+        if (chatContainerRef.current) {
+            // Use setTimeout with 0ms to ensure this runs after the DOM update
+            setTimeout(() => {
+                chatContainerRef.current!.scrollTop = chatContainerRef.current!.scrollHeight;
+            }, 0);
+        }
+    }, []);
+    
+    // Scroll to bottom when streaming message changes or during streaming
+    useEffect(() => {
+        if (responseStatus === 'streaming') {
+            scrollToBottomImmediate();
+        }
+    }, [streamingMessage, responseStatus, scrollToBottomImmediate]);
+    
     const fetchGeminiResponse = async (message: string) => {
         try {
             // Create a new AbortController for this request
@@ -155,6 +172,7 @@ const Chat = ({
             setStreamingMessage('');
             setStreamingSuggestions([]);
             setStreamingCitations([]);
+            scrollToBottomImmediate(); // Scroll immediately when starting to stream
             
             // Add the new user message to API history
             apiHistoryRef.current = [
@@ -212,14 +230,14 @@ const Chat = ({
                             // Direct text property (simplified format)
                             fullText += data.text;
                             setStreamingMessage(fullText);
-                            // Scroll happens via useEffect
+                            scrollToBottomImmediate(); // Force scroll on each text update
                         } else if (data.candidates && data.candidates[0] && data.candidates[0].content) {
                             // Handle the full raw response format
                             const candidateContent = data.candidates[0].content;
                             if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
                                 fullText += candidateContent.parts[0].text;
                                 setStreamingMessage(fullText);
-                                // Scroll happens via useEffect
+                                scrollToBottomImmediate(); // Force scroll on each text update
                             }
                         }
                         
