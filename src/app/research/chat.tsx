@@ -241,6 +241,17 @@ const Chat = ({
     useEffect(() => {
         if (responseStatus === 'streaming') {
             scrollToBottomImmediate();
+            
+            // Set up interval to keep scrolling during streaming
+            const scrollInterval = setInterval(() => {
+                if (responseStatus === 'streaming') {
+                    scrollToBottomImmediate();
+                } else {
+                    clearInterval(scrollInterval);
+                }
+            }, 100);
+            
+            return () => clearInterval(scrollInterval);
         }
     }, [streamingMessage, responseStatus, scrollToBottomImmediate]);
     
@@ -1102,6 +1113,13 @@ const Chat = ({
                     background-color: #f0f7ff;
                     border-radius: 12px;
                     max-width: 95%;
+                    min-height: 60px;
+                    height: auto;
+                    overflow: visible;
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
+                    word-break: break-word;
+                    white-space: normal;
                 }
                 
                 /* Markdown content in AI messages */
