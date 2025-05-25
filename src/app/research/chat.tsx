@@ -522,7 +522,19 @@ const Chat = ({
                                 {/* Show the assertion form inside AI message */}
                                 {item.hasForm && (
                                     <div className="chat__inline-form">
-                                        <form onSubmit={handleFormSubmit}>
+                                        <form onSubmit={handleFormSubmit} className={isSubmitting ? 'form-submitting' : ''}>
+                                            {/* Loading overlay - visible when form is submitting */}
+                                            {isSubmitting && (
+                                                <div className="form-processing-overlay">
+                                                    <div className="processing-spinner"></div>
+                                                    <p className="processing-text">데이터를 처리하는 중입니다...</p>
+                                                    <div className="typing-indicator processing-indicator">
+                                                        <span></span>
+                                                        <span></span>
+                                                        <span></span>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="assertion-form__field">
                                                 <label htmlFor="assertion">주장</label>
                                                 <textarea 
@@ -812,6 +824,62 @@ const Chat = ({
                 .assertion-form__button:disabled {
                     opacity: 0.5;
                     cursor: not-allowed;
+                }
+                
+                /* Form submitting state */
+                .form-submitting {
+                    position: relative;
+                }
+                
+                /* Processing overlay styling */
+                .form-processing-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: rgba(240, 247, 255, 0.85);
+                    backdrop-filter: blur(3px);
+                    z-index: 100;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 12px;
+                    animation: fadeIn 0.3s ease-in-out;
+                }
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                .processing-spinner {
+                    width: 50px;
+                    height: 50px;
+                    border: 4px solid rgba(76, 175, 80, 0.2);
+                    border-radius: 50%;
+                    border-top-color: #4caf50;
+                    animation: spin 1s linear infinite;
+                    margin-bottom: 16px;
+                }
+                
+                .processing-text {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #333;
+                    margin-bottom: 16px;
+                    text-align: center;
+                }
+                
+                .processing-indicator {
+                    margin-top: 0;
+                }
+                
+                .processing-indicator span {
+                    height: 10px;
+                    width: 10px;
+                    background-color: #4caf50;
                 }
                 /* Vertical stack for input and toggle */
                 .chat__input-stack {
