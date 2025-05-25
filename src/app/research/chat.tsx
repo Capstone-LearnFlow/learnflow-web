@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, useRef, FormEvent } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 type ChatMode = 'ask' | 'create';
@@ -69,6 +69,12 @@ type ApiContentItem = {
 
 interface ChatProps {
     nodeId: string;
+    mode: ChatMode;
+    setMode: (mode: ChatMode) => void;
+    setIsEditPanelOpen: (isOpen: boolean) => void;
+    setEditData: (data: EditableFormData | null) => void;
+    setEditingMessageIndex: (index: number | null) => void;
+    isEditPanelOpen: boolean;
 };
 
 // Type for the assertion form response
@@ -77,9 +83,16 @@ interface AssertionResponse {
     evidences: string[];
 }
 
-const Chat = (p: ChatProps) => {
+const Chat = ({
+    nodeId,
+    mode,
+    setMode,
+    setIsEditPanelOpen,
+    setEditData,
+    setEditingMessageIndex,
+    isEditPanelOpen
+}: ChatProps) => {
     // Initialize all state variables first
-    const [mode, setMode] = useState<ChatMode>('ask');
     const [chatLog, setChatLog] = useState<ChatItem[]>([]);
     const [inputValue, setInputValue] = useState<string>('');
     const [responseStatus, setResponseStatus] = useState<'streaming' | 'success' | 'error'>('success');
@@ -95,11 +108,6 @@ const Chat = (p: ChatProps) => {
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    
-    // Edit panel state
-    const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
-    const [editData, setEditData] = useState<EditableFormData | null>(null);
-    const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
 
     // Function to handle citation data without inserting inline citations
     const insertInlineCitations = (text: string, segmentMappings: SegmentMapping[]): string => {
@@ -516,90 +524,11 @@ const Chat = (p: ChatProps) => {
         );
     };
 
-    // Function to handle saving edited data
-    const handleSaveEdit = () => {
-        if (!editData || editingMessageIndex === null) return;
-        
-        // Format the edited data for display
-        let formattedResponse = `**주장**\n\n${editData.assertion}\n\n**근거**\n\n`;
-        editData.evidences.forEach((evidence, index) => {
-            formattedResponse += `${index + 1}. ${evidence}\n\n`;
-        });
-        
-        // Update the chat log with edited data
-        setChatLog(prev => {
-            const newLog = [...prev];
-            newLog[editingMessageIndex] = {
-                ...newLog[editingMessageIndex],
-                message: formattedResponse,
-                jsonData: {...editData},
-            };
-            return newLog;
-        });
-        
-        // Close the edit panel
-        setIsEditPanelOpen(false);
-        setEditData(null);
-        setEditingMessageIndex(null);
-    };
-    
-    // Function to handle canceling edit
-    const handleCancelEdit = () => {
-        setIsEditPanelOpen(false);
-        setEditData(null);
-        setEditingMessageIndex(null);
-    };
-    
-    // Function to handle evidence change
-    const handleEvidenceChange = (index: number, value: string) => {
-        if (!editData) return;
-        
-        const updatedEvidences = [...editData.evidences];
-        updatedEvidences[index] = value;
-        
-        setEditData({
-            ...editData,
-            evidences: updatedEvidences
-        });
-    };
 
     return (
         <div className="card card--chat">
-            <div className={`chat-container ${isEditPanelOpen ? 'chat-container--with-edit-panel' : ''}`}>
-                {isEditPanelOpen && editData && (
-                    <div className="edit-panel">
-                        <div className="edit-panel__content">
-                            <div className="edit-panel__field">
-                                <div className="edit-panel__label">주장 {editingMessageIndex !== null && editingMessageIndex + 1}</div>
-                                <textarea 
-                                    className="edit-panel__textarea"
-                                    value={editData.assertion}
-                                    onChange={(e) => setEditData({...editData, assertion: e.target.value})}
-                                    rows={4}
-                                />
-                            </div>
-                            
-                            {editData.evidences.map((evidence, idx) => (
-                                <div key={idx} className="edit-panel__field">
-                                    <div className="edit-panel__label">근거 {idx + 1}</div>
-                                    <textarea 
-                                        className="edit-panel__textarea"
-                                        value={evidence}
-                                        onChange={(e) => handleEvidenceChange(idx, e.target.value)}
-                                        rows={5}
-                                    />
-                                </div>
-                            ))}
-                            
-                            <div className="edit-panel__actions">
-                                <button className="edit-panel__button" onClick={handleCancelEdit}>취소</button>
-                                <button className="edit-panel__button edit-panel__button--primary" onClick={handleSaveEdit}>등록하기</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                
-                <div className="chat__stack" ref={chatContainerRef}>
+            <div className="chat-container">
+                <div className={`chat__stack ${isEditPanelOpen ? 'chat__stack--with-panel' : ''}`} ref={chatContainerRef}>
                 {/* Existing chat log */}
                 {chatLog.map((item, i) => (
                     <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
@@ -767,88 +696,11 @@ const Chat = (p: ChatProps) => {
             </div>
 
             <style jsx>{`
-                /* Edit panel styles */
+                /* Chat container */
                 .chat-container {
                     display: flex;
                     width: 100%;
                     height: 90vh;
-                }
-                
-                .chat-container--with-edit-panel .chat__stack {
-                    width: 60%;
-                    border-left: 1px solid #e0e0e0;
-                }
-                
-                .edit-panel {
-                    width: 40%;
-                    height: 90vh;
-                    overflow-y: auto;
-                    padding: 16px;
-                    background-color: #f9f9f9;
-                    border-right: 1px solid #e0e0e0;
-                }
-                
-                .edit-panel__content {
-                    padding: 16px;
-                    background-color: white;
-                    border-radius: 12px;
-                    border: 1px solid #e0e0e0;
-                }
-                
-                .edit-panel__field {
-                    margin-bottom: 16px;
-                }
-                
-                .edit-panel__label {
-                    font-weight: 600;
-                    margin-bottom: 8px;
-                    color: #333;
-                }
-                
-                .edit-panel__textarea {
-                    width: 100%;
-                    padding: 12px;
-                    border: 1px solid #ddd;
-                    border-radius: 8px;
-                    resize: vertical;
-                    font-family: inherit;
-                    box-sizing: border-box;
-                }
-                
-                .edit-panel__textarea:focus {
-                    outline: none;
-                    border-color: #0078ff;
-                }
-                
-                .edit-panel__actions {
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 12px;
-                    margin-top: 16px;
-                }
-                
-                .edit-panel__button {
-                    padding: 10px 20px;
-                    border-radius: 8px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    border: 1px solid #ddd;
-                    background-color: #f5f5f5;
-                    transition: all 0.2s;
-                }
-                
-                .edit-panel__button:hover {
-                    background-color: #e0e0e0;
-                }
-                
-                .edit-panel__button--primary {
-                    background-color: #0078ff;
-                    color: white;
-                    border-color: #0078ff;
-                }
-                
-                .edit-panel__button--primary:hover {
-                    background-color: #0065d9;
                 }
                 /* In-chat form styles */
                 .chat__inline-form {
@@ -960,6 +812,10 @@ const Chat = (p: ChatProps) => {
                     height: 100%;
                     width: 100%;
                     box-sizing: border-box;
+                }
+                
+                .chat__stack--with-panel {
+                    width: 100%;
                 }
                 
                 /* Basic message item styling */
