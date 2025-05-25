@@ -375,9 +375,8 @@ const Chat = ({
                 
                 console.log("Successfully parsed response data:", safeData);
                 
-                // Store JSON response for editing
+                // Store JSON response for editing but don't show panel yet
                 setEditData(safeData);
-                setIsEditPanelOpen(true);
                 
                 // Format response for display
                 let formattedResponse = `**주장**\n\n${safeData.assertion}\n\n**근거**\n\n`;
@@ -402,6 +401,9 @@ const Chat = ({
                 const newChatLog = [...chatLog, aiResponse];
                 setChatLog(newChatLog);
                 setEditingMessageIndex(newChatLog.length - 1);
+                
+                // Only open the edit panel after we've received the response
+                setIsEditPanelOpen(true);
                 
                 // Reset form state
                 setAssertion('');
