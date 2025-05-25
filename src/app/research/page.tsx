@@ -65,15 +65,15 @@ const Research = () => {
     };
 
     return (
-        <div className='Research'>
-            <div className='navigation'>
-                <div className='navigation__content navigation__content--large'>
-                    <div className="navigation__menu_container">
-                        <div className='navigation__menu navigation__menu--logo navigation__menu--inactive'>LearnFlow</div>
-                        <div className='navigation__menu navigation__menu--inactive'>사회(김민지 선생님)</div>
-                        <div className='navigation__menu'>토의 준비하기</div>
+        <div className={styles.Research}>
+            <div className={styles.navigation}>
+                <div className={`${styles['navigation__content']} ${styles['navigation__content--large']}`}>
+                    <div className={styles['navigation__menu_container']}>
+                        <div className={`${styles['navigation__menu']} ${styles['navigation__menu--logo']} ${styles['navigation__menu--inactive']}`}>LearnFlow</div>
+                        <div className={`${styles['navigation__menu']} ${styles['navigation__menu--inactive']}`}>사회(김민지 선생님)</div>
+                        <div className={styles['navigation__menu']}>토의 준비하기</div>
                     </div>
-                    <div className='navigation__menu'>최민준</div>
+                    <div className={styles['navigation__menu']}>최민준</div>
                 </div>
             </div>
             
