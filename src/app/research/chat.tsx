@@ -320,17 +320,37 @@ const Chat = (p: ChatProps) => {
                 throw new Error(`OpenAI API error: ${response.status}`);
             }
 
-            const data: AssertionResponse = await response.json();
+            // Parse the response data with error handling
+            const responseText = await response.text();
+            let data: AssertionResponse;
             
-            // Store JSON response for editing
-            setEditData(data);
-            setIsEditPanelOpen(true);
-            
-            // Format response for display
-            let formattedResponse = `**주장**\n\n${data.assertion}\n\n**근거**\n\n`;
-            data.evidences.forEach((evidence, index) => {
-                formattedResponse += `${index + 1}. ${evidence}\n\n`;
-            });
+            try {
+                data = JSON.parse(responseText);
+                
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid response format');
+                }
+                
+                // Ensure the data has the expected properties
+                const safeData: AssertionResponse = {
+                    assertion: data.assertion || '주장 내용이 없습니다.',
+                    evidences: Array.isArray(data.evidences) ? data.evidences : []
+                };
+                
+                // Store JSON response for editing
+                setEditData(safeData);
+                setIsEditPanelOpen(true);
+                
+                // Format response for display
+                let formattedResponse = `**주장**\n\n${safeData.assertion}\n\n**근거**\n\n`;
+                
+                if (safeData.evidences && safeData.evidences.length > 0) {
+                    safeData.evidences.forEach((evidence, index) => {
+                        formattedResponse += `${index + 1}. ${evidence}\n\n`;
+                    });
+                } else {
+                    formattedResponse += "근거가 제공되지 않았습니다.\n\n";
+                }
 
             // Add the AI response to the chat log
             const aiResponse: ChatItem = {
@@ -590,7 +610,7 @@ const Chat = (p: ChatProps) => {
                                 )}
                                 
                                 {/* Show citations if available */}
-                                {item.citations && item.citations.length > 0 && (
+                                {item.citations && Array.isArray(item.citations) && item.citations.length > 0 && (
                                     <div className="chat__citations">
                                         <span className="chat__citations-title">출처:</span>
                                         {item.citations.map((citation, idx) => (
@@ -602,7 +622,7 @@ const Chat = (p: ChatProps) => {
                                 )}
                                 
                                 {/* Show suggestions */}
-                                {item.suggestions && item.suggestions.length > 0 && (
+                                {item.suggestions && Array.isArray(item.suggestions) && item.suggestions.length > 0 && (
                                     <div className="chat__suggestions">
                                         {item.suggestions.map((suggestion, idx) => (
                                             <button 
@@ -636,7 +656,7 @@ const Chat = (p: ChatProps) => {
                             </div>
                             
                             {/* Show citations if available */}
-                            {streamingCitations.length > 0 && (
+                            {Array.isArray(streamingCitations) && streamingCitations.length > 0 && (
                                 <div className="chat__citations">
                                     <span className="chat__citations-title">출처:</span>
                                     {streamingCitations.map((citation, idx) => (
@@ -648,7 +668,7 @@ const Chat = (p: ChatProps) => {
                             )}
                             
                             {/* Show suggestions if available */}
-                            {streamingSuggestions.length > 0 && (
+                            {Array.isArray(streamingSuggestions) && streamingSuggestions.length > 0 && (
                                 <div className="chat__suggestions">
                                     {streamingSuggestions.map((suggestion, idx) => (
                                         <button 
