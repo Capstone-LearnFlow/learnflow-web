@@ -9,11 +9,15 @@
     width: 100%;
     height: calc(100vh - 60px); /* Subtract navbar height */
     background-color: #f8f9fa;
+    padding: 16px;
+    box-sizing: border-box;
 }
 
 .create-section {
     width: 40%;
     overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .chat-section {
