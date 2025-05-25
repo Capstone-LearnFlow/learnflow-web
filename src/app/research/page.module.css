@@ -18,7 +18,7 @@
 }
 
 .create-section {
-    width: 35%;
+    width: 40%;
     height: 100%;
     overflow: hidden;
     border-radius: 20px;
@@ -37,7 +37,7 @@
 }
 
 .chat-section--with-create {
-    width: 65%;
+    width: 60%;
 }
 
 .navigation {
