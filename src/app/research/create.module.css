@@ -10,11 +10,12 @@
 }
 
 .create-panel__content {
-    padding: 16px;
-    background-color: white;
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    margin-top: 8px;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e8e8e8;
+    margin-top: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .create-panel__field {
