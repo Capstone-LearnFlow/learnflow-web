@@ -365,21 +365,7 @@ const Chat = ({
                 
                 console.log("Successfully parsed response data:", safeData);
                 
-                // Store JSON response for editing but don't show panel yet
-                setEditData(safeData);
-                
-                // Format response for display
-                let formattedResponse = `**주장**\n\n${safeData.assertion}\n\n**근거**\n\n`;
-                
-                if (safeData.evidences && safeData.evidences.length > 0) {
-                    safeData.evidences.forEach((evidence, index) => {
-                        formattedResponse += `${index + 1}. ${evidence}\n\n`;
-                    });
-                } else {
-                    formattedResponse += "근거가 제공되지 않았습니다.\n\n";
-                }
-
-                // Instead of adding to chat log, directly open the edit panel
+                // Directly set the edit data and open the edit panel
                 setEditData(safeData);
                 
                 // Set a dummy index since we're not adding to chat log
