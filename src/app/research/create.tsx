@@ -55,7 +55,7 @@ const Create = ({
       <div className={styles['create-panel']}>
         <div className={styles['create-panel__content']}>
           <div className={styles['create-panel__field']}>
-            <div className={styles['create-panel__label']}>주장 {editingMessageIndex !== null && editingMessageIndex + 1}</div>
+            <div className={styles['create-panel__label']}>주장</div>
             <textarea 
               className={styles['create-panel__textarea']}
               value={editData.assertion}
