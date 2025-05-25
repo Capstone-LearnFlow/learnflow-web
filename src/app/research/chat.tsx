@@ -439,7 +439,12 @@ const Chat = ({
     const handleFormSubmit = (e: FormEvent) => {
         e.preventDefault();
         if (assertion.trim() && evidence.trim() && !isSubmitting) {
+            // First ensure edit panel is closed before submitting
+            setIsEditPanelOpen(false);
+            
+            // Then send data to OpenAI
             sendAssertionToOpenAI(assertion, evidence);
+            
             // Clear active form after submission
             setActiveFormMessageId(null);
         }
