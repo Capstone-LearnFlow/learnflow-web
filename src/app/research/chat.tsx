@@ -145,27 +145,86 @@ const Chat = ({
         }
     }, [streamingMessage, scrollToBottom]);
 
+    // Reference for the scroll anchor element
+    const scrollAnchorRef = useRef<HTMLDivElement>(null);
+    
     // Enhanced scroll function that ensures immediate scrolling during streaming
     // and when container has overflow
     const scrollToBottomImmediate = useCallback(() => {
         if (chatContainerRef.current) {
-            // Use setTimeout with 0ms to ensure this runs after the DOM update
-            setTimeout(() => {
+            // Use requestAnimationFrame to ensure this runs after paint
+            requestAnimationFrame(() => {
                 const container = chatContainerRef.current;
                 // Force scroll to absolute bottom with null check
                 if (container) {
+                    // Force scroll to absolute bottom
                     container.scrollTop = container.scrollHeight * 2;
-
-                    // Double-check the scroll position after a brief delay
-                    // This helps in cases where content is still rendering
-                    setTimeout(() => {
-                        if (container) {
-                            container.scrollTop = container.scrollHeight * 2;
-                        }
-                    }, 50);
+                    
+                    // Use a series of delayed checks to ensure scroll happens
+                    // even if content is still being rendered or images are loading
+                    [10, 50, 100, 300, 500].forEach(delay => {
+                        setTimeout(() => {
+                            if (container) {
+                                container.scrollTop = container.scrollHeight * 2;
+                            }
+                        }, delay);
+                    });
                 }
-            }, 0);
+            });
         }
+    }, []);
+    
+    // Set up MutationObserver to detect changes to chat container
+    useEffect(() => {
+        if (!chatContainerRef.current) return;
+        
+        // Create a MutationObserver to detect DOM changes
+        const observer = new MutationObserver(() => {
+            // When mutations occur, scroll to bottom
+            scrollToBottomImmediate();
+        });
+        
+        // Observe changes to the chat container's children
+        observer.observe(chatContainerRef.current, {
+            childList: true,       // Observe direct children additions/removals
+            subtree: true,         // Observe all descendants
+            characterData: true,   // Observe text changes
+            attributes: false      // Don't observe attribute changes
+        });
+        
+        // Clean up observer on unmount
+        return () => {
+            observer.disconnect();
+        };
+    }, [scrollToBottomImmediate]);
+    
+    // Scroll to bottom when scroll anchor becomes visible (scrollIntoView fallback)
+    useEffect(() => {
+        if (!scrollAnchorRef.current) return;
+        
+        const scrollIntoViewIfNeeded = () => {
+            if (scrollAnchorRef.current) {
+                scrollAnchorRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+        };
+        
+        // Set up IntersectionObserver to detect when anchor is visible
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                // If anchor is not visible, scroll it into view
+                if (!entry.isIntersecting) {
+                    scrollIntoViewIfNeeded();
+                }
+            },
+            { threshold: 1.0 } // Fully visible
+        );
+        
+        observer.observe(scrollAnchorRef.current);
+        
+        return () => {
+            observer.disconnect();
+        };
     }, []);
     
     // Force scroll to bottom whenever a new message is added
@@ -690,6 +749,9 @@ const Chat = ({
                             )}
                     </div>
                 )}
+                
+                {/* Scroll anchor element - always stays at the bottom */}
+                <div ref={scrollAnchorRef} className="scroll-anchor"></div>
                 </div>
             </div>
 
@@ -958,6 +1020,15 @@ const Chat = ({
                     scrollbar-width: thin; /* Firefox */
                     scrollbar-color: rgba(0, 120, 255, 0.3) transparent; /* Firefox */
                 }
+                
+                /* Scroll anchor styling */
+                .scroll-anchor {
+                    height: 1px;
+                    width: 100%;
+                    opacity: 0;
+                    margin-top: 8px;
+                    pointer-events: none;
+                }
 
                 /* Webkit scrollbar styling */
                 .chat__stack::-webkit-scrollbar {
@@ -987,13 +1058,14 @@ const Chat = ({
                     overflow-anchor: none; /* Disable browser's scroll anchoring */
                 }
                 
-                /* Add a "scroll anchor" element at the bottom to help browsers keep scroll position at bottom */
-                .chat__stack::after {
-                    content: '';
-                    height: 1px;
-                    width: 100%;
-                    display: block;
-                    overflow-anchor: auto;
+                /* Basic message item styling */
+                .chat__stack__item {
+                    padding: 16px 20px;
+                    border-radius: 10px;
+                    max-width: 95%;
+                    position: relative;
+                    margin-bottom: 12px;
+                    scroll-margin-bottom: 100px; /* Add extra scroll margin */
                 }
                 
                 /* Special styling for chat items with forms */
