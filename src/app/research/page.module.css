@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background-color: #f8f9fa;
+    background-color: #ffffff; /* Changed from #f8f9fa to white */
     overflow: hidden;
 }
 
@@ -10,7 +10,7 @@
     display: flex;
     width: 100%;
     height: calc(100vh - 60px); /* Subtract navbar height */
-    background-color: #f8f9fa;
+    background-color: #ffffff; /* Changed from #f8f9fa to white */
     padding: 24px;
     box-sizing: border-box;
     overflow: hidden;
@@ -46,7 +46,7 @@
 }
 
 .navigation {
-    background-color: #f8f9fa;
+    background-color: #ffffff; /* Changed from #f8f9fa to white */
     border-bottom: 1px solid #e9ecef;
     padding: 0 16px;
     height: 60px;
@@ -110,6 +110,7 @@
     margin-top: 0;
     padding: 8px 4px;
     border-top: 1px solid #e0e0e0;
+    background-color: #ffffff; /* Changed from #f9f9f9 to white */
 }
 
 .chat-section :global(.chat__stack__item) {
