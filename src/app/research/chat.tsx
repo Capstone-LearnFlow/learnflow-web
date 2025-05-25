@@ -175,10 +175,9 @@ const Chat = ({
             const signal = abortControllerRef.current.signal;
             
             setResponseStatus('streaming');
-                            // Direct text property (simplified format)
-                            fullText += data.text;
-                            setStreamingMessage(fullText);
-                            // Remove forced scrolling on text updates
+            setStreamingMessage('');
+            setStreamingSuggestions([]);
+            setStreamingCitations([]);
             
             // Add the new user message to API history
             apiHistoryRef.current = [
@@ -236,14 +235,14 @@ const Chat = ({
                             // Direct text property (simplified format)
                             fullText += data.text;
                             setStreamingMessage(fullText);
-                            scrollToBottomImmediate(); // Force scroll on each text update
+                            // No auto-scrolling
                         } else if (data.candidates && data.candidates[0] && data.candidates[0].content) {
                             // Handle the full raw response format
                             const candidateContent = data.candidates[0].content;
                             if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
                                 fullText += candidateContent.parts[0].text;
                                 setStreamingMessage(fullText);
-                                // Remove forced scrolling on text updates
+                                // No auto-scrolling
                             }
                         }
                         
@@ -274,7 +273,7 @@ const Chat = ({
                                     // Process the text to add inline citations
                                     fullText = insertInlineCitations(fullText, segmentMapping);
                                     setStreamingMessage(fullText);
-                                    // Scroll happens via useEffect
+                                    // No auto-scrolling
                                 }
                             }
                         }
