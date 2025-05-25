@@ -1024,7 +1024,7 @@ const Chat = ({
                 /* Streaming message - styled like regular AI messages with subtle differences */
                 .chat__stack__item--streaming {
                     align-self: flex-start;
-                    background-color: white !important;
+                    background-color: white;
                     border-radius: 18px 18px 18px 4px;
                     border: 1px solid #e0e0e0;
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -1049,23 +1049,35 @@ const Chat = ({
                     width: 100%;
                     height: auto;
                     min-height: 30px;
-                    background-color: white !important;
+                    background-color: white;
                 }
                 
-                /* All children of streaming content should have white background */
-                .chat__streaming-content * {
-                    background-color: white !important;
-                }
-                
-                /* Ensure typing indicator has white background */
+                /* Typing indicator - make sure it's visible and properly styled */
                 .chat__stack__item--streaming .typing-indicator {
-                    background-color: white !important;
+                    display: inline-flex;
+                    align-items: center;
+                    margin-top: 8px;
+                    margin-bottom: 4px;
+                    background-color: white;
                 }
                 
-                /* Override any parent background influences */
-                .card.card--chat .chat__stack .chat__stack__item--streaming,
-                .card.card--chat .chat__stack .chat__stack__item--streaming > * {
-                    background-color: white !important;
+                /* Make sure card container doesn't affect streaming message background */
+                .card.card--chat .chat__stack .chat__stack__item--streaming {
+                    background-color: white;
+                }
+                
+                /* Fix for streaming message background during expansion */
+                .chat__stack__item--streaming::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: white;
+                    border-radius: 18px 18px 18px 4px;
+                    z-index: -1;
+                    pointer-events: none;
                 }
                 
                 /* Ensure markdown content fills container properly */
