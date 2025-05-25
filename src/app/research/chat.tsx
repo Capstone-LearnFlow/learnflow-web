@@ -664,6 +664,7 @@ const Chat = (p: ChatProps) => {
                             )}
                     </div>
                 )}
+                </div>
             </div>
 
             <div className="chat__input-container">
@@ -1155,5 +1156,6 @@ const Chat = (p: ChatProps) => {
             `}</style>
         </div>
     );
-}
+};
+
 export default Chat;
