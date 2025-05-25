@@ -881,10 +881,14 @@ const Chat = ({
                 .chat__input-container {
                     padding: 12px 4px 16px;
                     background-color: #f9f9f9;
-                    margin-top: 0;
+                    margin-top: auto;
                     width: 100%;
                     box-sizing: border-box;
                     max-width: 100%;
+                    position: sticky;
+                    bottom: 0;
+                    z-index: 10;
+                    border-top: 1px solid #e0e0e0;
                 }
                 
                 /* Input area with full width */
