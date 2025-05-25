@@ -15,6 +15,7 @@
     box-sizing: border-box;
     overflow: hidden;
     gap: 24px;
+    justify-content: space-between;
 }
 
 .create-section {
