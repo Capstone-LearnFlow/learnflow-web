@@ -175,10 +175,10 @@ const Chat = ({
             const signal = abortControllerRef.current.signal;
             
             setResponseStatus('streaming');
-            setStreamingMessage('');
-            setStreamingSuggestions([]);
-            setStreamingCitations([]);
-            scrollToBottomImmediate(); // Scroll immediately when starting to stream
+                            // Direct text property (simplified format)
+                            fullText += data.text;
+                            setStreamingMessage(fullText);
+                            // Remove forced scrolling on text updates
             
             // Add the new user message to API history
             apiHistoryRef.current = [
@@ -243,7 +243,7 @@ const Chat = ({
                             if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
                                 fullText += candidateContent.parts[0].text;
                                 setStreamingMessage(fullText);
-                                scrollToBottomImmediate(); // Force scroll on each text update
+                                // Remove forced scrolling on text updates
                             }
                         }
                         
