@@ -146,14 +146,27 @@ const Chat = ({
     }, [streamingMessage, scrollToBottom]);
 
     // Enhanced scroll function that ensures immediate scrolling during streaming
+    // and when container has overflow
     const scrollToBottomImmediate = useCallback(() => {
         if (chatContainerRef.current) {
             // Use setTimeout with 0ms to ensure this runs after the DOM update
             setTimeout(() => {
-                chatContainerRef.current!.scrollTop = chatContainerRef.current!.scrollHeight;
+                const container = chatContainerRef.current;
+                // Force scroll to absolute bottom by setting a large value
+                container.scrollTop = container.scrollHeight * 2;
             }, 0);
         }
     }, []);
+    
+    // Force scroll to bottom whenever a new message is added
+    useEffect(() => {
+        if (chatLog.length > 0) {
+            // Use requestAnimationFrame to ensure DOM is fully updated
+            requestAnimationFrame(() => {
+                scrollToBottomImmediate();
+            });
+        }
+    }, [chatLog.length, scrollToBottomImmediate]);
     
     // Scroll to bottom when streaming message changes or during streaming
     useEffect(() => {
@@ -928,6 +941,9 @@ const Chat = ({
                     width: 100%;
                     box-sizing: border-box;
                     margin-bottom: 4px;
+                    scroll-behavior: smooth; /* Add smooth scrolling */
+                    overscroll-behavior: contain; /* Prevent scroll chaining */
+                    -webkit-overflow-scrolling: touch; /* Improve scroll on iOS */
                 }
                 
                 .chat__stack--with-panel {
@@ -941,6 +957,16 @@ const Chat = ({
                     max-width: 95%;
                     position: relative;
                     margin-bottom: 12px;
+                    overflow-anchor: none; /* Disable browser's scroll anchoring */
+                }
+                
+                /* Add a "scroll anchor" element at the bottom to help browsers keep scroll position at bottom */
+                .chat__stack::after {
+                    content: '';
+                    height: 1px;
+                    width: 100%;
+                    display: block;
+                    overflow-anchor: auto;
                 }
                 
                 /* Special styling for chat items with forms */
