@@ -109,6 +109,7 @@ const Chat = ({
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
 
     // Function to handle citation data without inserting inline citations
     const insertInlineCitations = (text: string, segmentMappings: SegmentMapping[]): string => {
@@ -409,7 +410,10 @@ const Chat = ({
     // Handle form submission
     const handleFormSubmit = (e: FormEvent) => {
         e.preventDefault();
-        if (assertion.trim() && evidence.trim() && !isSubmitting) {
+        if (assertion.trim() && evidence.trim() && !isSubmitting && !formSubmitted) {
+            // Mark form as submitted to disable further edits
+            setFormSubmitted(true);
+            
             // First ensure edit panel is closed before submitting
             setIsEditPanelOpen(false);
             
@@ -432,9 +436,10 @@ const Chat = ({
         };
         
         setChatLog((prev) => [...prev, aiFormMessage]);
-        // Reset form fields
+        // Reset form fields and submission state
         setAssertion('');
         setEvidence('');
+        setFormSubmitted(false);
     }, [setChatLog, setAssertion, setEvidence]);
     
     // Add form message when mode changes to 'create'
@@ -523,11 +528,12 @@ const Chat = ({
                                                 <textarea 
                                                     id="assertion"
                                                     value={assertion}
-                                                    onChange={(e) => setAssertion(e.target.value)}
+                                                    onChange={(e) => !formSubmitted && setAssertion(e.target.value)}
                                                     placeholder="주장을 입력해주세요..."
                                                     rows={3}
                                                     required
-                                                    disabled={isSubmitting}
+                                                    disabled={isSubmitting || formSubmitted}
+                                                    readOnly={formSubmitted}
                                                 />
                                             </div>
                                             <div className="assertion-form__field">
@@ -535,18 +541,19 @@ const Chat = ({
                                                 <textarea 
                                                     id="evidence"
                                                     value={evidence}
-                                                    onChange={(e) => setEvidence(e.target.value)}
+                                                    onChange={(e) => !formSubmitted && setEvidence(e.target.value)}
                                                     placeholder="근거를 입력해주세요..."
                                                     rows={5}
                                                     required
-                                                    disabled={isSubmitting}
+                                                    disabled={isSubmitting || formSubmitted}
+                                                    readOnly={formSubmitted}
                                                 />
                                             </div>
                                             <div className="assertion-form__actions">
                                                 <button 
                                                     type="submit" 
                                                     className="assertion-form__button assertion-form__button--submit"
-                                                    disabled={isSubmitting || !assertion.trim() || !evidence.trim()}
+                                                    disabled={isSubmitting || !assertion.trim() || !evidence.trim() || formSubmitted}
                                                 >
                                                     {isSubmitting ? '제출 중...' : '확인'}
                                                 </button>
