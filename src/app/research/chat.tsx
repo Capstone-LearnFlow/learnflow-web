@@ -300,6 +300,9 @@ const Chat = ({
         try {
             setIsSubmitting(true);
             
+            // Combine the texts for API request (but don't add to chat)
+            const displayText = `주장: ${assertionText}\n\n근거: ${evidenceText}`;
+            
             // Call OpenAI API
             const response = await fetch('/api/openai', {
                 method: 'POST',
