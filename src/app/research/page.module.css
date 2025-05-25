@@ -82,57 +82,64 @@
     color: #6c757d;
 }
 
-/* Fix for chat content area - using local class wrappers with global selectors */
-.chatWrapper {
-    height: 100%;
-}
-.chatWrapper :global(.card.card--chat) {
+/* Apply global styles in a CSS module-compatible way */
+.chat-section :global(.card.card--chat) {
     height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
-.chatContainer {
-    flex: 1;
-}
-.chatContainer :global(.chat-container) {
+.chat-section :global(.chat-container) {
     flex: 1;
     overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
-.chatStack {
-    flex: 1;
-}
-.chatStack :global(.chat__stack) {
-    height: auto !important; /* Override inline height */
+.chat-section :global(.chat__stack) {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
+    padding: 20px 4px 0; /* Reduced bottom padding */
     margin-bottom: 0;
-    padding-bottom: 8px;
+    box-sizing: border-box;
 }
 
-.chatInput {
+.chat-section :global(.chat__input-container) {
     margin-top: 0;
-}
-.chatInput :global(.chat__input-container) {
-    margin-top: 0;
-    padding-top: 8px;
+    padding: 8px 4px;
     border-top: 1px solid #e0e0e0;
 }
 
-.chatItems {
-    max-width: 90%;
-}
-.chatItems :global(.chat__stack__item) {
+.chat-section :global(.chat__stack__item) {
     max-width: 90%;
     word-break: break-word;
+    margin-bottom: 12px; /* Add consistent margin */
 }
 
-/* Apply the wrappers to the entire chat section */
-.chat-section {
-    composes: chatWrapper;
+/* Fix for streaming messages container */
+.chat-section :global(.chat__stack__item--streaming) {
+    overflow-x: hidden;
+    word-wrap: break-word;
+}
+
+/* Ensure input area takes full width without overflow */
+.chat-section :global(.chat__input-stack) {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure form elements don't overflow */
+.chat-section :global(.chat__inline-form) {
+    width: 100%;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+/* Additional styling for better vertical spacing */
+.chat-section :global(.chat__input-area) {
+    width: 100%;
+    margin-top: 8px;
 }
