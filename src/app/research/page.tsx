@@ -78,7 +78,7 @@ const Research = () => {
             </div>
             
             <div className={styles['research-container']}>
-                {(mode === 'create' || isEditPanelOpen) && (
+                {isEditPanelOpen && (
                     <div className={styles['create-section']}>
                         <Create 
                             isOpen={mode === 'create' || isEditPanelOpen}
