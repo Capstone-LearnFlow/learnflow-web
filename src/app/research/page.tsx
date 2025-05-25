@@ -54,7 +54,18 @@ const Research = () => {
 
     // Handler for save button in edit mode
     const handleSaveEdit = () => {
-        // This is a stub - the actual implementation is in the Chat component
+        if (!editData || editingMessageIndex === null) return;
+        
+        // Format the edited data for display
+        let formattedResponse = `**주장**\n\n${editData.assertion}\n\n**근거**\n\n`;
+        editData.evidences.forEach((evidence, index) => {
+            formattedResponse += `${index + 1}. ${evidence}\n\n`;
+        });
+        
+        // Close the edit panel
+        setIsEditPanelOpen(false);
+        setEditData(null);
+        setEditingMessageIndex(null);
     };
 
     // Handler for cancel button in edit mode
