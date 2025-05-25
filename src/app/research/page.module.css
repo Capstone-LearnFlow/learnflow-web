@@ -18,7 +18,7 @@
 }
 
 .create-section {
-    width: 40%;
+    width: 45%;
     height: 100%;
     overflow: hidden;
     border-radius: 20px;
@@ -28,6 +28,7 @@
 
 .chat-section {
     flex: 1;
+    max-width: 650px;
     height: 100%;
     transition: width 0.3s ease;
     border-radius: 20px;
@@ -37,7 +38,7 @@
 }
 
 .chat-section--with-create {
-    width: 60%;
+    width: 55%;
 }
 
 .navigation {
