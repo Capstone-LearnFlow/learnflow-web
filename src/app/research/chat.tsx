@@ -816,9 +816,10 @@ const Chat = ({
                     gap: 16px;
                     padding: 24px 4px 16px;
                     overflow-y: auto;
-                    height: 100%;
+                    height: calc(100% - 100px); /* Adjust for input height */
                     width: 100%;
                     box-sizing: border-box;
+                    margin-bottom: 10px;
                 }
                 
                 .chat__stack--with-panel {
