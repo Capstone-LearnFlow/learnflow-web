@@ -152,8 +152,18 @@ const Chat = ({
             // Use setTimeout with 0ms to ensure this runs after the DOM update
             setTimeout(() => {
                 const container = chatContainerRef.current;
-                // Force scroll to absolute bottom by setting a large value
-                container.scrollTop = container.scrollHeight * 2;
+                // Force scroll to absolute bottom with null check
+                if (container) {
+                    container.scrollTop = container.scrollHeight * 2;
+
+                    // Double-check the scroll position after a brief delay
+                    // This helps in cases where content is still rendering
+                    setTimeout(() => {
+                        if (container) {
+                            container.scrollTop = container.scrollHeight * 2;
+                        }
+                    }, 50);
+                }
             }, 0);
         }
     }, []);
@@ -937,6 +947,7 @@ const Chat = ({
                     gap: 16px;
                     padding: 20px 4px 16px;
                     overflow-y: auto;
+                    overflow-x: hidden;
                     height: calc(100% - 90px); /* Adjusted for input height */
                     width: 100%;
                     box-sizing: border-box;
@@ -944,6 +955,22 @@ const Chat = ({
                     scroll-behavior: smooth; /* Add smooth scrolling */
                     overscroll-behavior: contain; /* Prevent scroll chaining */
                     -webkit-overflow-scrolling: touch; /* Improve scroll on iOS */
+                    scrollbar-width: thin; /* Firefox */
+                    scrollbar-color: rgba(0, 120, 255, 0.3) transparent; /* Firefox */
+                }
+
+                /* Webkit scrollbar styling */
+                .chat__stack::-webkit-scrollbar {
+                    width: 6px;
+                }
+                
+                .chat__stack::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                
+                .chat__stack::-webkit-scrollbar-thumb {
+                    background-color: rgba(0, 120, 255, 0.3);
+                    border-radius: 3px;
                 }
                 
                 .chat__stack--with-panel {
