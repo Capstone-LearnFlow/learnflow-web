@@ -1024,7 +1024,7 @@ const Chat = ({
                 /* Streaming message - styled like regular AI messages with subtle differences */
                 .chat__stack__item--streaming {
                     align-self: flex-start;
-                    background-color: white !important; /* Force white background */
+                    background-color: white;
                     border-radius: 18px 18px 18px 4px;
                     border: 1px solid #e0e0e0;
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -1041,20 +1041,6 @@ const Chat = ({
                     word-break: break-word;
                     white-space: normal;
                     padding: 16px 20px 16px 20px; /* Increased bottom padding for typing indicator */
-                    position: relative; /* For pseudo-element */
-                }
-                
-                /* Add a pseudo-element with white background to ensure full coverage */
-                .chat__stack__item--streaming::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background-color: white;
-                    border-radius: 18px 18px 18px 4px;
-                    z-index: -1; /* Place behind content */
                 }
                 
                 /* Streaming content container to ensure proper spacing */
@@ -1063,9 +1049,11 @@ const Chat = ({
                     width: 100%;
                     height: auto;
                     min-height: 30px;
-                    background-color: white; /* Ensure content background is white */
-                    position: relative; /* Keep above pseudo-element */
-                    z-index: 1;
+                }
+                
+                /* Override the card and stack backgrounds for streaming content */
+                .card.card--chat .chat__stack .chat__stack__item--streaming {
+                    background-color: white;
                 }
                 
                 /* Ensure markdown content fills container properly */
