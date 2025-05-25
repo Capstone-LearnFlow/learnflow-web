@@ -15,7 +15,7 @@
     box-sizing: border-box;
     overflow: hidden;
     gap: 24px;
-    justify-content: space-between;
+    justify-content: flex-end; /* Align content to the right */
 }
 
 .create-section {
@@ -25,17 +25,20 @@
     border-radius: 20px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     background-color: #ffffff;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .chat-section {
-    flex: 1;
-    max-width: 650px;
+    width: 650px; /* Fixed width */
     height: 100%;
     transition: width 0.3s ease;
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    margin-left: auto; /* Push to the right */
 }
 
 .chat-section--with-create {
@@ -77,4 +80,36 @@
 
 .navigation__menu--inactive {
     color: #6c757d;
+}
+
+/* Fix for chat content area to take full height and prevent horizontal scrolling */
+:global(.card.card--chat) {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+:global(.chat-container) {
+    flex: 1;
+    overflow: hidden;
+}
+
+:global(.chat__stack) {
+    height: auto !important; /* Override inline height */
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-bottom: 0;
+    padding-bottom: 8px;
+}
+
+:global(.chat__input-container) {
+    margin-top: 0;
+    padding-top: 8px;
+}
+
+:global(.chat__stack__item) {
+    max-width: 90%;
+    word-break: break-word;
 }
