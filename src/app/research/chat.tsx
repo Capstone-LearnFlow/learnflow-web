@@ -707,7 +707,8 @@ const Chat = ({
                 .chat-container {
                     display: flex;
                     width: 100%;
-                    height: 90vh;
+                    flex: 1;
+                    overflow: hidden;
                 }
                 /* In-chat form styles */
                 .chat__inline-form {
