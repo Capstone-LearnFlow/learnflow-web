@@ -59,7 +59,7 @@ const Create = ({
             <textarea 
               className={styles['create-panel__textarea']}
               value={editData.assertion}
-              onChange={(e) => setEditData({...editData, assertion: e.target.value})}
+              onChange={(e) => onAssertionChange(e.target.value)}
               rows={4}
             />
           </div>
