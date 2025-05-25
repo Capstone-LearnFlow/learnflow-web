@@ -1,5 +1,6 @@
 "use client";
-import { FormEvent, useState } from 'react';
+import { FormEvent } from 'react';
+import styles from './create.module.css';
 
 // Define types for JSON edit panel
 interface EditableFormData {
@@ -51,12 +52,12 @@ const Create = ({
   // If we have edit data, show the edit panel
   if (editData) {
     return (
-      <div className="create-panel">
-        <div className="create-panel__content">
-          <div className="create-panel__field">
-            <div className="create-panel__label">주장 {editingMessageIndex !== null && editingMessageIndex + 1}</div>
+      <div className={styles['create-panel']}>
+        <div className={styles['create-panel__content']}>
+          <div className={styles['create-panel__field']}>
+            <div className={styles['create-panel__label']}>주장 {editingMessageIndex !== null && editingMessageIndex + 1}</div>
             <textarea 
-              className="create-panel__textarea"
+              className={styles['create-panel__textarea']}
               value={editData.assertion}
               onChange={(e) => onEvidenceChange(e.target.value)}
               rows={4}
@@ -64,10 +65,10 @@ const Create = ({
           </div>
           
           {editData.evidences.map((evidence, idx) => (
-            <div key={idx} className="create-panel__field">
-              <div className="create-panel__label">근거 {idx + 1}</div>
+            <div key={idx} className={styles['create-panel__field']}>
+              <div className={styles['create-panel__label']}>근거 {idx + 1}</div>
               <textarea 
-                className="create-panel__textarea"
+                className={styles['create-panel__textarea']}
                 value={evidence}
                 onChange={(e) => onEvidenceItemChange(idx, e.target.value)}
                 rows={5}
@@ -75,9 +76,9 @@ const Create = ({
             </div>
           ))}
           
-          <div className="create-panel__actions">
-            <button className="create-panel__button" onClick={onCancelEdit}>취소</button>
-            <button className="create-panel__button create-panel__button--primary" onClick={onSaveEdit}>등록하기</button>
+          <div className={styles['create-panel__actions']}>
+            <button className={styles['create-panel__button']} onClick={onCancelEdit}>취소</button>
+            <button className={`${styles['create-panel__button']} ${styles['create-panel__button--primary']}`} onClick={onSaveEdit}>등록하기</button>
           </div>
         </div>
       </div>
@@ -86,10 +87,10 @@ const Create = ({
   
   // Otherwise, show the form for creating a new assertion
   return (
-    <div className="create-panel">
-      <div className="create-panel__content">
+    <div className={styles['create-panel']}>
+      <div className={styles['create-panel__content']}>
         <form onSubmit={onSubmit}>
-          <div className="assertion-form__field">
+          <div className={styles['assertion-form__field']}>
             <label htmlFor="assertion">주장</label>
             <textarea 
               id="assertion"
@@ -101,7 +102,7 @@ const Create = ({
               disabled={isSubmitting}
             />
           </div>
-          <div className="assertion-form__field">
+          <div className={styles['assertion-form__field']}>
             <label htmlFor="evidence">근거</label>
             <textarea 
               id="evidence"
@@ -113,10 +114,10 @@ const Create = ({
               disabled={isSubmitting}
             />
           </div>
-          <div className="assertion-form__actions">
+          <div className={styles['assertion-form__actions']}>
             <button 
               type="submit" 
-              className="assertion-form__button assertion-form__button--submit"
+              className={`${styles['assertion-form__button']} ${styles['assertion-form__button--submit']}`}
               disabled={isSubmitting || !assertion.trim() || !evidence.trim()}
             >
               {isSubmitting ? '제출 중...' : '확인'}
