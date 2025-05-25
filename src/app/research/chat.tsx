@@ -148,63 +148,50 @@ const Chat = ({
     // Reference for the scroll anchor element
     const scrollAnchorRef = useRef<HTMLDivElement>(null);
     
-    // Enhanced scroll function for new messages and streaming
-    // but allows manual scrolling by the user
+    // Track whether user has scrolled up manually
+    const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
+    
+    // Enhanced scroll function that respects user's scroll position
     const scrollToBottomImmediate = useCallback(() => {
         if (chatContainerRef.current) {
             // Use requestAnimationFrame to ensure this runs after paint
             requestAnimationFrame(() => {
                 const container = chatContainerRef.current;
-                if (container) {
-                    // Get current scroll position
-                    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-                    
-                    // Only auto-scroll if user is already near the bottom
-                    // This allows manual scrolling up to view history
-                    if (isNearBottom) {
-                        container.scrollTop = container.scrollHeight;
-                        
-                        // Single delayed check to handle slow rendering
-                        setTimeout(() => {
-                            if (container && isNearBottom) {
-                                container.scrollTop = container.scrollHeight;
-                            }
-                        }, 100);
-                    }
+                if (container && !userHasScrolledUp) {
+                    container.scrollTop = container.scrollHeight;
                 }
             });
         }
+    }, [userHasScrolledUp]);
+    
+    // Handle scroll events to detect when user scrolls up
+    const handleScroll = useCallback(() => {
+        if (chatContainerRef.current) {
+            const container = chatContainerRef.current;
+            const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+            
+            // Set flag when user scrolls up away from bottom
+            setUserHasScrolledUp(!isNearBottom);
+        }
     }, []);
     
-    // Set up MutationObserver to detect new messages being added
+    // Add scroll event listener
     useEffect(() => {
-        if (!chatContainerRef.current) return;
-        
-        // Create a MutationObserver to detect DOM changes
-        const observer = new MutationObserver((mutations) => {
-            // Only auto-scroll for added nodes or when streaming is active
-            const shouldScroll = mutations.some(mutation => 
-                mutation.type === 'childList' && mutation.addedNodes.length > 0
-            ) || responseStatus === 'streaming';
-            
-            if (shouldScroll) {
-                scrollToBottomImmediate();
-            }
-        });
-        
-        // Observe changes to the chat container's children
-        observer.observe(chatContainerRef.current, {
-            childList: true,       // Observe direct children additions/removals
-            subtree: false,        // Don't observe all descendants (less aggressive)
-            characterData: false,  // Don't observe text changes (less aggressive)
-            attributes: false      // Don't observe attribute changes
-        });
-        
-        // Clean up observer on unmount
-        return () => {
-            observer.disconnect();
-        };
-    }, [scrollToBottomImmediate]);
+        const container = chatContainerRef.current;
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+            return () => container.removeEventListener('scroll', handleScroll);
+        }
+    }, [handleScroll]);
+    
+    // Reset userHasScrolledUp when a new message is added
+    useEffect(() => {
+        if (chatLog.length > 0) {
+            // When a new message is added, reset the scroll flag and scroll to bottom
+            setUserHasScrolledUp(false);
+            scrollToBottomImmediate();
+        }
+    }, [chatLog.length, scrollToBottomImmediate]);
     
     // Scroll to bottom when scroll anchor becomes visible (scrollIntoView fallback)
     useEffect(() => {
@@ -245,30 +232,13 @@ const Chat = ({
         }
     }, [chatLog.length, scrollToBottomImmediate]);
     
-    // Scroll to bottom when streaming message changes or during streaming
-    // but with less aggressive interval to allow manual scrolling
+    // Scroll to bottom when streaming starts, but don't force it during streaming
+    // unless the user is already at the bottom
     useEffect(() => {
-        if (responseStatus === 'streaming') {
+        if (responseStatus === 'streaming' && !userHasScrolledUp) {
             scrollToBottomImmediate();
-            
-            // Set up interval with longer delay and checking if user has scrolled up
-            const scrollInterval = setInterval(() => {
-                if (responseStatus === 'streaming' && chatContainerRef.current) {
-                    const container = chatContainerRef.current;
-                    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-                    
-                    // Only auto-scroll if user is already at/near the bottom
-                    if (isNearBottom) {
-                        container.scrollTop = container.scrollHeight;
-                    }
-                } else {
-                    clearInterval(scrollInterval);
-                }
-            }, 500); // Longer interval (less aggressive)
-            
-            return () => clearInterval(scrollInterval);
         }
-    }, [streamingMessage, responseStatus, scrollToBottomImmediate]);
+    }, [streamingMessage, responseStatus, scrollToBottomImmediate, userHasScrolledUp]);
     
     const fetchGeminiResponse = async (message: string) => {
         try {
@@ -734,45 +704,47 @@ const Chat = ({
                     </div>
                 ))}
                 
-                {/* Streaming message at the bottom when active */}
+                {/* Streaming message at the bottom when active - restructured to ensure styling consistency */}
                 {responseStatus === 'streaming' && (
                     <div className="chat__stack__item chat__stack__item--streaming">
+                        <div className="chat__streaming-content">
                             {streamingMessage && renderMarkdown(streamingMessage)}
                             
-                            {/* Show the typing indicator */}
+                            {/* Show the typing indicator inside the message box */}
                             <div className="typing-indicator">
                                 <span></span>
                                 <span></span>
                                 <span></span>
                             </div>
-                            
-                            {/* Show citations if available */}
-                            {Array.isArray(streamingCitations) && streamingCitations.length > 0 && (
-                                <div className="chat__citations">
-                                    <span className="chat__citations-title">출처:</span>
-                                    {streamingCitations.map((citation, idx) => (
-                                        <span key={idx} className="chat__citation">
-                                            {renderCitation(citation)}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                            
-                            {/* Show suggestions if available */}
-                            {Array.isArray(streamingSuggestions) && streamingSuggestions.length > 0 && (
-                                <div className="chat__suggestions">
-                                    {streamingSuggestions.map((suggestion, idx) => (
-                                        <button 
-                                            key={idx} 
-                                            className="chat__suggestion-button"
-                                            onClick={() => handleSuggestionClick(suggestion)}
-                                            disabled={true}
-                                        >
-                                            {suggestion}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                        </div>
+                        
+                        {/* Show citations if available */}
+                        {Array.isArray(streamingCitations) && streamingCitations.length > 0 && (
+                            <div className="chat__citations">
+                                <span className="chat__citations-title">출처:</span>
+                                {streamingCitations.map((citation, idx) => (
+                                    <span key={idx} className="chat__citation">
+                                        {renderCitation(citation)}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                        
+                        {/* Show suggestions if available */}
+                        {Array.isArray(streamingSuggestions) && streamingSuggestions.length > 0 && (
+                            <div className="chat__suggestions">
+                                {streamingSuggestions.map((suggestion, idx) => (
+                                    <button 
+                                        key={idx} 
+                                        className="chat__suggestion-button"
+                                        onClick={() => handleSuggestionClick(suggestion)}
+                                        disabled={true}
+                                    >
+                                        {suggestion}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
                 
@@ -1137,6 +1109,13 @@ const Chat = ({
                     word-wrap: break-word;
                     word-break: break-word;
                     white-space: normal;
+                    padding: 16px 20px 8px 20px; /* Adjusted padding for typing indicator */
+                }
+                
+                /* Streaming content container to ensure proper spacing */
+                .chat__streaming-content {
+                    display: flex;
+                    flex-direction: column;
                 }
                 
                 /* Markdown content in AI messages */
@@ -1326,11 +1305,12 @@ const Chat = ({
                     background-color: #e0f0ff;
                 }
                 
-                /* Typing indicator */
+                /* Typing indicator - adjusted to appear inside the message */
                 .typing-indicator {
                     display: inline-flex;
                     align-items: center;
                     margin-top: 8px;
+                    margin-bottom: 4px;
                 }
                 
                 .typing-indicator span {
