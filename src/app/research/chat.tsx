@@ -1032,18 +1032,31 @@ const Chat = ({
                     max-width: 95%;
                     min-height: 60px;
                     height: auto;
+                    width: auto;
+                    display: block;
+                    box-sizing: border-box;
                     overflow: visible;
                     overflow-wrap: break-word;
                     word-wrap: break-word;
                     word-break: break-word;
                     white-space: normal;
-                    padding: 16px 20px 8px 20px; /* Adjusted padding for typing indicator */
+                    padding: 16px 20px 16px 20px; /* Increased bottom padding for typing indicator */
                 }
                 
                 /* Streaming content container to ensure proper spacing */
                 .chat__streaming-content {
-                    display: flex;
-                    flex-direction: column;
+                    display: block; /* Change to block from flex to avoid flexbox issues */
+                    width: 100%;
+                    height: auto;
+                    min-height: 30px;
+                }
+                
+                /* Ensure markdown content fills container properly */
+                .chat__stack__item--streaming .chat__markdown-content {
+                    width: 100%;
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
+                    word-break: break-word;
                 }
                 
                 /* Markdown content in AI messages */
