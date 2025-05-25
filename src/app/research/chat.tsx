@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 type ChatMode = 'ask' | 'create';
