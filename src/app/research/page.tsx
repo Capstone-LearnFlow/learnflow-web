@@ -2,7 +2,7 @@
 import { useState, FormEvent } from 'react';
 import Chat from './chat';
 import Create from './create';
-import './page.module.css';
+import styles from './page.module.css';
 
 // Define types for JSON edit panel
 interface EditableFormData {
@@ -77,9 +77,9 @@ const Research = () => {
                 </div>
             </div>
             
-            <div className="research-container">
+            <div className={styles['research-container']}>
                 {(mode === 'create' || isEditPanelOpen) && (
-                    <div className="create-section">
+                    <div className={styles['create-section']}>
                         <Create 
                             isOpen={mode === 'create' || isEditPanelOpen}
                             editData={editData}
@@ -97,7 +97,7 @@ const Research = () => {
                     </div>
                 )}
                 
-                <div className={`chat-section ${(mode === 'create' || isEditPanelOpen) ? 'chat-section--with-create' : ''}`}>
+                <div className={`${styles['chat-section']} ${(mode === 'create' || isEditPanelOpen) ? styles['chat-section--with-create'] : ''}`}>
                     <Chat 
                         nodeId='0'
                         mode={mode}
@@ -110,65 +110,6 @@ const Research = () => {
                 </div>
             </div>
 
-            <style jsx>{`
-                .research-container {
-                    display: flex;
-                    width: 100%;
-                    height: calc(100vh - 60px); /* Subtract navbar height */
-                }
-                
-                .create-section {
-                    width: 40%;
-                    overflow: hidden;
-                }
-                
-                .chat-section {
-                    flex: 1;
-                    width: 100%;
-                    transition: width 0.3s ease;
-                }
-                
-                .chat-section--with-create {
-                    width: 60%;
-                }
-                
-                .navigation {
-                    background-color: #f8f9fa;
-                    border-bottom: 1px solid #e9ecef;
-                    padding: 0 16px;
-                    height: 60px;
-                    display: flex;
-                    align-items: center;
-                }
-                
-                .navigation__content {
-                    width: 100%;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                
-                .navigation__menu_container {
-                    display: flex;
-                    gap: 20px;
-                }
-                
-                .navigation__menu {
-                    font-size: 16px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    padding: 8px 0;
-                }
-                
-                .navigation__menu--logo {
-                    font-weight: 700;
-                    color: #0078ff;
-                }
-                
-                .navigation__menu--inactive {
-                    color: #6c757d;
-                }
-            `}</style>
         </div>
     );
 };
