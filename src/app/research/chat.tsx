@@ -933,8 +933,8 @@ const Chat = ({
                     flex-direction: column;
                     gap: 16px;
                     padding: 20px 4px 16px;
-                    overflow-y: auto;
-                    overflow-x: hidden;
+                    overflow-y: auto !important;
+                    overflow-x: hidden !important;
                     height: calc(100% - 90px); /* Adjusted for input height */
                     width: 100%;
                     box-sizing: border-box;
@@ -943,14 +943,22 @@ const Chat = ({
                     overscroll-behavior: contain; /* Prevent scroll chaining */
                     -webkit-overflow-scrolling: touch; /* Improve scroll on iOS */
                     
-                    /* Firefox - hide scrollbar by default */
-                    scrollbar-width: none; /* Hide scrollbar in Firefox */
-                    scrollbar-color: rgba(0, 120, 255, 0.3) transparent; /* Firefox */
+                    /* Hide scrollbar in all browsers */
+                    -ms-overflow-style: none !important; /* IE and Edge */
+                    scrollbar-width: none !important; /* Firefox */
                 }
                 
-                /* Show scrollbar on hover for Firefox */
-                .chat__stack:hover {
-                    scrollbar-width: thin; /* Show thin scrollbar on hover in Firefox */
+                /* Hide WebKit scrollbar completely */
+                .chat__stack::-webkit-scrollbar {
+                    display: none !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                    background: transparent !important;
+                }
+                
+                /* Hide Internet Explorer scrollbar */
+                .chat__stack {
+                    -ms-overflow-style: none !important;
                 }
                 
                 /* Scroll anchor styling */
@@ -960,26 +968,6 @@ const Chat = ({
                     opacity: 0;
                     margin-top: 8px;
                     pointer-events: none;
-                }
-
-                /* Webkit scrollbar styling - hidden by default */
-                .chat__stack::-webkit-scrollbar {
-                    width: 0; /* Hidden by default */
-                    transition: width 0.3s;
-                }
-                
-                /* Show scrollbar on hover for Webkit browsers */
-                .chat__stack:hover::-webkit-scrollbar {
-                    width: 6px; /* Show on hover */
-                }
-                
-                .chat__stack::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                
-                .chat__stack::-webkit-scrollbar-thumb {
-                    background-color: rgba(0, 120, 255, 0.3);
-                    border-radius: 3px;
                 }
                 
                 .chat__stack--with-panel {
