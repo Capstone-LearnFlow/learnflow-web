@@ -942,8 +942,15 @@ const Chat = ({
                     scroll-behavior: smooth; /* Add smooth scrolling */
                     overscroll-behavior: contain; /* Prevent scroll chaining */
                     -webkit-overflow-scrolling: touch; /* Improve scroll on iOS */
-                    scrollbar-width: thin; /* Firefox */
+                    
+                    /* Firefox - hide scrollbar by default */
+                    scrollbar-width: none; /* Hide scrollbar in Firefox */
                     scrollbar-color: rgba(0, 120, 255, 0.3) transparent; /* Firefox */
+                }
+                
+                /* Show scrollbar on hover for Firefox */
+                .chat__stack:hover {
+                    scrollbar-width: thin; /* Show thin scrollbar on hover in Firefox */
                 }
                 
                 /* Scroll anchor styling */
@@ -955,9 +962,15 @@ const Chat = ({
                     pointer-events: none;
                 }
 
-                /* Webkit scrollbar styling */
+                /* Webkit scrollbar styling - hidden by default */
                 .chat__stack::-webkit-scrollbar {
-                    width: 6px;
+                    width: 0; /* Hidden by default */
+                    transition: width 0.3s;
+                }
+                
+                /* Show scrollbar on hover for Webkit browsers */
+                .chat__stack:hover::-webkit-scrollbar {
+                    width: 6px; /* Show on hover */
                 }
                 
                 .chat__stack::-webkit-scrollbar-track {
