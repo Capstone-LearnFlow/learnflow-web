@@ -1,12 +1,20 @@
+.Research {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
 .research-container {
     display: flex;
     width: 100%;
     height: calc(100vh - 60px); /* Subtract navbar height */
+    background-color: #f8f9fa;
 }
 
 .create-section {
     width: 40%;
     overflow: hidden;
+    border-right: 1px solid #e0e0e0;
 }
 
 .chat-section {
