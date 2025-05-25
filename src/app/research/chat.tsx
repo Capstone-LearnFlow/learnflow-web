@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, useRef, FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
+import StreamingMessage from './components/StreamingMessage';
 
 type ChatMode = 'ask' | 'create';
 type ChatItemSender = "USER" | "AI";
@@ -631,48 +632,14 @@ const Chat = ({
                     </div>
                 ))}
                 
-                {/* Streaming message at the bottom when active - restructured to ensure styling consistency */}
+                {/* Streaming message using dedicated component for consistent white background */}
                 {responseStatus === 'streaming' && (
-                    <div className="chat__stack__item chat__stack__item--streaming">
-                        <div className="chat__streaming-content">
-                            {streamingMessage && renderMarkdown(streamingMessage)}
-                            
-                            {/* Show the typing indicator inside the message box */}
-                            <div className="typing-indicator">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                        </div>
-                        
-                        {/* Show citations if available */}
-                        {Array.isArray(streamingCitations) && streamingCitations.length > 0 && (
-                            <div className="chat__citations">
-                                <span className="chat__citations-title">출처:</span>
-                                {streamingCitations.map((citation, idx) => (
-                                    <span key={idx} className="chat__citation">
-                                        {renderCitation(citation)}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-                        
-                        {/* Show suggestions if available */}
-                        {Array.isArray(streamingSuggestions) && streamingSuggestions.length > 0 && (
-                            <div className="chat__suggestions">
-                                {streamingSuggestions.map((suggestion, idx) => (
-                                    <button 
-                                        key={idx} 
-                                        className="chat__suggestion-button"
-                                        onClick={() => handleSuggestionClick(suggestion)}
-                                        disabled={true}
-                                    >
-                                        {suggestion}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                    <StreamingMessage 
+                        content={streamingMessage}
+                        citations={streamingCitations}
+                        suggestions={streamingSuggestions}
+                        onSuggestionClick={handleSuggestionClick}
+                    />
                 )}
                 
                 {/* Scroll anchor element - always stays at the bottom */}
