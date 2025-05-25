@@ -378,9 +378,7 @@ const Chat = ({
                 // Open the edit panel
                 setIsEditPanelOpen(true);
                 
-                // Reset form state
-                setAssertion('');
-                setEvidence('');
+                // Keep form values (removed reset logic)
                 setActiveFormMessageId(null);
             } catch (parseError) {
                 console.error('Error parsing response:', parseError);
