@@ -352,24 +352,33 @@ const Chat = (p: ChatProps) => {
                     formattedResponse += "근거가 제공되지 않았습니다.\n\n";
                 }
 
-            // Add the AI response to the chat log
-            const aiResponse: ChatItem = {
-                sender: "AI",
-                message: formattedResponse,
-                created_at: Date.now(),
-                mode: 'create',
-                jsonData: data,
-            };
-            
-            const newChatLog = [...chatLog, aiResponse];
-            setChatLog(newChatLog);
-            setEditingMessageIndex(newChatLog.length - 1);
-            
-            // Reset form state
-            setAssertion('');
-            setEvidence('');
-            setActiveFormMessageId(null);
-            
+                // Add the AI response to the chat log
+                const aiResponse: ChatItem = {
+                    sender: "AI",
+                    message: formattedResponse,
+                    created_at: Date.now(),
+                    mode: 'create',
+                    jsonData: safeData,
+                };
+                
+                const newChatLog = [...chatLog, aiResponse];
+                setChatLog(newChatLog);
+                setEditingMessageIndex(newChatLog.length - 1);
+                
+                // Reset form state
+                setAssertion('');
+                setEvidence('');
+                setActiveFormMessageId(null);
+            } catch (parseError) {
+                console.error('Error parsing response:', parseError);
+                // Show error message in chat
+                setChatLog((prev) => [...prev, {
+                    sender: "AI",
+                    message: "죄송합니다. 응답을 처리하는 중 오류가 발생했습니다.",
+                    created_at: Date.now(),
+                    mode: 'create',
+                }]);
+            }
         } catch (error) {
             console.error('Error calling OpenAI API:', error);
             // Show error message in chat
