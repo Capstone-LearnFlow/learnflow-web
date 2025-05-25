@@ -1021,7 +1021,7 @@ const Chat = ({
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                 }
                 
-                /* Streaming message - styled like regular AI messages with subtle differences */
+                /* Streaming message - similar to regular AI messages but with streaming indicator */
                 .chat__stack__item--streaming {
                     align-self: flex-start;
                     background-color: white;
@@ -1040,44 +1040,30 @@ const Chat = ({
                     word-wrap: break-word;
                     word-break: break-word;
                     white-space: normal;
-                    padding: 16px 20px 16px 20px; /* Increased bottom padding for typing indicator */
+                    padding: 16px 20px 16px 20px; /* Padding for content */
+                    position: relative; /* For z-index to work */
+                    z-index: 2; /* Ensure it's above the gray background */
                 }
                 
-                /* Streaming content container to ensure proper spacing */
+                /* Streaming content container */
                 .chat__streaming-content {
-                    display: block; /* Change to block from flex to avoid flexbox issues */
+                    display: block;
                     width: 100%;
                     height: auto;
                     min-height: 30px;
-                    background-color: white;
                 }
                 
-                /* Typing indicator - make sure it's visible and properly styled */
-                .chat__stack__item--streaming .typing-indicator {
+                /* Typing indicator inside streaming message */
+                .typing-indicator {
                     display: inline-flex;
                     align-items: center;
                     margin-top: 8px;
                     margin-bottom: 4px;
-                    background-color: white;
                 }
                 
-                /* Make sure card container doesn't affect streaming message background */
-                .card.card--chat .chat__stack .chat__stack__item--streaming {
-                    background-color: white;
-                }
-                
-                /* Fix for streaming message background during expansion */
-                .chat__stack__item--streaming::after {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background-color: white;
-                    border-radius: 18px 18px 18px 4px;
-                    z-index: -1;
-                    pointer-events: none;
+                /* Container background override */
+                .card--chat {
+                    position: relative;
                 }
                 
                 /* Ensure markdown content fills container properly */
