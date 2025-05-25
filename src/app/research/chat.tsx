@@ -295,24 +295,11 @@ const Chat = ({
         }
     };
 
-    // Function to send an assertion to OpenAI API
+    // Function to send an assertion to OpenAI API - modified to directly open edit panel
     const sendAssertionToOpenAI = async (assertionText: string, evidenceText: string) => {
         try {
             setIsSubmitting(true);
-            setResponseStatus('streaming');
-
-            // Combine the texts for display in chat
-            const displayText = `주장: ${assertionText}\n\n근거: ${evidenceText}`;
             
-            // Add user message to chat
-            const newChatItem: ChatItem = {
-                sender: "USER",
-                message: displayText,
-                created_at: Date.now(),
-                mode: 'create',
-            };
-            setChatLog((prev) => [...prev, newChatItem]);
-
             // Call OpenAI API
             const response = await fetch('/api/openai', {
                 method: 'POST',
