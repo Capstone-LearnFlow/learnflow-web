@@ -1021,7 +1021,7 @@ const Chat = ({
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                 }
                 
-                /* Streaming message - styled like regular AI messages but optimized for streaming */
+                /* Streaming message - styled like regular AI messages with reliable white background */
                 .chat__stack__item--streaming {
                     align-self: flex-start;
                     background-color: white;
@@ -1040,31 +1040,15 @@ const Chat = ({
                     word-wrap: break-word;
                     word-break: break-word;
                     white-space: normal;
-                    padding: 16px 20px 16px 20px; /* Increased bottom padding for typing indicator */
+                    padding: 16px 20px 16px 20px; /* Padding for content */
                 }
                 
-                /* Streaming content container to ensure proper spacing */
-                .chat__streaming-content {
-                    display: block; /* Change to block from flex to avoid flexbox issues */
-                    width: 100%;
-                    height: auto;
-                    min-height: 30px;
-                    background-color: white;
-                }
-                
-                /* Ensure the typing indicator is visible */
+                /* Typing indicator inside streaming message */
                 .typing-indicator {
                     display: inline-flex;
                     align-items: center;
                     margin-top: 8px;
                     margin-bottom: 4px;
-                }
-                
-                /* Ensure consistent background color for streaming text and container */
-                .chat__stack__item--streaming,
-                .chat__stack__item--streaming .chat__streaming-content,
-                .chat__stack__item--streaming .typing-indicator {
-                    background-color: white;
                 }
                 
                 /* Ensure markdown content fills container properly */
