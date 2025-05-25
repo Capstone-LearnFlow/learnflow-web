@@ -814,12 +814,12 @@ const Chat = ({
                     display: flex;
                     flex-direction: column;
                     gap: 16px;
-                    padding: 24px 4px 16px;
+                    padding: 20px 4px 16px;
                     overflow-y: auto;
-                    height: calc(100% - 100px); /* Adjust for input height */
+                    height: calc(100% - 90px); /* Adjusted for input height */
                     width: 100%;
                     box-sizing: border-box;
-                    margin-bottom: 10px;
+                    margin-bottom: 4px;
                 }
                 
                 .chat__stack--with-panel {
