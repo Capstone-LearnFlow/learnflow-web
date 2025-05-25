@@ -1,7 +1,8 @@
 .Research {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    min-height: 100vh;
+    max-height: 100vh;
     background-color: #ffffff;
     overflow: hidden;
 }
@@ -9,33 +10,32 @@
 .research-container {
     display: flex;
     width: 100%;
-    height: calc(100vh - 60px); /* Subtract navbar height */
+    flex: 1;
+    min-height: 0; /* Important for flex containers */
     background-color: #ffffff;
-    padding: 0; /* Remove padding to prevent separation */
+    padding: 0;
     box-sizing: border-box;
-    overflow: visible; /* Changed from hidden to allow content to be fully visible */
-    gap: 0; /* Remove gap to prevent separation */
+    gap: 0;
     justify-content: flex-end; /* Align content to the right */
 }
 
 .create-section {
     width: 45%;
     height: 100%;
-    overflow: hidden;
     background-color: #ffffff;
     flex-shrink: 0; /* Prevent shrinking */
 }
 
 .chat-section {
     width: 650px; /* Fixed width */
-    height: 100%; /* Full height */
+    height: auto;
+    min-height: 0; /* Important for flex containers */
     transition: width 0.3s ease;
-    overflow: visible; /* Changed from hidden to show all content */
     background-color: #ffffff;
     display: flex;
     flex-direction: column;
     margin-left: auto; /* Push to the right */
-    padding-bottom: 20px; /* Add padding at bottom to prevent cut-off */
+    padding-bottom: 80px; /* Extra padding to ensure input is visible */
 }
 
 .chat-section--with-create {
@@ -47,8 +47,10 @@
     border-bottom: 1px solid #e9ecef;
     padding: 0 16px;
     height: 60px;
+    min-height: 60px; /* Ensure consistent height */
     display: flex;
     align-items: center;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .navigation__content {
@@ -81,39 +83,38 @@
 
 /* Apply global styles in a CSS module-compatible way */
 .chat-section :global(.card.card--chat) {
-    height: calc(100% - 20px); /* Adjusted height to account for padding */
+    height: 100%;
     display: flex;
     flex-direction: column;
-    overflow: visible; /* Show all content */
     background-color: #ffffff;
-    border-radius: 0; /* Remove border radius to prevent visual separation */
-    box-shadow: none; /* Remove shadow to prevent visual separation */
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .chat-section :global(.chat-container) {
     flex: 1;
-    overflow: visible; /* Show all content */
+    min-height: 0; /* Important for flex containers */
     display: flex;
     flex-direction: column;
+    position: relative; /* For absolute positioning of input */
 }
 
 .chat-section :global(.chat__stack) {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 20px 4px 0; /* Reduced bottom padding */
+    padding: 20px 4px 100px; /* Extra padding at bottom to prevent content being hidden behind input */
     margin-bottom: 0;
     box-sizing: border-box;
-    max-height: calc(100% - 120px); /* Reserve space for input area */
 }
 
 .chat-section :global(.chat__input-container) {
-    margin-top: 0;
-    padding: 8px 4px 16px; /* Increased bottom padding */
+    padding: 8px 4px 16px;
     border-top: 1px solid #e0e0e0;
     background-color: #ffffff;
-    position: relative; /* Ensure it stays in flow */
-    bottom: 0; /* Align to bottom */
+    position: absolute; /* Position at bottom of container */
+    bottom: 0;
+    left: 0;
     width: 100%;
     z-index: 10;
 }
@@ -121,7 +122,7 @@
 .chat-section :global(.chat__stack__item) {
     max-width: 90%;
     word-break: break-word;
-    margin-bottom: 12px; /* Add consistent margin */
+    margin-bottom: 12px;
 }
 
 /* Fix for streaming messages container */
@@ -150,7 +151,20 @@
     margin-top: 8px;
 }
 
-/* Remove excess space between chat and buttons */
-.chat-section :global(.chat__stack) + :global(.chat__input-container) {
-    margin-top: 0;
+/* iPad specific adjustments */
+@media (max-width: 1024px) {
+    .chat-section {
+        padding-bottom: 100px; /* More padding for iPad */
+    }
+    
+    .chat-section :global(.chat__stack) {
+        padding-bottom: 120px; /* More padding for content */
+    }
+}
+
+/* Small screens */
+@media (max-width: 768px) {
+    .chat-section {
+        width: 100%; /* Full width on small screens */
+    }
 }
