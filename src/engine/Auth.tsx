@@ -9,7 +9,7 @@ interface User {
   id: string;
   name: string;
   role?: string;
-  [key: string]: any; // 필요에 따라 추가 필드를 위한 인덱스 시그니처
+  // [key: string]: any; // 필요에 따라 추가 필드를 위한 인덱스 시그니처
 }
 
 interface AuthContextType {

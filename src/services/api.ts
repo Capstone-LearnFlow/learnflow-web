@@ -1,5 +1,5 @@
 // API service connecting to the real API server
-const API_BASE_URL = 'http://100.65.217.64:8080/api';
+// const API_BASE_URL = 'http://100.65.217.64:8080/api';
 
 // Type definitions
 interface AuthResponse {
@@ -9,17 +9,17 @@ interface AuthResponse {
     token?: string;
 }
 
-interface Student {
-    id: string;
-    name: string;
-    [key: string]: any; // For additional properties
-}
+// interface Student {
+//     id: string;
+//     name: string;
+//     [key: string]: any; // For additional properties
+// }
 
-interface Phase {
-    type: string;
-    content: string;
-    [key: string]: any;
-}
+// interface Phase {
+//     type: string;
+//     content: string;
+//     [key: string]: any;
+// }
 
 interface ApiResponse<T> {
     success: boolean;

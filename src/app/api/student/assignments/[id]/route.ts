@@ -1,14 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 const API_BASE_URL = 'http://100.65.217.64:8080/api';
 
 export async function GET(
-    request: Request,
+    request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
-        // Get the assignment ID from the URL parameters
         const assignmentId = params.id;
 
         const cookieStore = await cookies();

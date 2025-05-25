@@ -1,6 +1,8 @@
 import Chat from './chat';
+import Tree from './tree';
 
-const Research = () => {
+const Research = ({ params }: { params: { assigmentId: string } }) => {
+    const { assigmentId } = params;
 
     return (
         <div className='Research'>
@@ -17,6 +19,7 @@ const Research = () => {
             {/* <div className="section">
                 <div className="header">Dashboard</div>
             </div> */}
+            <Tree />
             <Chat nodeId='0' />
         </div>
     );

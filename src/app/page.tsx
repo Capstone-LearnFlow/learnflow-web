@@ -48,7 +48,7 @@ const Home = () => {
       </div>
       <div className="section section--large">
         {assignments && assignments.map((assignment) => (
-          <div className='card card--assignment' key={assignment.id} onClick={() => router.push(`/research?a=${assignment.id}`)}>
+          <div className='card card--assignment' key={assignment.id} onClick={() => router.push(`/research/${assignment.id}`)}>
             <div className='assignment__container'>
               <div className='assignment__subtitle_container'>
                 <div className='assignment__subtitle assignment__subtitle--bold'>{`${assignment.subject}(${assignment.teacherName} 선생님)`}</div>

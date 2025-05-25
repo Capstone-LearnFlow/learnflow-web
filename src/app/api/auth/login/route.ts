@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+// import { cookies } from 'next/headers';
 
 const API_BASE_URL = 'http://100.65.217.64:8080/api';
 

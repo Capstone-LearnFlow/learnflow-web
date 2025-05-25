@@ -27,15 +27,17 @@
   --c-fill-gray-tertiary: rgb(210, 210, 215);
   --c-fill-gray-tertiary-alpha: rgba(0, 0, 0, 0.16);
   --c-fill-gray-quaternary: rgb(232, 232, 237);
-  --c-fill-gray-quaternary-alpha: rgba(0, 0, 0, 0.08);
+  --c-fill-gray-quaternary-alpha: rgba(255, 255, 255, 0.60);
 
   --c-fill-blue: rgb(0, 113, 227);
   --c-fill-orange: rgb(245, 99, 0);
   --c-fill-orange-secondary: rgb(255, 249, 244);
-  --c-fill-green: rgb(3, 161, 14);
-  --c-fill-green-secondary: rgb(245, 255, 246);
-  --c-fill-red: rgb(227, 0, 0);
-  --c-fill-red-secondary: rgb(255, 242, 244);
+  --c-fill-green: #3E935C;
+  --c-fill-green-secondary: #EEFBF4;
+  --c-fill-red: #CC2A53;
+  --c-fill-red-secondary: #FDEAEE;
+  --c-fill-navy: #385FA2;
+  --c-fill-navy-secondary: #EEF4FC;
   --c-fill-yellow: rgb(255, 224, 69);
   --c-fill-yellow-secondary: rgb(255, 254, 242);
 
@@ -245,6 +247,8 @@ button {
   background-color: var(--c-fill-gray-secondary-alpha);
 } */
 
+
+
 /* dashboard */
 .card--assignment {
   width: fit-content;
@@ -318,6 +322,8 @@ button {
 .assignment__btn:active svg {
   fill: var(--c-glyph-gray-secondary-alpha);
 }
+
+
 
 /* chat */
 .card--chat {
@@ -403,4 +409,98 @@ button {
 
 .chat__input__button--active {
   background: url('data:image/svg+xml,<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M36 18.0069C36 27.9156 27.9156 36 17.9931 36C8.08445 36 0 27.9156 0 18.0069C0 8.08445 8.08445 0 17.9931 0C27.9156 0 36 8.08445 36 18.0069ZM17.0948 9.27296L11.0419 15.1601C10.7931 15.395 10.6687 15.6576 10.6687 15.9892C10.6687 16.625 11.1386 17.0948 11.7881 17.0948C12.0922 17.0948 12.4376 16.9705 12.6587 16.7079L15.6576 13.5709L16.8461 12.3409L16.7493 15.0357V25.9255C16.7493 26.5889 17.3159 27.1555 18.0069 27.1555C18.6841 27.1555 19.2645 26.5889 19.2645 25.9255V15.0357L19.1678 12.3409L20.3424 13.5709L23.3413 16.7079C23.5624 16.9705 23.894 17.0948 24.1981 17.0948C24.8477 17.0948 25.3451 16.625 25.3451 15.9892C25.3451 15.6576 25.2069 15.395 24.972 15.1601L18.9052 9.27296C18.6011 8.95509 18.3248 8.85833 18.0069 8.85833C17.6753 8.85833 17.4127 8.95509 17.0948 9.27296Z" fill="%23007AFF"/></svg>') no-repeat center;
+}
+
+
+/* tree */
+.tree {
+  position: relative;
+  margin: 107px 24px 24px 24px;
+  width: calc(100vw - 48px);
+  height: calc(100vh - 107px - 24px);
+  overflow: scroll;
+}
+
+.tree__node {
+  --c-key: var(--c-glyph-gray);
+  --c-bg: var(--c-fill-secondary);
+
+  position: absolute;
+  min-width: 462px;
+  width: 462px;
+  max-width: 462px;
+  display: inline-flex;
+  padding: 14px 12px 16px 8px;
+  box-sizing: border-box;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  background-color: var(--c-bg);
+  border-radius: 4px 18px 18px 4px;
+  border-left: 4px solid var(--c-key);
+}
+
+.tree__node__content_container {
+  display: flex;
+  padding-left: 4px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.tree__node__title {
+  padding-left: 2px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--c-key);
+}
+
+.tree__node__content {
+  color: var(--c-glyph-gray);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.tree__node__children_container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tree__node--subject {
+  top: 0px;
+  left: 0px;
+  min-width: 0px;
+  width: fit-content;
+  padding: 16px 24px;
+  border-radius: 18px;
+  border: none;
+}
+
+.tree__node--argument {
+  --c-key: var(--c-fill-green);
+  --c-bg: var(--c-fill-green-secondary);
+}
+
+.tree__node--counterargument {
+  --c-key: var(--c-fill-red);
+  --c-bg: var(--c-fill-red-secondary);
+}
+
+.tree__node--evidence {
+  --c-key: inherit;
+  --c-bg: var(--c-fill-gray-quaternary-alpha);
+
+  position: relative;
+  min-width: 438px;
+  width: 438px;
+  max-width: 438px;
+  padding: 8px 24px 12px 6px;
+}
+
+.tree__node--question {
+  --c-key: var(--c-fill-navy);
+  --c-bg: var(--c-fill-navy-secondary);
 }
