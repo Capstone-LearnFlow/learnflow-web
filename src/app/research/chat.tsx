@@ -1024,7 +1024,7 @@ const Chat = ({
                 /* Streaming message - styled like regular AI messages with subtle differences */
                 .chat__stack__item--streaming {
                     align-self: flex-start;
-                    background-color: white;
+                    background-color: white !important;
                     border-radius: 18px 18px 18px 4px;
                     border: 1px solid #e0e0e0;
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -1049,11 +1049,23 @@ const Chat = ({
                     width: 100%;
                     height: auto;
                     min-height: 30px;
+                    background-color: white !important;
                 }
                 
-                /* Override the card and stack backgrounds for streaming content */
-                .card.card--chat .chat__stack .chat__stack__item--streaming {
-                    background-color: white;
+                /* All children of streaming content should have white background */
+                .chat__streaming-content * {
+                    background-color: white !important;
+                }
+                
+                /* Ensure typing indicator has white background */
+                .chat__stack__item--streaming .typing-indicator {
+                    background-color: white !important;
+                }
+                
+                /* Override any parent background influences */
+                .card.card--chat .chat__stack .chat__stack__item--streaming,
+                .card.card--chat .chat__stack .chat__stack__item--streaming > * {
+                    background-color: white !important;
                 }
                 
                 /* Ensure markdown content fills container properly */
