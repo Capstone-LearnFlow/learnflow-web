@@ -1,12 +1,12 @@
 /* Create panel styles */
 .create-panel {
     width: 100%;
-    height: 90vh;
+    height: 100%;
     overflow-y: auto;
-    padding: 16px;
-    background-color: #f9f9f9;
-    border-radius: 16px;
-    margin-right: 16px;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 20px;
+    box-sizing: border-box;
 }
 
 .create-panel__content {
