@@ -5,13 +5,15 @@
     overflow-y: auto;
     padding: 16px;
     background-color: #f9f9f9;
+    border-right: 1px solid #e0e0e0;
 }
 
 .create-panel__content {
     padding: 16px;
     background-color: white;
-    border-radius: 12px;
+    border-radius: 8px;
     border: 1px solid #e0e0e0;
+    margin-top: 8px;
 }
 
 .create-panel__field {
@@ -61,13 +63,13 @@
 }
 
 .create-panel__button--primary {
-    background-color: #0078ff;
+    background-color: #4caf50;
     color: white;
-    border-color: #0078ff;
+    border-color: #4caf50;
 }
 
 .create-panel__button--primary:hover {
-    background-color: #0065d9;
+    background-color: #43a047;
 }
 
 /* In-chat form styles */
@@ -126,12 +128,12 @@
 }
 
 .assertion-form__button--submit {
-    background-color: #0078ff;
+    background-color: #4caf50;
     color: white;
 }
 
 .assertion-form__button--submit:hover {
-    background-color: #0065d9;
+    background-color: #43a047;
 }
 
 .assertion-form__button:disabled {
