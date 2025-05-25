@@ -148,97 +148,25 @@ const Chat = ({
     // Reference for the scroll anchor element
     const scrollAnchorRef = useRef<HTMLDivElement>(null);
     
-    // Track whether user has scrolled up manually
-    const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
-    
-    // Enhanced scroll function that respects user's scroll position
-    const scrollToBottomImmediate = useCallback(() => {
+    // Disable auto scrolling completely
+    // This basic scroll function is only used for initial messages
+    const manualScrollToBottom = useCallback(() => {
         if (chatContainerRef.current) {
-            // Use requestAnimationFrame to ensure this runs after paint
-            requestAnimationFrame(() => {
-                const container = chatContainerRef.current;
-                if (container && !userHasScrolledUp) {
-                    container.scrollTop = container.scrollHeight;
-                }
-            });
-        }
-    }, [userHasScrolledUp]);
-    
-    // Handle scroll events to detect when user scrolls up
-    const handleScroll = useCallback(() => {
-        if (chatContainerRef.current) {
-            const container = chatContainerRef.current;
-            const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-            
-            // Set flag when user scrolls up away from bottom
-            setUserHasScrolledUp(!isNearBottom);
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, []);
     
-    // Add scroll event listener
+    // Only scroll for the very first message, then let user control
     useEffect(() => {
-        const container = chatContainerRef.current;
-        if (container) {
-            container.addEventListener('scroll', handleScroll);
-            return () => container.removeEventListener('scroll', handleScroll);
+        if (chatLog.length === 1) {
+            // Only auto-scroll for the first message
+            setTimeout(manualScrollToBottom, 100);
         }
-    }, [handleScroll]);
+    }, [chatLog.length, manualScrollToBottom]);
     
-    // Reset userHasScrolledUp when a new message is added
-    useEffect(() => {
-        if (chatLog.length > 0) {
-            // When a new message is added, reset the scroll flag and scroll to bottom
-            setUserHasScrolledUp(false);
-            scrollToBottomImmediate();
-        }
-    }, [chatLog.length, scrollToBottomImmediate]);
+    // Remove IntersectionObserver that forces scroll
     
-    // Scroll to bottom when scroll anchor becomes visible (scrollIntoView fallback)
-    useEffect(() => {
-        if (!scrollAnchorRef.current) return;
-        
-        const scrollIntoViewIfNeeded = () => {
-            if (scrollAnchorRef.current) {
-                scrollAnchorRef.current.scrollIntoView({ behavior: 'smooth' });
-            }
-        };
-        
-        // Set up IntersectionObserver to detect when anchor is visible
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const [entry] = entries;
-                // If anchor is not visible, scroll it into view
-                if (!entry.isIntersecting) {
-                    scrollIntoViewIfNeeded();
-                }
-            },
-            { threshold: 1.0 } // Fully visible
-        );
-        
-        observer.observe(scrollAnchorRef.current);
-        
-        return () => {
-            observer.disconnect();
-        };
-    }, []);
-    
-    // Force scroll to bottom whenever a new message is added
-    useEffect(() => {
-        if (chatLog.length > 0) {
-            // Use requestAnimationFrame to ensure DOM is fully updated
-            requestAnimationFrame(() => {
-                scrollToBottomImmediate();
-            });
-        }
-    }, [chatLog.length, scrollToBottomImmediate]);
-    
-    // Scroll to bottom when streaming starts, but don't force it during streaming
-    // unless the user is already at the bottom
-    useEffect(() => {
-        if (responseStatus === 'streaming' && !userHasScrolledUp) {
-            scrollToBottomImmediate();
-        }
-    }, [streamingMessage, responseStatus, scrollToBottomImmediate, userHasScrolledUp]);
+    // Remove additional auto-scroll effects
     
     const fetchGeminiResponse = async (message: string) => {
         try {
