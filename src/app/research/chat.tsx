@@ -379,20 +379,13 @@ const Chat = ({
                     formattedResponse += "근거가 제공되지 않았습니다.\n\n";
                 }
 
-                // Add the AI response to the chat log
-                const aiResponse: ChatItem = {
-                    sender: "AI",
-                    message: formattedResponse,
-                    created_at: Date.now(),
-                    mode: 'create',
-                    jsonData: safeData,
-                };
+                // Instead of adding to chat log, directly open the edit panel
+                setEditData(safeData);
                 
-                const newChatLog = [...chatLog, aiResponse];
-                setChatLog(newChatLog);
-                setEditingMessageIndex(newChatLog.length - 1);
+                // Set a dummy index since we're not adding to chat log
+                setEditingMessageIndex(0);
                 
-                // Only open the edit panel after we've received the response
+                // Open the edit panel
                 setIsEditPanelOpen(true);
                 
                 // Reset form state
