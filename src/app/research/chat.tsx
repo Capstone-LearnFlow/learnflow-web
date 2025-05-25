@@ -99,6 +99,7 @@ const Chat = ({
     const [streamingMessage, setStreamingMessage] = useState<string>('');
     const [streamingSuggestions, setStreamingSuggestions] = useState<string[]>([]);
     const [streamingCitations, setStreamingCitations] = useState<Citation[]>([]);
+    const [hasAskedQuestion, setHasAskedQuestion] = useState<boolean>(false);
     const abortControllerRef = useRef<AbortController | null>(null);
     const apiHistoryRef = useRef<ApiContentItem[]>([]);
     const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -283,6 +284,9 @@ const Chat = ({
             setStreamingSuggestions([]);
             setStreamingCitations([]);
             setResponseStatus('success');
+            
+            // Mark that the user has asked at least one question
+            setHasAskedQuestion(true);
         } catch (error) {
             if (error instanceof DOMException && error.name === 'AbortError') {
                 console.log('Fetch aborted');
@@ -645,7 +649,7 @@ const Chat = ({
                         <button 
                             className={`chat__mode-button ${mode === 'create' ? 'chat__mode-button--active' : ''}`}
                             onClick={() => setMode('create')}
-                            disabled={responseStatus === 'streaming'}
+                            disabled={responseStatus === 'streaming' || !hasAskedQuestion}
                         >
                             생성하기
                         </button>
