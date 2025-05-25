@@ -690,27 +690,70 @@ const Chat = ({
                 }
                 /* In-chat form styles */
                 .chat__inline-form {
-                    margin-top: 16px;
-                    padding: 16px;
-                    background-color: #f9f9f9;
-                    border-radius: 12px;
-                    border: 1px solid #e0e0e0;
+                    margin-top: 20px;
+                    padding: 20px;
+                    background-color: #f0f7ff;
+                    border-radius: 16px;
+                    border: 1px solid #d0e0ff;
                     width: 100%;
                     box-sizing: border-box;
                     max-width: calc(100% + 16px);
                     margin-left: -8px;
                     margin-right: -8px;
+                    box-shadow: 0 4px 12px rgba(0, 120, 255, 0.08);
                 }
                 
                 .assertion-form__field {
-                    margin-bottom: 16px;
+                    margin-bottom: 24px;
+                    position: relative;
+                    padding-left: 24px;
+                    background-color: rgba(255, 255, 255, 0.7);
+                    border-radius: 12px;
+                    padding: 16px 16px 16px 24px;
+                    border: 1px solid rgba(0, 0, 0, 0.05);
+                }
+                
+                /* Green vertical bar for assertion (주장) */
+                .assertion-form__field:first-of-type::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 6px;
+                    background-color: #4caf50;
+                    border-top-left-radius: 12px;
+                    border-bottom-left-radius: 12px;
+                }
+                
+                /* Red vertical bar for evidence (근거) */
+                .assertion-form__field:not(:first-of-type)::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 6px;
+                    background-color: #e74c3c;
+                    border-top-left-radius: 12px;
+                    border-bottom-left-radius: 12px;
                 }
                 
                 .assertion-form__field label {
                     display: block;
-                    margin-bottom: 8px;
+                    margin-bottom: 12px;
                     font-weight: bold;
                     color: #444;
+                }
+                
+                /* Green label color for assertion (주장) */
+                .assertion-form__field:first-of-type label {
+                    color: #4caf50;
+                }
+                
+                /* Red label color for evidence (근거) */
+                .assertion-form__field:not(:first-of-type) label {
+                    color: #e74c3c;
                 }
                 
                 .assertion-form__field textarea {
@@ -721,8 +764,9 @@ const Chat = ({
                     resize: vertical;
                     font-family: inherit;
                     font-size: 15px;
-                    background-color: #f9f9f9;
+                    background-color: #ffffff;
                     box-sizing: border-box;
+                    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
                 }
                 
                 .assertion-form__field textarea:focus {
@@ -757,12 +801,12 @@ const Chat = ({
                 }
                 
                 .assertion-form__button--submit {
-                    background-color: #0078ff;
+                    background-color: #4caf50;
                     color: white;
                 }
                 
                 .assertion-form__button--submit:hover {
-                    background-color: #0065d9;
+                    background-color: #43a047;
                 }
                 
                 .assertion-form__button:disabled {
