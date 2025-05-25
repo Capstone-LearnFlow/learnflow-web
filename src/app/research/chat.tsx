@@ -806,8 +806,8 @@ const Chat = ({
                     background-color: #f9f9f9;
                     display: flex;
                     flex-direction: column;
-                    height: 90vh;
-                    padding-bottom: 76px; /* Add padding for the input area */
+                    height: 100%;
+                    position: relative;
                 }
                 
                 /* Chat messages container with reduced padding */
