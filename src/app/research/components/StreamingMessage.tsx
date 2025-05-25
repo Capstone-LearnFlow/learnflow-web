@@ -1,6 +1,13 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Citation } from '../types';
+
+// Define Citation interface directly in component
+interface Citation {
+  text: string;
+  url: string;
+  title: string;
+  index?: number;
+}
 
 interface StreamingMessageProps {
     content: string;
