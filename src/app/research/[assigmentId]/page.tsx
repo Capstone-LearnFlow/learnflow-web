@@ -89,9 +89,11 @@ const Research = ({ params }: { params: { assigmentId: string } }) => {
                 </div>
             </div>
             
-            {/* Create popup overlay - positioned above Tree */}
-            {isEditPanelOpen && (
-                <div className={styles['create-popup-overlay']}>
+            <div className={styles['tree-container']}>
+                <Tree />
+                
+                {/* Create floating panel - positioned above Tree */}
+                {isEditPanelOpen && (
                     <div className={styles['create-popup']}>
                         <Create 
                             isOpen={mode === 'create' || isEditPanelOpen}
@@ -108,10 +110,8 @@ const Research = ({ params }: { params: { assigmentId: string } }) => {
                             editingMessageIndex={editingMessageIndex}
                         />
                     </div>
-                </div>
-            )}
-            
-            <Tree />
+                )}
+            </div>
             <div className={styles['research-container']}>
                 
                 <div className={`${styles['chat-section']} ${(mode === 'create' || isEditPanelOpen) ? styles['chat-section--with-create'] : ''}`}>
