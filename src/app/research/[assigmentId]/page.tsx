@@ -89,30 +89,30 @@ const Research = ({ params }: { params: { assigmentId: string } }) => {
                 </div>
             </div>
             
-            <div className={styles['tree-container']}>
-                <Tree />
-                
-                {/* Create floating panel - positioned above Tree */}
-                {isEditPanelOpen && (
-                    <div className={styles['create-popup']}>
-                        <Create 
-                            isOpen={mode === 'create' || isEditPanelOpen}
-                            editData={editData}
-                            isSubmitting={isSubmitting}
-                            assertion={assertion}
-                            evidence={evidence}
-                            onAssertionChange={handleAssertionChange}
-                            onEvidenceChange={setEvidence}
-                            onSubmit={handleSubmit}
-                            onSaveEdit={handleSaveEdit}
-                            onCancelEdit={handleCancelEdit}
-                            onEvidenceItemChange={handleEvidenceItemChange}
-                            editingMessageIndex={editingMessageIndex}
-                        />
-                    </div>
-                )}
-            </div>
             <div className={styles['research-container']}>
+                <div className={styles['tree-container']}>
+                    <Tree />
+                    
+                    {/* Create floating panel - positioned above Tree */}
+                    {isEditPanelOpen && (
+                        <div className={styles['create-popup']}>
+                            <Create 
+                                isOpen={mode === 'create' || isEditPanelOpen}
+                                editData={editData}
+                                isSubmitting={isSubmitting}
+                                assertion={assertion}
+                                evidence={evidence}
+                                onAssertionChange={handleAssertionChange}
+                                onEvidenceChange={setEvidence}
+                                onSubmit={handleSubmit}
+                                onSaveEdit={handleSaveEdit}
+                                onCancelEdit={handleCancelEdit}
+                                onEvidenceItemChange={handleEvidenceItemChange}
+                                editingMessageIndex={editingMessageIndex}
+                            />
+                        </div>
+                    )}
+                </div>
                 
                 <div className={`${styles['chat-section']} ${(mode === 'create' || isEditPanelOpen) ? styles['chat-section--with-create'] : ''}`}>
                     <Chat 
