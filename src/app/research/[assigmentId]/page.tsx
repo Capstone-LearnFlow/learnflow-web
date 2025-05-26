@@ -88,10 +88,11 @@ const Research = ({ params }: { params: { assigmentId: string } }) => {
                     <div className={styles['navigation__menu']}>최민준</div>
                 </div>
             </div>
-            <Tree />
-            <div className={styles['research-container']}>
-                {isEditPanelOpen && (
-                    <div className={styles['create-section']}>
+            
+            {/* Create popup overlay - positioned above Tree */}
+            {isEditPanelOpen && (
+                <div className={styles['create-popup-overlay']}>
+                    <div className={styles['create-popup']}>
                         <Create 
                             isOpen={mode === 'create' || isEditPanelOpen}
                             editData={editData}
@@ -107,7 +108,11 @@ const Research = ({ params }: { params: { assigmentId: string } }) => {
                             editingMessageIndex={editingMessageIndex}
                         />
                     </div>
-                )}
+                </div>
+            )}
+            
+            <Tree />
+            <div className={styles['research-container']}>
                 
                 <div className={`${styles['chat-section']} ${(mode === 'create' || isEditPanelOpen) ? styles['chat-section--with-create'] : ''}`}>
                     <Chat 
