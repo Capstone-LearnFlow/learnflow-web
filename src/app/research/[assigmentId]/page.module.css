@@ -26,35 +26,32 @@
     flex-shrink: 0; /* Prevent shrinking */
 }
 
-/* Popup overlay styling */
-.create-popup-overlay {
-    position: fixed;
-    top: 60px; /* Below the navigation bar */
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
-    z-index: 100; /* High z-index to appear above other content */
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding-top: 40px; /* Space from the top */
+/* Tree container styling */
+.tree-container {
+    position: relative;
+    width: 100%;
 }
 
+/* Floating popup styling */
 .create-popup {
-    width: 45%;
+    position: absolute;
+    top: 10px;
+    left: 10%;
+    right: 10%;
+    width: 80%;
     max-height: 80vh;
     background-color: #ffffff;
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     overflow-y: auto;
+    z-index: 100; /* High z-index to appear above the Tree */
     animation: popup-appear 0.2s ease-out;
 }
 
 @keyframes popup-appear {
     from {
         opacity: 0;
-        transform: translateY(-20px);
+        transform: translateY(-10px);
     }
     to {
         opacity: 1;
