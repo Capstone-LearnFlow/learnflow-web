@@ -7,8 +7,8 @@ import styles from './page.module.css';
 
 // Define types for JSON edit panel
 interface EditableFormData {
-  assertion: string;
-  evidences: string[];
+    assertion: string;
+    evidences: string[];
 }
 
 type ChatMode = 'ask' | 'create';
@@ -56,13 +56,13 @@ const Research = ({ params }: { params: { assigmentId: string } }) => {
     // Handler for save button in edit mode
     const handleSaveEdit = () => {
         if (!editData || editingMessageIndex === null) return;
-        
+
         // Format the edited data for display
         let formattedResponse = `**주장**\n\n${editData.assertion}\n\n**근거**\n\n`;
         editData.evidences.forEach((evidence, index) => {
             formattedResponse += `${index + 1}. ${evidence}\n\n`;
         });
-        
+
         // Close the edit panel
         setIsEditPanelOpen(false);
         setEditData(null);
@@ -77,26 +77,26 @@ const Research = ({ params }: { params: { assigmentId: string } }) => {
     };
 
     return (
-        <div className={styles.Research}>
-            <div className={styles.navigation}>
-                <div className={`${styles['navigation__content']} ${styles['navigation__content--large']}`}>
-                    <div className={styles['navigation__menu_container']}>
-                        <div className={`${styles['navigation__menu']} ${styles['navigation__menu--logo']} ${styles['navigation__menu--inactive']}`}>LearnFlow</div>
-                        <div className={`${styles['navigation__menu']} ${styles['navigation__menu--inactive']}`}>사회(김민지 선생님)</div>
-                        <div className={styles['navigation__menu']}>토의 준비하기</div>
+        <div className='research'>
+            <div className='navigation'>
+                <div className='navigation__content navigation__content--large'>
+                    <div className='navigation__menu_container'>
+                        <div className='navigation__menu navigation__menu--logo navigation__menu--inactive'>LearnFlow</div>
+                        <div className='navigation__menu navigation__menu--inactive'>사회(김민지 선생님)</div>
+                        <div className='navigation__menu'>토의 준비하기</div>
                     </div>
-                    <div className={styles['navigation__menu']}>최민준</div>
+                    <div className='navigation__menu'>최민준</div>
                 </div>
             </div>
-            
-            <div className={styles['research-container']}>
-                <div className={styles['tree-container']}>
+
+            <div className='research-container'>
+                <div className='tree-container'>
                     <Tree />
-                    
+
                     {/* Create floating panel - positioned above Tree */}
                     {isEditPanelOpen && (
                         <div className={styles['create-popup']}>
-                            <Create 
+                            <Create
                                 isOpen={mode === 'create' || isEditPanelOpen}
                                 editData={editData}
                                 isSubmitting={isSubmitting}
@@ -113,9 +113,11 @@ const Research = ({ params }: { params: { assigmentId: string } }) => {
                         </div>
                     )}
                 </div>
-                
-                <div className={`${styles['chat-section']} ${(mode === 'create' || isEditPanelOpen) ? styles['chat-section--with-create'] : ''}`}>
-                    <Chat 
+
+                <div className={`${styles['']} ${(mode === 'create' || isEditPanelOpen) ? styles['chat-section--with-create'] : ''}`}>
+                    <Chat
+                        status='closed'
+                        isClosable={true}
                         nodeId='0'
                         mode={mode}
                         setMode={setMode}
@@ -126,7 +128,7 @@ const Research = ({ params }: { params: { assigmentId: string } }) => {
                     />
                 </div>
             </div>
-            
+
 
         </div>
     );

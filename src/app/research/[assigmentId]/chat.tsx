@@ -8,47 +8,47 @@ type ChatItemSender = "USER" | "AI";
 
 // Define types for Gemini API responses
 interface WebSource {
-  uri: string;
-  title: string;
+    uri: string;
+    title: string;
 }
 
 interface GroundingChunk {
-  web: WebSource;
+    web: WebSource;
 }
 
 interface TextSegment {
-  startIndex?: number;
-  endIndex?: number;
-  text: string;
+    startIndex?: number;
+    endIndex?: number;
+    text: string;
 }
 
 // Define types for JSON edit panel
 interface EditableFormData {
-  assertion: string;
-  evidences: string[];
+    assertion: string;
+    evidences: string[];
 }
 
 interface SegmentMapping {
-  segment: TextSegment;
-  citationIndices: number[];
+    segment: TextSegment;
+    citationIndices: number[];
 }
 
 interface GroundingMetadata {
-  groundingChunks?: GroundingChunk[];
-  webSearchQueries?: string[];
+    groundingChunks?: GroundingChunk[];
+    webSearchQueries?: string[];
 }
 
 interface Citation {
-  text: string;
-  url: string;
-  title: string;
-  index?: number;
+    text: string;
+    url: string;
+    title: string;
+    index?: number;
 }
 
 // Type for inline citation references
 interface InlineCitation {
-  index: number;
-  position: number;
+    index: number;
+    position: number;
 }
 
 type ChatItem = {
@@ -69,6 +69,8 @@ type ApiContentItem = {
 };
 
 interface ChatProps {
+    status: 'open' | 'closed';
+    isClosable: boolean;
     nodeId: string;
     mode: ChatMode;
     setMode: (mode: ChatMode) => void;
@@ -85,6 +87,8 @@ interface AssertionResponse {
 }
 
 const Chat = ({
+    status,
+    isClosable,
     nodeId,
     mode,
     setMode,
@@ -93,7 +97,7 @@ const Chat = ({
     setEditingMessageIndex,
     isEditPanelOpen
 }: ChatProps) => {
-    // Initialize all state variables first
+    const [viewStatus, setViewStatus] = useState<'open' | 'closed'>(status);
     const [chatLog, setChatLog] = useState<ChatItem[]>([]);
     const [inputValue, setInputValue] = useState<string>('');
     const [responseStatus, setResponseStatus] = useState<'streaming' | 'success' | 'error'>('success');
@@ -104,7 +108,7 @@ const Chat = ({
     const abortControllerRef = useRef<AbortController | null>(null);
     const apiHistoryRef = useRef<ApiContentItem[]>([]);
     const chatContainerRef = useRef<HTMLDivElement>(null);
-    
+
     // Form state
     const [activeFormMessageId, setActiveFormMessageId] = useState<number | null>(null);
     const [assertion, setAssertion] = useState<string>('');
@@ -112,12 +116,16 @@ const Chat = ({
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
 
+    useEffect(() => {
+        setViewStatus(status);
+    }, [status]);
+
     // Function to handle citation data without inserting inline citations
     const insertInlineCitations = (text: string, segmentMappings: SegmentMapping[]): string => {
         // No longer inserting inline citations, just return the original text
         return text;
     };
-    
+
     // Function to scroll to the bottom of the chat
     const scrollToBottom = useCallback(() => {
         if (chatContainerRef.current) {
@@ -133,12 +141,12 @@ const Chat = ({
             }
         };
     }, []);
-    
+
     // Scroll to bottom when chat log changes
     useEffect(() => {
         scrollToBottom();
     }, [chatLog, scrollToBottom]);
-    
+
     // Scroll to bottom when streaming message changes
     useEffect(() => {
         if (streamingMessage) {
@@ -147,8 +155,8 @@ const Chat = ({
     }, [streamingMessage, scrollToBottom]);
 
     // Reference for the scroll anchor element
-    const scrollAnchorRef = useRef<HTMLDivElement>(null);
-    
+    // const scrollAnchorRef = useRef<HTMLDivElement>(null);
+
     // Disable auto scrolling completely
     // This basic scroll function is only used for initial messages
     const manualScrollToBottom = useCallback(() => {
@@ -156,7 +164,7 @@ const Chat = ({
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, []);
-    
+
     // Only scroll for the very first message, then let user control
     useEffect(() => {
         if (chatLog.length === 1) {
@@ -164,22 +172,22 @@ const Chat = ({
             setTimeout(manualScrollToBottom, 100);
         }
     }, [chatLog.length, manualScrollToBottom]);
-    
+
     // Remove IntersectionObserver that forces scroll
-    
+
     // Remove additional auto-scroll effects
-    
+
     const fetchGeminiResponse = async (message: string) => {
         try {
             // Create a new AbortController for this request
             abortControllerRef.current = new AbortController();
             const signal = abortControllerRef.current.signal;
-            
+
             setResponseStatus('streaming');
             setStreamingMessage('');
             setStreamingSuggestions([]);
             setStreamingCitations([]);
-            
+
             // Add the new user message to API history
             apiHistoryRef.current = [
                 ...apiHistoryRef.current,
@@ -188,7 +196,7 @@ const Chat = ({
                     parts: [{ text: message }]
                 }
             ];
-            
+
             const response = await fetch('/api/gemini', {
                 method: 'POST',
                 headers: {
@@ -200,37 +208,37 @@ const Chat = ({
                 }),
                 signal,
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const reader = response.body?.getReader();
             if (!reader) {
                 throw new Error('Response body is null');
             }
-            
+
             const decoder = new TextDecoder();
             let fullText = '';
             let citations: Citation[] = [];
             let suggestions: string[] = [];
-            
+
             while (true) {
                 const { done, value } = await reader.read();
-                
+
                 if (done) {
                     break;
                 }
-                
+
                 const chunk = decoder.decode(value, { stream: true });
-                
+
                 // Split by newline to handle JSON objects separated by newlines
                 const jsonStrings = chunk.split('\n').filter(str => str.trim());
-                
+
                 for (const jsonStr of jsonStrings) {
                     try {
                         const data = JSON.parse(jsonStr);
-                        
+
                         // Handle regular text chunks from various formats of API response
                         if (data.text) {
                             // Direct text property (simplified format)
@@ -246,17 +254,17 @@ const Chat = ({
                                 // No auto-scrolling
                             }
                         }
-                        
+
                         // Handle citation data (sent after all text chunks)
                         if (data.type === 'citations' && data.groundingMetadata) {
                             const { groundingMetadata, segmentMapping } = data;
-                            
+
                             // Extract suggestions
                             if (groundingMetadata.webSearchQueries && groundingMetadata.webSearchQueries.length > 0) {
                                 suggestions = groundingMetadata.webSearchQueries;
                                 setStreamingSuggestions(suggestions);
                             }
-                            
+
                             // Extract citations if available
                             if (groundingMetadata.groundingChunks && groundingMetadata.groundingChunks.length > 0) {
                                 citations = groundingMetadata.groundingChunks
@@ -268,7 +276,7 @@ const Chat = ({
                                         index: index
                                     }));
                                 setStreamingCitations(citations);
-                                
+
                                 // If we have segment mapping, insert citation references into the text
                                 if (segmentMapping && segmentMapping.length > 0) {
                                     // Process the text to add inline citations
@@ -284,7 +292,7 @@ const Chat = ({
                     }
                 }
             }
-            
+
             // Add the AI response to API history for context in future requests
             apiHistoryRef.current = [
                 ...apiHistoryRef.current,
@@ -293,7 +301,7 @@ const Chat = ({
                     parts: [{ text: fullText }]
                 }
             ];
-            
+
             // Add the AI response to the chat log
             const aiResponse: ChatItem = {
                 sender: "AI",
@@ -303,13 +311,13 @@ const Chat = ({
                 suggestions,
                 citations
             };
-            
+
             setChatLog((prev) => [...prev, aiResponse]);
             setStreamingMessage('');
             setStreamingSuggestions([]);
             setStreamingCitations([]);
             setResponseStatus('success');
-            
+
             // Mark that the user has asked at least one question
             setHasAskedQuestion(true);
         } catch (error) {
@@ -328,10 +336,10 @@ const Chat = ({
     const sendAssertionToOpenAI = async (assertionText: string, evidenceText: string) => {
         try {
             setIsSubmitting(true);
-            
+
             // Combine the texts for API request (but don't add to chat)
             const displayText = `주장: ${assertionText}\n\n근거: ${evidenceText}`;
-            
+
             // Call OpenAI API
             const response = await fetch('/api/openai', {
                 method: 'POST',
@@ -350,17 +358,17 @@ const Chat = ({
             // Parse the response data with error handling
             const responseText = await response.text();
             console.log("Raw OpenAI response:", responseText);
-            
+
             let data: AssertionResponse;
-            
+
             try {
                 // Try to parse the response - it might be a string representation of JSON
                 let parsedData;
-                
+
                 try {
                     // First attempt to parse the response text
                     parsedData = JSON.parse(responseText);
-                    
+
                     // If parsedData is a string (doubly stringified JSON), parse it again
                     if (typeof parsedData === 'string') {
                         try {
@@ -373,36 +381,36 @@ const Chat = ({
                     console.error("Error in initial JSON parsing:", parseErr);
                     throw new Error("Failed to parse response");
                 }
-                
+
                 // Validate the structure
                 if (!parsedData || typeof parsedData !== 'object') {
                     console.error("Invalid data format after parsing:", parsedData);
                     throw new Error('Invalid response format - not an object');
                 }
-                
+
                 // Check if expected properties exist
                 if (!('assertion' in parsedData) || !('evidences' in parsedData)) {
                     console.error("Missing required fields in response:", parsedData);
                     throw new Error('Invalid response format - missing required fields');
                 }
-                
+
                 // Create a safe data object with proper defaults
                 const safeData: AssertionResponse = {
                     assertion: parsedData.assertion || '주장 내용이 없습니다.',
                     evidences: Array.isArray(parsedData.evidences) ? parsedData.evidences : []
                 };
-                
+
                 console.log("Successfully parsed response data:", safeData);
-                
+
                 // Directly set the edit data and open the edit panel
                 setEditData(safeData);
-                
+
                 // Set a dummy index since we're not adding to chat log
                 setEditingMessageIndex(0);
-                
+
                 // Open the edit panel
                 setIsEditPanelOpen(true);
-                
+
                 // Keep form values (removed reset logic)
                 setActiveFormMessageId(null);
             } catch (parseError) {
@@ -437,13 +445,13 @@ const Chat = ({
         if (assertion.trim() && evidence.trim() && !isSubmitting && !formSubmitted) {
             // Mark form as submitted to disable further edits
             setFormSubmitted(true);
-            
+
             // First ensure edit panel is closed before submitting
             setIsEditPanelOpen(false);
-            
+
             // Then send data to OpenAI
             sendAssertionToOpenAI(assertion, evidence);
-            
+
             // Clear active form after submission
             setActiveFormMessageId(null);
         }
@@ -458,14 +466,14 @@ const Chat = ({
             mode: 'create',
             hasForm: true,
         };
-        
+
         setChatLog((prev) => [...prev, aiFormMessage]);
         // Reset form fields and submission state
         setAssertion('');
         setEvidence('');
         setFormSubmitted(false);
     }, [setChatLog, setAssertion, setEvidence]);
-    
+
     // Add form message when mode changes to 'create'
     useEffect(() => {
         if (mode === 'create' && responseStatus === 'success') {
@@ -508,9 +516,9 @@ const Chat = ({
     // Render a citation link
     const renderCitation = (citation: Citation) => {
         return (
-            <a 
-                href={citation.url} 
-                target="_blank" 
+            <a
+                href={citation.url}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="chat__citation-link"
                 title={citation.title}
@@ -533,161 +541,162 @@ const Chat = ({
 
 
     return (
-        <div className="card card--chat">
-            <div className="chat-container">
-                <div className={`chat__stack ${isEditPanelOpen ? 'chat__stack--with-panel' : ''}`} ref={chatContainerRef}>
-                {/* Existing chat log */}
-                {chatLog.map((item, i) => (
-                    <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
-                        {item.sender === "AI" ? (
-                            <>
-                                {renderMarkdown(item.message)}
-                                
-                                {/* Show the assertion form inside AI message */}
-                                {item.hasForm && (
-                                    <div className="chat__inline-form">
-                                        <form onSubmit={handleFormSubmit} className={isSubmitting ? 'form-submitting' : ''}>
-                                            {/* Loading overlay - visible when form is submitting */}
-                                            {isSubmitting && (
-                                                <div className="form-processing-overlay">
-                                                    <div className="processing-spinner"></div>
-                                                    <p className="processing-text">데이터를 처리하는 중입니다...</p>
-                                                    <div className="typing-indicator processing-indicator">
-                                                        <span></span>
-                                                        <span></span>
-                                                        <span></span>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className="assertion-form__field">
-                                                <label htmlFor="assertion">주장</label>
-                                                <textarea 
-                                                    id="assertion"
-                                                    value={assertion}
-                                                    onChange={(e) => !formSubmitted && setAssertion(e.target.value)}
-                                                    placeholder="주장을 입력해주세요..."
-                                                    rows={3}
-                                                    required
-                                                    disabled={isSubmitting || formSubmitted}
-                                                    readOnly={formSubmitted}
-                                                />
-                                            </div>
-                                            <div className="assertion-form__field">
-                                                <label htmlFor="evidence">근거</label>
-                                                <textarea 
-                                                    id="evidence"
-                                                    value={evidence}
-                                                    onChange={(e) => !formSubmitted && setEvidence(e.target.value)}
-                                                    placeholder="근거를 입력해주세요..."
-                                                    rows={5}
-                                                    required
-                                                    disabled={isSubmitting || formSubmitted}
-                                                    readOnly={formSubmitted}
-                                                />
-                                            </div>
-                                            <div className="assertion-form__actions">
-                                                <button 
-                                                    type="submit" 
-                                                    className="assertion-form__button assertion-form__button--submit"
-                                                    disabled={isSubmitting || !assertion.trim() || !evidence.trim() || formSubmitted}
-                                                >
-                                                    {isSubmitting ? '제출 중...' : '확인'}
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                )}
-                                
-                                {/* Show citations if available */}
-                                {item.citations && Array.isArray(item.citations) && item.citations.length > 0 && (
-                                    <div className="chat__citations">
-                                        <span className="chat__citations-title">출처:</span>
-                                        {item.citations.map((citation, idx) => (
-                                            <span key={idx} className="chat__citation">
-                                                {renderCitation(citation)}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                                
-                                {/* Show suggestions */}
-                                {item.suggestions && Array.isArray(item.suggestions) && item.suggestions.length > 0 && (
-                                    <div className="chat__suggestions">
-                                        {item.suggestions.map((suggestion, idx) => (
-                                            <button 
-                                                key={idx} 
-                                                className="chat__suggestion-button"
-                                                onClick={() => handleSuggestionClick(suggestion)}
-                                                disabled={responseStatus === 'streaming'}
-                                            >
-                                                {suggestion}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            item.message
+        viewStatus === 'open' ? (
+            <div className="card card--chat">
+                {isClosable && (<div className='btn chat__close_btn' onClick={() => setViewStatus('closed')}></div>)}
+                <div className="chat-container">
+                    <div className={`chat__stack ${isEditPanelOpen ? 'chat__stack--with-panel' : ''}`} ref={chatContainerRef}>
+                        {/* Streaming message using dedicated component for consistent white background */}
+                        {responseStatus === 'streaming' && (
+                            <StreamingMessage
+                                content={streamingMessage}
+                                citations={streamingCitations}
+                                suggestions={streamingSuggestions}
+                                onSuggestionClick={handleSuggestionClick}
+                            />
                         )}
+
+                        {/* Existing chat log */}
+                        {chatLog.toReversed().map((item, i) => (
+                            <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
+                                {item.sender === "AI" ? (
+                                    <>
+                                        {renderMarkdown(item.message)}
+
+                                        {/* Show the assertion form inside AI message */}
+                                        {item.hasForm && (
+                                            <div className="chat__inline-form">
+                                                <form onSubmit={handleFormSubmit} className={isSubmitting ? 'form-submitting' : ''}>
+                                                    {/* Loading overlay - visible when form is submitting */}
+                                                    {isSubmitting && (
+                                                        <div className="form-processing-overlay">
+                                                            <div className="processing-spinner"></div>
+                                                            <p className="processing-text">데이터를 처리하는 중입니다...</p>
+                                                            <div className="typing-indicator processing-indicator">
+                                                                <span></span>
+                                                                <span></span>
+                                                                <span></span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div className="assertion-form__field">
+                                                        <label htmlFor="assertion">주장</label>
+                                                        <textarea
+                                                            id="assertion"
+                                                            value={assertion}
+                                                            onChange={(e) => !formSubmitted && setAssertion(e.target.value)}
+                                                            placeholder="주장을 입력해주세요..."
+                                                            rows={3}
+                                                            required
+                                                            disabled={isSubmitting || formSubmitted}
+                                                            readOnly={formSubmitted}
+                                                        />
+                                                    </div>
+                                                    <div className="assertion-form__field">
+                                                        <label htmlFor="evidence">근거</label>
+                                                        <textarea
+                                                            id="evidence"
+                                                            value={evidence}
+                                                            onChange={(e) => !formSubmitted && setEvidence(e.target.value)}
+                                                            placeholder="근거를 입력해주세요..."
+                                                            rows={5}
+                                                            required
+                                                            disabled={isSubmitting || formSubmitted}
+                                                            readOnly={formSubmitted}
+                                                        />
+                                                    </div>
+                                                    <div className="assertion-form__actions">
+                                                        <button
+                                                            type="submit"
+                                                            className="assertion-form__button assertion-form__button--submit"
+                                                            disabled={isSubmitting || !assertion.trim() || !evidence.trim() || formSubmitted}
+                                                        >
+                                                            {isSubmitting ? '제출 중...' : '확인'}
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        )}
+
+                                        {/* Show citations if available */}
+                                        {item.citations && Array.isArray(item.citations) && item.citations.length > 0 && (
+                                            <div className="chat__citations">
+                                                <span className="chat__citations-title">출처:</span>
+                                                {item.citations.map((citation, idx) => (
+                                                    <span key={idx} className="chat__citation">
+                                                        {renderCitation(citation)}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Show suggestions */}
+                                        {item.suggestions && Array.isArray(item.suggestions) && item.suggestions.length > 0 && (
+                                            <div className="chat__suggestions">
+                                                {item.suggestions.map((suggestion, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        className="chat__suggestion-button"
+                                                        onClick={() => handleSuggestionClick(suggestion)}
+                                                        disabled={responseStatus === 'streaming'}
+                                                    >
+                                                        {suggestion}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    item.message
+                                )}
+                            </div>
+                        ))}
+
+
+                        {/* Scroll anchor element - always stays at the bottom */}
+                        {/* <div ref={scrollAnchorRef} className="scroll-anchor"></div> */}
                     </div>
-                ))}
-                
-                {/* Streaming message using dedicated component for consistent white background */}
-                {responseStatus === 'streaming' && (
-                    <StreamingMessage 
-                        content={streamingMessage}
-                        citations={streamingCitations}
-                        suggestions={streamingSuggestions}
-                        onSuggestionClick={handleSuggestionClick}
+                </div>
+
+                {/* <div className="chat__input-container"> */}
+                {/* <div className="chat__input-stack"> */}
+                {/* Mode toggle buttons positioned horizontally above input */}
+                <div className="chat__toggle-area">
+                    <button
+                        className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
+                        onClick={() => setMode('ask')}
+                        disabled={responseStatus === 'streaming'}
+                    >
+                        질문하기
+                    </button>
+                    <button
+                        className={`chat__mode-button ${mode === 'create' ? 'chat__mode-button--active' : ''}`}
+                        onClick={() => setMode('create')}
+                        disabled={responseStatus === 'streaming' || !hasAskedQuestion}
+                    >
+                        생성하기
+                    </button>
+                </div>
+
+                {/* Input field with full width */}
+                <div className="chat__input">
+                    <input
+                        type="text"
+                        className="chat__input__text"
+                        placeholder={mode === 'ask' ? "질문하기..." : "생성할 내용 입력..."}
+                        value={inputValue || ''}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        disabled={responseStatus === 'streaming'}
                     />
-                )}
-                
-                {/* Scroll anchor element - always stays at the bottom */}
-                <div ref={scrollAnchorRef} className="scroll-anchor"></div>
+                    <button
+                        className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`}
+                        onClick={() => sendMessage()}
+                        disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
+                    ></button>
                 </div>
-            </div>
 
-            <div className="chat__input-container">
-                <div className="chat__input-stack">
-                    {/* Mode toggle buttons positioned horizontally above input */}
-                    <div className="chat__toggle-area">
-                        <button 
-                            className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
-                            onClick={() => setMode('ask')}
-                            disabled={responseStatus === 'streaming'}
-                        >
-                            질문하기
-                        </button>
-                        <button 
-                            className={`chat__mode-button ${mode === 'create' ? 'chat__mode-button--active' : ''}`}
-                            onClick={() => setMode('create')}
-                            disabled={responseStatus === 'streaming' || !hasAskedQuestion}
-                        >
-                            생성하기
-                        </button>
-                    </div>
-                    
-                    {/* Input field with full width */}
-                    <div className="chat__input-area">
-                        <input 
-                            type="text" 
-                            className="chat__input__text" 
-                            placeholder={mode === 'ask' ? "질문하기..." : "생성할 내용 입력..."}
-                            value={inputValue || ''} 
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            disabled={responseStatus === 'streaming'}
-                        />
-                        <button 
-                            className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`} 
-                            onClick={() => sendMessage()}
-                            disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
-                        ></button>
-                    </div>
-                </div>
-            </div>
-
-            <style jsx>{`
+                <style jsx>{`
                 /* Chat container */
                 .chat-container {
                     display: flex;
@@ -877,116 +886,23 @@ const Chat = ({
                     background-color: #4caf50;
                 }
                 /* Vertical stack for input and toggle */
-                .chat__input-stack {
-                    display: flex;
-                    flex-direction: column;
-                    width: 100%;
-                    gap: 8px;
-                }
+                
                 /* Main chat container */
-                .card.card--chat {
-                    border-radius: 12px;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                    overflow: hidden;
-                    background-color: #f9f9f9;
-                    display: flex;
-                    flex-direction: column;
-                    height: 100%;
-                }
                 
-                /* Chat messages container with reduced padding */
-                .chat__stack {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                    padding: 20px 4px 16px;
-                    overflow-y: auto !important;
-                    overflow-x: hidden !important;
-                    height: calc(100% - 90px); /* Adjusted for input height */
-                    width: 100%;
-                    box-sizing: border-box;
-                    margin-bottom: 4px;
-                    scroll-behavior: smooth; /* Add smooth scrolling */
-                    overscroll-behavior: contain; /* Prevent scroll chaining */
-                    -webkit-overflow-scrolling: touch; /* Improve scroll on iOS */
-                    
-                    /* Hide scrollbar in all browsers */
-                    -ms-overflow-style: none !important; /* IE and Edge */
-                    scrollbar-width: none !important; /* Firefox */
-                }
-                
-                /* Hide WebKit scrollbar completely */
-                .chat__stack::-webkit-scrollbar {
-                    display: none !important;
-                    width: 0 !important;
-                    height: 0 !important;
-                    background: transparent !important;
-                }
-                
-                /* Hide Internet Explorer scrollbar */
-                .chat__stack {
-                    -ms-overflow-style: none !important;
-                }
-                
-                /* Scroll anchor styling */
-                .scroll-anchor {
-                    height: 1px;
-                    width: 100%;
-                    opacity: 0;
-                    margin-top: 8px;
-                    pointer-events: none;
-                }
                 
                 .chat__stack--with-panel {
                     width: 100%;
                 }
                 
                 /* Basic message item styling */
-                .chat__stack__item {
-                    padding: 16px 20px;
-                    border-radius: 10px;
-                    max-width: 95%;
-                    position: relative;
-                    margin-bottom: 12px;
-                    overflow-anchor: none; /* Disable browser's scroll anchoring */
-                }
                 
                 /* Basic message item styling */
-                .chat__stack__item {
-                    padding: 16px 20px;
-                    border-radius: 10px;
-                    max-width: 95%;
-                    position: relative;
-                    margin-bottom: 12px;
-                    scroll-margin-bottom: 100px; /* Add extra scroll margin */
-                }
                 
                 /* Special styling for chat items with forms */
-                .chat__stack__item:has(.chat__inline-form) {
-                    max-width: 98%;
-                    width: 98%;
-                    padding-left: 12px;
-                    padding-right: 12px;
-                }
                 
                 /* User message styling */
-                .chat__stack__item--bubble {
-                    align-self: flex-end;
-                    background-color: #0078ff;
-                    color: white;
-                    border-radius: 18px 18px 4px 18px;
-                    padding: 12px 16px;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                }
                 
                 /* AI message styling */
-                .chat__stack__item:not(.chat__stack__item--bubble) {
-                    align-self: flex-start;
-                    background-color: white;
-                    border-radius: 18px 18px 18px 4px;
-                    border: 1px solid #e0e0e0;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-                }
                 
                 /* Streaming message - styled like regular AI messages with reliable white background */
                 .chat__stack__item--streaming {
@@ -1046,56 +962,9 @@ const Chat = ({
                 }
                 
                 /* Input container with minimal padding */
-                .chat__input-container {
-                    padding: 12px 4px 16px;
-                    background-color: #f9f9f9;
-                    margin-top: auto;
-                    width: 100%;
-                    box-sizing: border-box;
-                    max-width: 100%;
-                    position: sticky;
-                    bottom: 0;
-                    z-index: 10;
-                    border-top: 1px solid #e0e0e0;
-                }
+                
                 
                 /* Input area with full width */
-                .chat__input-area {
-                    display: flex;
-                    align-items: center;
-                    border: 1px solid #ddd;
-                    border-radius: 24px;
-                    overflow: hidden;
-                    padding: 8px 16px;
-                    background-color: white;
-                    width: 100%;
-                    box-sizing: border-box;
-                }
-                
-                .chat__input__text {
-                    flex: 1;
-                    border: none;
-                    outline: none;
-                    font-size: 15px;
-                    padding: 8px 0;
-                }
-                
-                .chat__input__button {
-                    background-color: #e0e0e0;
-                    border: none;
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 50%;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: background-color 0.2s;
-                }
-                
-                .chat__input__button--active {
-                    background-color: #0078ff;
-                }
                 
                 /* Toggle area with horizontal layout */
                 .chat__toggle-area {
@@ -1250,7 +1119,15 @@ const Chat = ({
                     40% { transform: scale(1); }
                 }
             `}</style>
-        </div>
+            </div>
+        ) : isClosable && (
+            <div className='btn chat__open_btn' onClick={() => setViewStatus('open')}>
+                <div>채팅하기</div>
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M36 17.9931C36 27.9156 27.9156 36 17.9932 36C8.08448 36 2.36175e-05 27.9156 2.36175e-05 17.9931C2.36175e-05 8.08445 8.08448 0 17.9932 0C27.9156 0 36 8.08445 36 17.9931ZM11.9816 9.83949C9.45262 9.83949 8.00157 11.3044 8.00157 13.8057V21.0472C8.00157 23.5762 9.45262 25.0549 11.9816 25.0549H18.5321L21.8488 28.0261C22.2081 28.3716 22.4292 28.5097 22.7471 28.5097C23.1893 28.5097 23.4656 28.1919 23.4656 27.6945V25.0549H24.0046C26.5474 25.0549 27.9847 23.59 27.9847 21.0472V13.8057C27.9847 11.3044 26.5474 9.83949 24.0046 9.83949H11.9816Z" fill="#007AFF" />
+                </svg>
+            </div>
+        )
     );
 };
 

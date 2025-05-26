@@ -25,7 +25,7 @@
   --c-fill-gray-secondary: rgb(134, 134, 139);
   --c-fill-gray-secondary-alpha: rgba(0, 0, 0, 0.48);
   --c-fill-gray-tertiary: rgb(210, 210, 215);
-  --c-fill-gray-tertiary-alpha: rgba(0, 0, 0, 0.16);
+  --c-fill-gray-tertiary-alpha: rgba(238, 238, 238, 0.60);
   --c-fill-gray-quaternary: rgb(232, 232, 237);
   --c-fill-gray-quaternary-alpha: rgba(255, 255, 255, 0.60);
 
@@ -84,7 +84,7 @@ button {
   height: 52px;
   padding: 0px 24px;
   box-sizing: border-box;
-  background: var(--c-fill-gray-quaternary-alpha);
+  background-color: var(--c-fill-gray-quaternary-alpha);
   backdrop-filter: saturate(180%) blur(20px);
   z-index: 10;
 }
@@ -330,15 +330,15 @@ button {
 .card--chat {
   width: 480px;
   height: 90vh;
-  /* Increase height to fill more vertical space */
   position: fixed;
   top: 70px;
   right: 22px;
   padding-top: 16px;
   padding-bottom: 76px;
-  /* Increased padding at the bottom for the input area */
   display: flex;
   flex-direction: column;
+  background-color: var(--c-fill-gray-tertiary-alpha);
+  backdrop-filter: saturate(180%) blur(10px);
 }
 
 .chat__stack {
@@ -410,6 +410,34 @@ button {
 
 .chat__input__button--active {
   background: url('data:image/svg+xml,<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M36 18.0069C36 27.9156 27.9156 36 17.9931 36C8.08445 36 0 27.9156 0 18.0069C0 8.08445 8.08445 0 17.9931 0C27.9156 0 36 8.08445 36 18.0069ZM17.0948 9.27296L11.0419 15.1601C10.7931 15.395 10.6687 15.6576 10.6687 15.9892C10.6687 16.625 11.1386 17.0948 11.7881 17.0948C12.0922 17.0948 12.4376 16.9705 12.6587 16.7079L15.6576 13.5709L16.8461 12.3409L16.7493 15.0357V25.9255C16.7493 26.5889 17.3159 27.1555 18.0069 27.1555C18.6841 27.1555 19.2645 26.5889 19.2645 25.9255V15.0357L19.1678 12.3409L20.3424 13.5709L23.3413 16.7079C23.5624 16.9705 23.894 17.0948 24.1981 17.0948C24.8477 17.0948 25.3451 16.625 25.3451 15.9892C25.3451 15.6576 25.2069 15.395 24.972 15.1601L18.9052 9.27296C18.6011 8.95509 18.3248 8.85833 18.0069 8.85833C17.6753 8.85833 17.4127 8.95509 17.0948 9.27296Z" fill="%23007AFF"/></svg>') no-repeat center;
+}
+
+.chat__close_btn {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  padding: 0px;
+  margin: 0px;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M36 18.0069C36 27.9156 27.9156 36 17.9931 36C8.08445 36 0 27.9156 0 18.0069C0 8.08445 8.08445 0 17.9931 0C27.9156 0 36 8.08445 36 18.0069ZM23.1339 11.1386L17.9931 16.2518L12.8799 11.1524C12.6311 10.9036 12.3548 10.7793 11.9954 10.7793C11.2906 10.7793 10.724 11.3183 10.724 12.0231C10.724 12.3686 10.8622 12.6725 11.1109 12.9213L16.2104 18.0207L11.1109 23.1201C10.8622 23.3689 10.724 23.6867 10.724 24.0184C10.724 24.7371 11.2906 25.3037 11.9954 25.3037C12.3548 25.3037 12.6725 25.1654 12.9213 24.9167L17.9931 19.8172L23.0788 24.9167C23.3275 25.1654 23.6453 25.3037 24.0046 25.3037C24.7094 25.3037 25.276 24.7371 25.276 24.0184C25.276 23.6729 25.1654 23.3551 24.9029 23.1063L19.8034 18.0207L24.9167 12.9075C25.1931 12.6311 25.2899 12.3548 25.2899 11.9954C25.2899 11.3044 24.7232 10.7516 24.0323 10.7516C23.6867 10.7516 23.4104 10.8622 23.1339 11.1386Z" fill="black"/></svg>') no-repeat center;
+}
+
+.chat__open_btn {
+  position: fixed;
+  right: 24px;
+  top: 94px;
+  height: 52px;
+  padding: 0px 8px 0px 24px;
+  align-items: center;
+  gap: 18px;
+  border-radius: 28px;
+  background-color: var(--c-fill-gray-tertiary-alpha);
+  backdrop-filter: saturate(180%) blur(10px);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-glyph-gray);
 }
 
 
