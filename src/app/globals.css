@@ -84,8 +84,9 @@ button {
   height: 52px;
   padding: 0px 24px;
   box-sizing: border-box;
-  background: rgba(255, 255, 252, 0.80);
+  background: var(--c-fill-gray-quaternary-alpha);
   backdrop-filter: saturate(180%) blur(20px);
+  z-index: 10;
 }
 
 .navigation__content {
@@ -202,7 +203,7 @@ button {
 }
 
 .btn:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
   /* filter: brightness(0.9) opacity(0.8); */
 }
 
@@ -413,12 +414,22 @@ button {
 
 
 /* tree */
+.research {
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  overflow: scroll;
+  scrollbar-width: none;
+}
+
 .tree {
   position: relative;
   margin: 107px 24px 24px 24px;
-  width: calc(100vw - 48px);
-  height: calc(100vh - 107px - 24px);
-  overflow: scroll;
+  width: 100vw;
+  min-height: 100vh;
+  box-sizing: border-box;
+  /* overflow: scroll; */
+  z-index: 0;
 }
 
 .tree__node {
@@ -431,6 +442,7 @@ button {
   max-width: 462px;
   display: inline-flex;
   padding: 14px 12px 16px 8px;
+  margin: 0px 32px 0px 0px;
   box-sizing: border-box;
   flex-direction: column;
   justify-content: center;
@@ -467,6 +479,20 @@ button {
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
+}
+
+.tree__node__btn {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 24px;
+  height: 24px;
+  padding: 0px;
+  background-color: var(--c-key);
+  mask-image: url('data:image/svg+xml,<svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24.9609 12.9609C24.9609 19.5727 19.5845 24.9609 12.9609 24.9609C6.34917 24.9609 0.960938 19.5727 0.960938 12.9609C0.960938 6.3374 6.34917 0.960938 12.9609 0.960938C19.5845 0.960938 24.9609 6.3374 24.9609 12.9609ZM11.9374 8.25505V11.9374H8.25505C7.64329 11.9374 7.21975 12.3609 7.21975 12.9727C7.21975 13.5727 7.64329 13.9727 8.25505 13.9727H11.9374V17.6668C11.9374 18.2668 12.3492 18.7021 12.9492 18.7021C13.5609 18.7021 13.9844 18.2786 13.9844 17.6668V13.9727H17.6786C18.2786 13.9727 18.7138 13.5727 18.7138 12.9727C18.7138 12.3609 18.2786 11.9374 17.6786 11.9374H13.9844V8.25505C13.9844 7.64329 13.5609 7.20799 12.9492 7.20799C12.3492 7.20799 11.9374 7.64329 11.9374 8.25505Z" fill="%23000000"/></svg>');
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
 }
 
 .tree__node--subject {
