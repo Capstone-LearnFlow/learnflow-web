@@ -40,11 +40,13 @@
     left: 5%;
     width: 90%; /* 90% of the tree container width */
     max-height: calc(100vh - 120px); /* Allow enough space to avoid scrolling */
-    background-color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.85); /* Semi-transparent background */
+    backdrop-filter: blur(4px); /* Adds a subtle blur effect behind */
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     z-index: 100; /* High z-index to appear above the Tree */
     animation: popup-appear 0.2s ease-out;
+    border: 1px solid rgba(200, 200, 200, 0.5); /* Subtle border */
 }
 
 @keyframes popup-appear {
