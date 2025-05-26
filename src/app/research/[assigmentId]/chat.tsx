@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback, useRef, FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
+import StreamingMessage from './components/StreamingMessage';
 
 type ChatMode = 'ask' | 'create';
 type ChatItemSender = "USER" | "AI";
@@ -19,6 +20,12 @@ interface TextSegment {
   startIndex?: number;
   endIndex?: number;
   text: string;
+}
+
+// Define types for JSON edit panel
+interface EditableFormData {
+  assertion: string;
+  evidences: string[];
 }
 
 interface SegmentMapping {
@@ -52,6 +59,7 @@ type ChatItem = {
     suggestions?: string[];
     citations?: Citation[];
     hasForm?: boolean; // To identify if this message should contain a form
+    jsonData?: EditableFormData; // To store the JSON data for editing
 };
 
 // Type for API history items
@@ -62,6 +70,12 @@ type ApiContentItem = {
 
 interface ChatProps {
     nodeId: string;
+    mode: ChatMode;
+    setMode: (mode: ChatMode) => void;
+    setIsEditPanelOpen: (isOpen: boolean) => void;
+    setEditData: (data: EditableFormData | null) => void;
+    setEditingMessageIndex: (index: number | null) => void;
+    isEditPanelOpen: boolean;
 };
 
 // Type for the assertion form response
@@ -70,15 +84,23 @@ interface AssertionResponse {
     evidences: string[];
 }
 
-const Chat = (p: ChatProps) => {
+const Chat = ({
+    nodeId,
+    mode,
+    setMode,
+    setIsEditPanelOpen,
+    setEditData,
+    setEditingMessageIndex,
+    isEditPanelOpen
+}: ChatProps) => {
     // Initialize all state variables first
-    const [mode, setMode] = useState<ChatMode>('ask');
     const [chatLog, setChatLog] = useState<ChatItem[]>([]);
     const [inputValue, setInputValue] = useState<string>('');
     const [responseStatus, setResponseStatus] = useState<'streaming' | 'success' | 'error'>('success');
     const [streamingMessage, setStreamingMessage] = useState<string>('');
     const [streamingSuggestions, setStreamingSuggestions] = useState<string[]>([]);
     const [streamingCitations, setStreamingCitations] = useState<Citation[]>([]);
+    const [hasAskedQuestion, setHasAskedQuestion] = useState<boolean>(false);
     const abortControllerRef = useRef<AbortController | null>(null);
     const apiHistoryRef = useRef<ApiContentItem[]>([]);
     const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -88,6 +110,7 @@ const Chat = (p: ChatProps) => {
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
 
     // Function to handle citation data without inserting inline citations
     const insertInlineCitations = (text: string, segmentMappings: SegmentMapping[]): string => {
@@ -123,6 +146,29 @@ const Chat = (p: ChatProps) => {
         }
     }, [streamingMessage, scrollToBottom]);
 
+    // Reference for the scroll anchor element
+    const scrollAnchorRef = useRef<HTMLDivElement>(null);
+    
+    // Disable auto scrolling completely
+    // This basic scroll function is only used for initial messages
+    const manualScrollToBottom = useCallback(() => {
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+    }, []);
+    
+    // Only scroll for the very first message, then let user control
+    useEffect(() => {
+        if (chatLog.length === 1) {
+            // Only auto-scroll for the first message
+            setTimeout(manualScrollToBottom, 100);
+        }
+    }, [chatLog.length, manualScrollToBottom]);
+    
+    // Remove IntersectionObserver that forces scroll
+    
+    // Remove additional auto-scroll effects
+    
     const fetchGeminiResponse = async (message: string) => {
         try {
             // Create a new AbortController for this request
@@ -190,14 +236,14 @@ const Chat = (p: ChatProps) => {
                             // Direct text property (simplified format)
                             fullText += data.text;
                             setStreamingMessage(fullText);
-                            // Scroll happens via useEffect
+                            // No auto-scrolling
                         } else if (data.candidates && data.candidates[0] && data.candidates[0].content) {
                             // Handle the full raw response format
                             const candidateContent = data.candidates[0].content;
                             if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
                                 fullText += candidateContent.parts[0].text;
                                 setStreamingMessage(fullText);
-                                // Scroll happens via useEffect
+                                // No auto-scrolling
                             }
                         }
                         
@@ -228,7 +274,7 @@ const Chat = (p: ChatProps) => {
                                     // Process the text to add inline citations
                                     fullText = insertInlineCitations(fullText, segmentMapping);
                                     setStreamingMessage(fullText);
-                                    // Scroll happens via useEffect
+                                    // No auto-scrolling
                                 }
                             }
                         }
@@ -263,6 +309,9 @@ const Chat = (p: ChatProps) => {
             setStreamingSuggestions([]);
             setStreamingCitations([]);
             setResponseStatus('success');
+            
+            // Mark that the user has asked at least one question
+            setHasAskedQuestion(true);
         } catch (error) {
             if (error instanceof DOMException && error.name === 'AbortError') {
                 console.log('Fetch aborted');
@@ -275,24 +324,14 @@ const Chat = (p: ChatProps) => {
         }
     };
 
-    // Function to send an assertion to OpenAI API
+    // Function to send an assertion to OpenAI API - modified to directly open edit panel
     const sendAssertionToOpenAI = async (assertionText: string, evidenceText: string) => {
         try {
             setIsSubmitting(true);
-            setResponseStatus('streaming');
-
-            // Combine the texts for display in chat
+            
+            // Combine the texts for API request (but don't add to chat)
             const displayText = `주장: ${assertionText}\n\n근거: ${evidenceText}`;
             
-            // Add user message to chat
-            const newChatItem: ChatItem = {
-                sender: "USER",
-                message: displayText,
-                created_at: Date.now(),
-                mode: 'create',
-            };
-            setChatLog((prev) => [...prev, newChatItem]);
-
             // Call OpenAI API
             const response = await fetch('/api/openai', {
                 method: 'POST',
@@ -308,29 +347,74 @@ const Chat = (p: ChatProps) => {
                 throw new Error(`OpenAI API error: ${response.status}`);
             }
 
-            const data: AssertionResponse = await response.json();
+            // Parse the response data with error handling
+            const responseText = await response.text();
+            console.log("Raw OpenAI response:", responseText);
             
-            // Format response for display
-            let formattedResponse = `**주장**\n\n${data.assertion}\n\n**근거**\n\n`;
-            data.evidences.forEach((evidence, index) => {
-                formattedResponse += `${index + 1}. ${evidence}\n\n`;
-            });
-
-            // Add the AI response to the chat log
-            const aiResponse: ChatItem = {
-                sender: "AI",
-                message: formattedResponse,
-                created_at: Date.now(),
-                mode: 'create',
-            };
+            let data: AssertionResponse;
             
-            setChatLog((prev) => [...prev, aiResponse]);
-            
-            // Reset form state
-            setAssertion('');
-            setEvidence('');
-            setActiveFormMessageId(null);
-            
+            try {
+                // Try to parse the response - it might be a string representation of JSON
+                let parsedData;
+                
+                try {
+                    // First attempt to parse the response text
+                    parsedData = JSON.parse(responseText);
+                    
+                    // If parsedData is a string (doubly stringified JSON), parse it again
+                    if (typeof parsedData === 'string') {
+                        try {
+                            parsedData = JSON.parse(parsedData);
+                        } catch (innerErr) {
+                            console.error("Error parsing inner JSON string:", innerErr);
+                        }
+                    }
+                } catch (parseErr) {
+                    console.error("Error in initial JSON parsing:", parseErr);
+                    throw new Error("Failed to parse response");
+                }
+                
+                // Validate the structure
+                if (!parsedData || typeof parsedData !== 'object') {
+                    console.error("Invalid data format after parsing:", parsedData);
+                    throw new Error('Invalid response format - not an object');
+                }
+                
+                // Check if expected properties exist
+                if (!('assertion' in parsedData) || !('evidences' in parsedData)) {
+                    console.error("Missing required fields in response:", parsedData);
+                    throw new Error('Invalid response format - missing required fields');
+                }
+                
+                // Create a safe data object with proper defaults
+                const safeData: AssertionResponse = {
+                    assertion: parsedData.assertion || '주장 내용이 없습니다.',
+                    evidences: Array.isArray(parsedData.evidences) ? parsedData.evidences : []
+                };
+                
+                console.log("Successfully parsed response data:", safeData);
+                
+                // Directly set the edit data and open the edit panel
+                setEditData(safeData);
+                
+                // Set a dummy index since we're not adding to chat log
+                setEditingMessageIndex(0);
+                
+                // Open the edit panel
+                setIsEditPanelOpen(true);
+                
+                // Keep form values (removed reset logic)
+                setActiveFormMessageId(null);
+            } catch (parseError) {
+                console.error('Error parsing response:', parseError);
+                // Show error message in chat
+                setChatLog((prev) => [...prev, {
+                    sender: "AI",
+                    message: "죄송합니다. 응답을 처리하는 중 오류가 발생했습니다.",
+                    created_at: Date.now(),
+                    mode: 'create',
+                }]);
+            }
         } catch (error) {
             console.error('Error calling OpenAI API:', error);
             // Show error message in chat
@@ -350,8 +434,16 @@ const Chat = (p: ChatProps) => {
     // Handle form submission
     const handleFormSubmit = (e: FormEvent) => {
         e.preventDefault();
-        if (assertion.trim() && evidence.trim() && !isSubmitting) {
+        if (assertion.trim() && evidence.trim() && !isSubmitting && !formSubmitted) {
+            // Mark form as submitted to disable further edits
+            setFormSubmitted(true);
+            
+            // First ensure edit panel is closed before submitting
+            setIsEditPanelOpen(false);
+            
+            // Then send data to OpenAI
             sendAssertionToOpenAI(assertion, evidence);
+            
             // Clear active form after submission
             setActiveFormMessageId(null);
         }
@@ -368,9 +460,10 @@ const Chat = (p: ChatProps) => {
         };
         
         setChatLog((prev) => [...prev, aiFormMessage]);
-        // Reset form fields
+        // Reset form fields and submission state
         setAssertion('');
         setEvidence('');
+        setFormSubmitted(false);
     }, [setChatLog, setAssertion, setEvidence]);
     
     // Add form message when mode changes to 'create'
@@ -438,9 +531,11 @@ const Chat = (p: ChatProps) => {
         );
     };
 
+
     return (
         <div className="card card--chat">
-            <div className="chat__stack" ref={chatContainerRef}>
+            <div className="chat-container">
+                <div className={`chat__stack ${isEditPanelOpen ? 'chat__stack--with-panel' : ''}`} ref={chatContainerRef}>
                 {/* Existing chat log */}
                 {chatLog.map((item, i) => (
                     <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
@@ -451,17 +546,30 @@ const Chat = (p: ChatProps) => {
                                 {/* Show the assertion form inside AI message */}
                                 {item.hasForm && (
                                     <div className="chat__inline-form">
-                                        <form onSubmit={handleFormSubmit}>
+                                        <form onSubmit={handleFormSubmit} className={isSubmitting ? 'form-submitting' : ''}>
+                                            {/* Loading overlay - visible when form is submitting */}
+                                            {isSubmitting && (
+                                                <div className="form-processing-overlay">
+                                                    <div className="processing-spinner"></div>
+                                                    <p className="processing-text">데이터를 처리하는 중입니다...</p>
+                                                    <div className="typing-indicator processing-indicator">
+                                                        <span></span>
+                                                        <span></span>
+                                                        <span></span>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="assertion-form__field">
                                                 <label htmlFor="assertion">주장</label>
                                                 <textarea 
                                                     id="assertion"
                                                     value={assertion}
-                                                    onChange={(e) => setAssertion(e.target.value)}
+                                                    onChange={(e) => !formSubmitted && setAssertion(e.target.value)}
                                                     placeholder="주장을 입력해주세요..."
                                                     rows={3}
                                                     required
-                                                    disabled={isSubmitting}
+                                                    disabled={isSubmitting || formSubmitted}
+                                                    readOnly={formSubmitted}
                                                 />
                                             </div>
                                             <div className="assertion-form__field">
@@ -469,18 +577,19 @@ const Chat = (p: ChatProps) => {
                                                 <textarea 
                                                     id="evidence"
                                                     value={evidence}
-                                                    onChange={(e) => setEvidence(e.target.value)}
+                                                    onChange={(e) => !formSubmitted && setEvidence(e.target.value)}
                                                     placeholder="근거를 입력해주세요..."
                                                     rows={5}
                                                     required
-                                                    disabled={isSubmitting}
+                                                    disabled={isSubmitting || formSubmitted}
+                                                    readOnly={formSubmitted}
                                                 />
                                             </div>
                                             <div className="assertion-form__actions">
                                                 <button 
                                                     type="submit" 
                                                     className="assertion-form__button assertion-form__button--submit"
-                                                    disabled={isSubmitting || !assertion.trim() || !evidence.trim()}
+                                                    disabled={isSubmitting || !assertion.trim() || !evidence.trim() || formSubmitted}
                                                 >
                                                     {isSubmitting ? '제출 중...' : '확인'}
                                                 </button>
@@ -490,7 +599,7 @@ const Chat = (p: ChatProps) => {
                                 )}
                                 
                                 {/* Show citations if available */}
-                                {item.citations && item.citations.length > 0 && (
+                                {item.citations && Array.isArray(item.citations) && item.citations.length > 0 && (
                                     <div className="chat__citations">
                                         <span className="chat__citations-title">출처:</span>
                                         {item.citations.map((citation, idx) => (
@@ -502,7 +611,7 @@ const Chat = (p: ChatProps) => {
                                 )}
                                 
                                 {/* Show suggestions */}
-                                {item.suggestions && item.suggestions.length > 0 && (
+                                {item.suggestions && Array.isArray(item.suggestions) && item.suggestions.length > 0 && (
                                     <div className="chat__suggestions">
                                         {item.suggestions.map((suggestion, idx) => (
                                             <button 
@@ -523,47 +632,19 @@ const Chat = (p: ChatProps) => {
                     </div>
                 ))}
                 
-                {/* Streaming message at the bottom when active */}
+                {/* Streaming message using dedicated component for consistent white background */}
                 {responseStatus === 'streaming' && (
-                    <div className="chat__stack__item chat__stack__item--streaming">
-                            {streamingMessage && renderMarkdown(streamingMessage)}
-                            
-                            {/* Show the typing indicator */}
-                            <div className="typing-indicator">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                            
-                            {/* Show citations if available */}
-                            {streamingCitations.length > 0 && (
-                                <div className="chat__citations">
-                                    <span className="chat__citations-title">출처:</span>
-                                    {streamingCitations.map((citation, idx) => (
-                                        <span key={idx} className="chat__citation">
-                                            {renderCitation(citation)}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                            
-                            {/* Show suggestions if available */}
-                            {streamingSuggestions.length > 0 && (
-                                <div className="chat__suggestions">
-                                    {streamingSuggestions.map((suggestion, idx) => (
-                                        <button 
-                                            key={idx} 
-                                            className="chat__suggestion-button"
-                                            onClick={() => handleSuggestionClick(suggestion)}
-                                            disabled={true}
-                                        >
-                                            {suggestion}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                    </div>
+                    <StreamingMessage 
+                        content={streamingMessage}
+                        citations={streamingCitations}
+                        suggestions={streamingSuggestions}
+                        onSuggestionClick={handleSuggestionClick}
+                    />
                 )}
+                
+                {/* Scroll anchor element - always stays at the bottom */}
+                <div ref={scrollAnchorRef} className="scroll-anchor"></div>
+                </div>
             </div>
 
             <div className="chat__input-container">
@@ -580,7 +661,7 @@ const Chat = (p: ChatProps) => {
                         <button 
                             className={`chat__mode-button ${mode === 'create' ? 'chat__mode-button--active' : ''}`}
                             onClick={() => setMode('create')}
-                            disabled={responseStatus === 'streaming'}
+                            disabled={responseStatus === 'streaming' || !hasAskedQuestion}
                         >
                             생성하기
                         </button>
@@ -607,29 +688,79 @@ const Chat = (p: ChatProps) => {
             </div>
 
             <style jsx>{`
+                /* Chat container */
+                .chat-container {
+                    display: flex;
+                    width: 100%;
+                    flex: 1;
+                    overflow: hidden;
+                }
                 /* In-chat form styles */
                 .chat__inline-form {
-                    margin-top: 16px;
-                    padding: 16px;
-                    background-color: #f9f9f9;
-                    border-radius: 12px;
-                    border: 1px solid #e0e0e0;
+                    margin-top: 20px;
+                    padding: 20px;
+                    background-color: #f0f7ff;
+                    border-radius: 16px;
+                    border: 1px solid #d0e0ff;
                     width: 100%;
                     box-sizing: border-box;
                     max-width: calc(100% + 16px);
                     margin-left: -8px;
                     margin-right: -8px;
+                    box-shadow: 0 4px 12px rgba(0, 120, 255, 0.08);
                 }
                 
                 .assertion-form__field {
-                    margin-bottom: 16px;
+                    margin-bottom: 24px;
+                    position: relative;
+                    padding-left: 24px;
+                    background-color: rgba(255, 255, 255, 0.7);
+                    border-radius: 12px;
+                    padding: 16px 16px 16px 24px;
+                    border: 1px solid rgba(0, 0, 0, 0.05);
+                }
+                
+                /* Green vertical bar for assertion (주장) */
+                .assertion-form__field:first-of-type::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 6px;
+                    background-color: #4caf50;
+                    border-top-left-radius: 12px;
+                    border-bottom-left-radius: 12px;
+                }
+                
+                /* Red vertical bar for evidence (근거) */
+                .assertion-form__field:not(:first-of-type)::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 6px;
+                    background-color: #e74c3c;
+                    border-top-left-radius: 12px;
+                    border-bottom-left-radius: 12px;
                 }
                 
                 .assertion-form__field label {
                     display: block;
-                    margin-bottom: 8px;
+                    margin-bottom: 12px;
                     font-weight: bold;
                     color: #444;
+                }
+                
+                /* Green label color for assertion (주장) */
+                .assertion-form__field:first-of-type label {
+                    color: #4caf50;
+                }
+                
+                /* Red label color for evidence (근거) */
+                .assertion-form__field:not(:first-of-type) label {
+                    color: #e74c3c;
                 }
                 
                 .assertion-form__field textarea {
@@ -640,8 +771,9 @@ const Chat = (p: ChatProps) => {
                     resize: vertical;
                     font-family: inherit;
                     font-size: 15px;
-                    background-color: #f9f9f9;
+                    background-color: #ffffff;
                     box-sizing: border-box;
+                    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
                 }
                 
                 .assertion-form__field textarea:focus {
@@ -676,17 +808,73 @@ const Chat = (p: ChatProps) => {
                 }
                 
                 .assertion-form__button--submit {
-                    background-color: #0078ff;
+                    background-color: #4caf50;
                     color: white;
                 }
                 
                 .assertion-form__button--submit:hover {
-                    background-color: #0065d9;
+                    background-color: #43a047;
                 }
                 
                 .assertion-form__button:disabled {
                     opacity: 0.5;
                     cursor: not-allowed;
+                }
+                
+                /* Form submitting state */
+                .form-submitting {
+                    position: relative;
+                }
+                
+                /* Processing overlay styling */
+                .form-processing-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: rgba(240, 247, 255, 0.85);
+                    backdrop-filter: blur(3px);
+                    z-index: 100;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 12px;
+                    animation: fadeIn 0.3s ease-in-out;
+                }
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                .processing-spinner {
+                    width: 50px;
+                    height: 50px;
+                    border: 4px solid rgba(76, 175, 80, 0.2);
+                    border-radius: 50%;
+                    border-top-color: #4caf50;
+                    animation: spin 1s linear infinite;
+                    margin-bottom: 16px;
+                }
+                
+                .processing-text {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #333;
+                    margin-bottom: 16px;
+                    text-align: center;
+                }
+                
+                .processing-indicator {
+                    margin-top: 0;
+                }
+                
+                .processing-indicator span {
+                    height: 10px;
+                    width: 10px;
+                    background-color: #4caf50;
                 }
                 /* Vertical stack for input and toggle */
                 .chat__input-stack {
@@ -703,8 +891,7 @@ const Chat = (p: ChatProps) => {
                     background-color: #f9f9f9;
                     display: flex;
                     flex-direction: column;
-                    height: 90vh;
-                    padding-bottom: 76px; /* Add padding for the input area */
+                    height: 100%;
                 }
                 
                 /* Chat messages container with reduced padding */
@@ -712,11 +899,46 @@ const Chat = (p: ChatProps) => {
                     display: flex;
                     flex-direction: column;
                     gap: 16px;
-                    padding: 24px 4px 16px;
-                    overflow-y: auto;
-                    height: 100%;
+                    padding: 20px 4px 16px;
+                    overflow-y: auto !important;
+                    overflow-x: hidden !important;
+                    height: calc(100% - 90px); /* Adjusted for input height */
                     width: 100%;
                     box-sizing: border-box;
+                    margin-bottom: 4px;
+                    scroll-behavior: smooth; /* Add smooth scrolling */
+                    overscroll-behavior: contain; /* Prevent scroll chaining */
+                    -webkit-overflow-scrolling: touch; /* Improve scroll on iOS */
+                    
+                    /* Hide scrollbar in all browsers */
+                    -ms-overflow-style: none !important; /* IE and Edge */
+                    scrollbar-width: none !important; /* Firefox */
+                }
+                
+                /* Hide WebKit scrollbar completely */
+                .chat__stack::-webkit-scrollbar {
+                    display: none !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                    background: transparent !important;
+                }
+                
+                /* Hide Internet Explorer scrollbar */
+                .chat__stack {
+                    -ms-overflow-style: none !important;
+                }
+                
+                /* Scroll anchor styling */
+                .scroll-anchor {
+                    height: 1px;
+                    width: 100%;
+                    opacity: 0;
+                    margin-top: 8px;
+                    pointer-events: none;
+                }
+                
+                .chat__stack--with-panel {
+                    width: 100%;
                 }
                 
                 /* Basic message item styling */
@@ -726,6 +948,17 @@ const Chat = (p: ChatProps) => {
                     max-width: 95%;
                     position: relative;
                     margin-bottom: 12px;
+                    overflow-anchor: none; /* Disable browser's scroll anchoring */
+                }
+                
+                /* Basic message item styling */
+                .chat__stack__item {
+                    padding: 16px 20px;
+                    border-radius: 10px;
+                    max-width: 95%;
+                    position: relative;
+                    margin-bottom: 12px;
+                    scroll-margin-bottom: 100px; /* Add extra scroll margin */
                 }
                 
                 /* Special styling for chat items with forms */
@@ -755,29 +988,75 @@ const Chat = (p: ChatProps) => {
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                 }
                 
-                /* Streaming message */
+                /* Streaming message - styled like regular AI messages with reliable white background */
                 .chat__stack__item--streaming {
-                    border-left: 3px solid #0066cc;
-                    padding: 16px 20px 16px 20px;
-                    background-color: #f0f7ff;
-                    border-radius: 12px;
+                    align-self: flex-start;
+                    background-color: white;
+                    border-radius: 18px 18px 18px 4px;
+                    border: 1px solid #e0e0e0;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                    border-left: 3px solid #0078ff; /* Blue accent to indicate streaming */
                     max-width: 95%;
+                    min-height: 60px;
+                    height: auto;
+                    width: auto;
+                    display: block;
+                    box-sizing: border-box;
+                    overflow: visible;
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
+                    word-break: break-word;
+                    white-space: normal;
+                    padding: 16px 20px 16px 20px; /* Padding for content */
+                }
+                
+                /* Typing indicator inside streaming message */
+                .typing-indicator {
+                    display: inline-flex;
+                    align-items: center;
+                    margin-top: 8px;
+                    margin-bottom: 4px;
+                }
+                
+                /* Ensure markdown content fills container properly */
+                .chat__stack__item--streaming .chat__markdown-content {
+                    width: 100%;
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
+                    word-break: break-word;
                 }
                 
                 /* Markdown content in AI messages */
                 .chat__markdown-content {
                     line-height: 1.6;
                     font-size: 16px;
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
+                    word-break: break-word;
+                    max-width: 100%;
+                    overflow-x: hidden;
+                    white-space: normal;
+                }
+                
+                /* Ensure content doesn't cause horizontal scrolling */
+                .chat__markdown-content * {
+                    max-width: 100%;
+                    overflow-wrap: break-word;
+                    white-space: normal;
                 }
                 
                 /* Input container with minimal padding */
                 .chat__input-container {
                     padding: 12px 4px 16px;
                     background-color: #f9f9f9;
-                    margin-top: 0;
+                    margin-top: auto;
                     width: 100%;
                     box-sizing: border-box;
                     max-width: 100%;
+                    position: sticky;
+                    bottom: 0;
+                    z-index: 10;
+                    border-top: 1px solid #e0e0e0;
                 }
                 
                 /* Input area with full width */
@@ -934,11 +1213,12 @@ const Chat = (p: ChatProps) => {
                     background-color: #e0f0ff;
                 }
                 
-                /* Typing indicator */
+                /* Typing indicator - adjusted to appear inside the message */
                 .typing-indicator {
                     display: inline-flex;
                     align-items: center;
                     margin-top: 8px;
+                    margin-bottom: 4px;
                 }
                 
                 .typing-indicator span {
@@ -972,5 +1252,6 @@ const Chat = (p: ChatProps) => {
             `}</style>
         </div>
     );
-}
+};
+
 export default Chat;
