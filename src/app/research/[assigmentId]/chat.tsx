@@ -973,6 +973,7 @@ const Chat = ({
                     gap: 8px;
                     width: 100%;
                     justify-content: center; /* Center the toggle buttons */
+                    margin-top: 20px; /* Add spacing between chat and buttons */
                 }
                 .chat__mode-button {
                     border: 1px solid #ddd;
