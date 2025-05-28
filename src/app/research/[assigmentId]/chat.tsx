@@ -899,6 +899,10 @@ const Chat = ({
                 /* Basic message item styling */
                 
                 /* Special styling for chat items with forms */
+                .chat__stack__item {
+                    width: 100%;
+                    max-width: 100% !important;
+                }
                 
                 /* User message styling */
                 
