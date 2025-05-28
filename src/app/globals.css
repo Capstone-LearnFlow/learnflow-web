@@ -364,13 +364,14 @@ button {
 }
 
 .chat__stack__item--bubble {
-  display: flex;
-  padding: 12px 19px;
-  margin-top: 20px;
-  justify-content: flex-end;
-  align-items: center;
-  background-color: var(--c-fill);
-  border-radius: 28px;
+    display: flex;
+    padding: 12px 19px;
+    margin-top: 20px;
+    justify-content: flex-end;
+    align-items: center;
+    align-self: flex-end;
+    background-color: var(--c-fill);
+    border-radius: 28px;
 }
 
 .chat__input {
