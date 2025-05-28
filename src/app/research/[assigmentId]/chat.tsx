@@ -713,20 +713,20 @@ const Chat = ({
                     border: 1px solid #d0e0ff;
                     width: 100%;
                     box-sizing: border-box;
-                    max-width: calc(100% + 16px);
-                    margin-left: -8px;
-                    margin-right: -8px;
+                    max-width: 100%;
+                    margin-left: 0;
+                    margin-right: 0;
                     box-shadow: 0 4px 12px rgba(0, 120, 255, 0.08);
                 }
                 
                 .assertion-form__field {
                     margin-bottom: 24px;
                     position: relative;
-                    padding-left: 24px;
                     background-color: rgba(255, 255, 255, 0.7);
                     border-radius: 12px;
                     padding: 16px 16px 16px 24px;
                     border: 1px solid rgba(0, 0, 0, 0.05);
+                    width: 100%;
                 }
                 
                 /* Green vertical bar for assertion (주장) */
