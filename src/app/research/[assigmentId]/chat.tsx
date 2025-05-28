@@ -711,6 +711,7 @@ const Chat = ({
                     background-color: #eef4ff;
                     border-radius: 12px;
                     width: 100%;
+                    min-width: 100%;
                     box-sizing: border-box;
                 }
                 
