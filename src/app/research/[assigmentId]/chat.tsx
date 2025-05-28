@@ -707,14 +707,11 @@ const Chat = ({
                 /* In-chat form styles */
                 .chat__inline-form {
                     margin-top: 20px;
-                    padding: 20px;
+                    padding: 16px;
                     background-color: #eef4ff;
                     border-radius: 12px;
                     width: 100%;
                     box-sizing: border-box;
-                    max-width: 600px;
-                    margin-left: auto;
-                    margin-right: auto;
                 }
                 
                 .assertion-form__field {
