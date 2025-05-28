@@ -707,20 +707,18 @@ const Chat = ({
                 /* In-chat form styles */
                 .chat__inline-form {
                     margin-top: 20px;
-                    padding: 16px;
+                    padding: 20px;
                     background-color: #f0f7ff;
                     border-radius: 16px;
-                    border: 1px solid #d0e0ff;
-                    width: 90%;
+                    width: 100%;
                     box-sizing: border-box;
-                    margin: 20px auto 0;
                     box-shadow: 0 4px 12px rgba(0, 120, 255, 0.08);
                 }
                 
                 .assertion-form__field {
                     margin-bottom: 20px;
                     position: relative;
-                    background-color: rgba(255, 255, 255, 0.7);
+                    background-color: #ffffff;
                     border-radius: 12px;
                     padding: 14px 14px 14px 20px;
                     border: 1px solid rgba(0, 0, 0, 0.05);
@@ -793,7 +791,7 @@ const Chat = ({
                     display: flex;
                     justify-content: flex-end;
                     gap: 12px;
-                    margin-top: 24px;
+                    margin-top: 12px;
                 }
                 
                 .assertion-form__button {
