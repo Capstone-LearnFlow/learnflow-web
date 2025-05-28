@@ -707,24 +707,22 @@ const Chat = ({
                 /* In-chat form styles */
                 .chat__inline-form {
                     margin-top: 20px;
-                    padding: 20px;
+                    padding: 16px;
                     background-color: #f0f7ff;
                     border-radius: 16px;
                     border: 1px solid #d0e0ff;
-                    width: 100%;
+                    width: 90%;
                     box-sizing: border-box;
-                    max-width: 100%;
-                    margin-left: 0;
-                    margin-right: 0;
+                    margin: 20px auto 0;
                     box-shadow: 0 4px 12px rgba(0, 120, 255, 0.08);
                 }
                 
                 .assertion-form__field {
-                    margin-bottom: 24px;
+                    margin-bottom: 20px;
                     position: relative;
                     background-color: rgba(255, 255, 255, 0.7);
                     border-radius: 12px;
-                    padding: 16px 16px 16px 24px;
+                    padding: 14px 14px 14px 20px;
                     border: 1px solid rgba(0, 0, 0, 0.05);
                     width: 100%;
                 }
