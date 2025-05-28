@@ -707,26 +707,23 @@ const Chat = ({
                 /* In-chat form styles */
                 .chat__inline-form {
                     margin-top: 20px;
-                    padding: 20px;
-                    background-color: #f0f7ff;
-                    border-radius: 16px;
-                    border: 1px solid #d0e0ff;
+                    padding: 16px;
+                    background-color: #eef4ff;
+                    border-radius: 12px;
                     width: 100%;
+                    min-width: 100%;
                     box-sizing: border-box;
-                    max-width: calc(100% + 16px);
-                    margin-left: -8px;
-                    margin-right: -8px;
-                    box-shadow: 0 4px 12px rgba(0, 120, 255, 0.08);
                 }
                 
                 .assertion-form__field {
-                    margin-bottom: 24px;
+                    margin-bottom: 16px;
                     position: relative;
-                    padding-left: 24px;
-                    background-color: rgba(255, 255, 255, 0.7);
-                    border-radius: 12px;
-                    padding: 16px 16px 16px 24px;
-                    border: 1px solid rgba(0, 0, 0, 0.05);
+                    background-color: #ffffff;
+                    border-radius: 8px;
+                    padding: 12px 12px 12px 20px;
+                    border: 1px solid rgba(0, 0, 0, 0.08);
+                    width: 100%;
+                    box-sizing: border-box;
                 }
                 
                 /* Green vertical bar for assertion (주장) */
@@ -795,7 +792,8 @@ const Chat = ({
                     display: flex;
                     justify-content: flex-end;
                     gap: 12px;
-                    margin-top: 24px;
+                    margin-top: 8px;
+                    padding-right: 4px;
                 }
                 
                 .assertion-form__button {
@@ -817,8 +815,10 @@ const Chat = ({
                 }
                 
                 .assertion-form__button--submit {
-                    background-color: #4caf50;
+                    background-color: #7fbf84;
                     color: white;
+                    padding: 8px 16px;
+                    border-radius: 6px;
                 }
                 
                 .assertion-form__button--submit:hover {
@@ -899,8 +899,36 @@ const Chat = ({
                 /* Basic message item styling */
                 
                 /* Special styling for chat items with forms */
+                .chat__stack__item {
+                    width: 100%;
+                    max-width: 100% !important;
+                }
                 
                 /* User message styling */
+                .chat__stack__item--bubble {
+                    align-self: flex-end;
+                    background-color: #ffffff;
+                    border-radius: 18px 18px 4px 18px;
+                    border: 1px solid #e0e0e0;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                    max-width: 95%;
+                    min-height: 40px;
+                    height: auto;
+                    width: auto;
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    box-sizing: border-box;
+                    overflow: visible;
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
+                    word-break: break-word;
+                    white-space: normal;
+                    padding: 12px 16px;
+                    margin: 6px 0;
+                    color: #333;
+                    font-size: 16px;
+                }
                 
                 /* AI message styling */
                 
@@ -973,6 +1001,7 @@ const Chat = ({
                     gap: 8px;
                     width: 100%;
                     justify-content: center; /* Center the toggle buttons */
+                    margin-top: 20px; /* Add spacing between chat and buttons */
                 }
                 .chat__mode-button {
                     border: 1px solid #ddd;

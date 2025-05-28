@@ -40,14 +40,14 @@
 /* Floating popup styling */
 .create-popup {
     position: absolute;
-    top: 10px;
-    left: 5%;
-    width: 90%;
-    /* 90% of the tree container width */
-    max-height: calc(100vh - 120px);
-    /* Allow enough space to avoid scrolling */
-    background-color: rgba(255, 255, 255, 0.85);
-    /* Semi-transparent background */
+    top: 80px; /* Position below the LearnFlow icon/navigation */
+    left: 0; /* Align with left edge */
+    right: 655px; /* Position to the left of the chat window with slight adjustment */
+    width: auto; /* Width determined by left and right positioning */
+    min-height: 500px; /* Set minimum height */
+    max-height: calc(100vh - 140px); /* Allow enough space to avoid scrolling */
+    background-color: rgba(255, 255, 255, 0.95);
+    /* More opaque background */
     backdrop-filter: blur(4px);
     /* Adds a subtle blur effect behind */
     border-radius: 12px;
@@ -57,6 +57,7 @@
     animation: popup-appear 0.2s ease-out;
     border: 1px solid rgba(200, 200, 200, 0.5);
     /* Subtle border */
+    margin: 0 15px 0 20px; /* Adjust margins (top right bottom left) */
 }
 
 @keyframes popup-appear {
