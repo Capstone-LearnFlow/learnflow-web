@@ -907,9 +907,9 @@ const Chat = ({
                 /* User message styling */
                 .chat__stack__item--bubble {
                     align-self: flex-end;
-                    background-color: #e1f5fe;
+                    background-color: #ffffff;
                     border-radius: 18px 18px 4px 18px;
-                    border: 1px solid #b3e5fc;
+                    border: 1px solid #e0e0e0;
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                     max-width: 95%;
                     min-height: 40px;
