@@ -905,6 +905,30 @@ const Chat = ({
                 }
                 
                 /* User message styling */
+                .chat__stack__item--bubble {
+                    align-self: flex-end;
+                    background-color: #e1f5fe;
+                    border-radius: 18px 18px 4px 18px;
+                    border: 1px solid #b3e5fc;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                    max-width: 95%;
+                    min-height: 40px;
+                    height: auto;
+                    width: auto;
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    box-sizing: border-box;
+                    overflow: visible;
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
+                    word-break: break-word;
+                    white-space: normal;
+                    padding: 12px 16px;
+                    margin: 6px 0;
+                    color: #333;
+                    font-size: 16px;
+                }
                 
                 /* AI message styling */
                 
