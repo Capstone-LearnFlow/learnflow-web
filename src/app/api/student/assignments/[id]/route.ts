@@ -5,10 +5,10 @@ const API_BASE_URL = 'http://100.65.217.64:8080/api';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const assignmentId = params.id;
+        const { id: assignmentId } = await context.params;
 
         const cookieStore = await cookies();
         const allCookies = cookieStore.getAll();
@@ -52,7 +52,7 @@ export async function GET(
         // Return the response with the same status
         return NextResponse.json(data, { status: response.status });
     } catch (error) {
-        console.error(`Error forwarding request for assignment ${params.id}:`, error);
+        console.error(`Error forwarding request for assignment:`, error);
         return NextResponse.json(
             {
                 success: false,

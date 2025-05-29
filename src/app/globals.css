@@ -364,14 +364,14 @@ button {
 }
 
 .chat__stack__item--bubble {
-    display: flex;
-    padding: 12px 19px;
-    margin-top: 20px;
-    justify-content: flex-end;
-    align-items: center;
-    align-self: flex-end;
-    background-color: var(--c-fill);
-    border-radius: 28px;
+  display: flex;
+  padding: 12px 19px;
+  margin-top: 20px;
+  justify-content: flex-end;
+  align-items: center;
+  align-self: flex-end;
+  background-color: var(--c-fill);
+  border-radius: 28px;
 }
 
 .chat__input {
@@ -482,6 +482,42 @@ button {
   border-left: 4px solid var(--c-key);
 }
 
+.tree__node__link {
+  position: absolute;
+  display: block;
+  left: -26px;
+  top: 20px;
+  width: 2px;
+  height: 20px;
+  transform: translateY(-100%);
+  background-color: var(--c-key);
+}
+
+.tree__node__link::before {
+  content: "";
+  position: absolute;
+  right: 0px;
+  top: -3px;
+  width: 28px;
+  height: 8px;
+  background-color: var(--c-key);
+  mask-image: url('data:image/svg+xml,<svg width="28" height="8" viewBox="0 0 28 8" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="4" cy="4" r="4" fill="%23000000"/><rect x="4" y="3" width="24" height="2" fill="%23000000"/></svg>');
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+}
+
+.tree__node__link::after {
+  content: "";
+  position: absolute;
+  left: 0px;
+  bottom: -2px;
+  width: 22px;
+  height: 2px;
+  background-color: var(--c-key);
+}
+
+
 .tree__node__content_container {
   display: flex;
   padding-left: 4px;
@@ -558,4 +594,15 @@ button {
 .tree__node--question {
   --c-key: var(--c-fill-navy);
   --c-bg: var(--c-fill-navy-secondary);
+}
+
+.tree__node--answer {
+  --c-key: var(--c-fill-green);
+  --c-bg: var(--c-fill-gray-quaternary-alpha);
+
+  position: relative;
+  min-width: 438px;
+  width: 438px;
+  max-width: 438px;
+  padding: 8px 24px 12px 6px;
 }

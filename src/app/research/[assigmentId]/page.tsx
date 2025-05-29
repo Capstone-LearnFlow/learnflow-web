@@ -1,5 +1,5 @@
 "use client";
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import Chat from './chat';
 import Tree from './tree';
 import Create from './create';
@@ -13,16 +13,24 @@ interface EditableFormData {
 
 type ChatMode = 'ask' | 'create';
 
-const Research = ({ params }: { params: { assigmentId: string } }) => {
+const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
     // Shared state between Chat and Create components
     const [mode, setMode] = useState<ChatMode>('ask');
     const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
     const [editData, setEditData] = useState<EditableFormData | null>(null);
     const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+    const [assignmentId, setAssignmentId] = useState<string>('');
+
+    // Resolve params on component mount
+    useEffect(() => {
+        params.then(resolvedParams => {
+            setAssignmentId(resolvedParams.assigmentId);
+        });
+    }, [params]);
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const { assigmentId } = params;
+    // const { assigmentId } = params;
     // Handler for assertion changes in edit mode
     const handleAssertionChange = (value: string) => {
         if (editData) {
