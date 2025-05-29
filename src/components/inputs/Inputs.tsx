@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useImperativeHandle, forwardRef, RefObject, ChangeEvent, KeyboardEvent, FocusEvent } from 'react';
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef, ChangeEvent, KeyboardEvent, FocusEvent } from 'react';
 
 import style from './Inputs.module.css';
 
@@ -86,7 +86,7 @@ const LineInput = forwardRef(
 
         const forceFocus = async (timeout = 0) => {
             if (input.current) {
-                let temp = document.createElement('input');
+                const temp = document.createElement('input');
                 temp.style.position = 'absolute';
                 temp.style.top = '0px';
                 temp.style.height = '0px';
@@ -156,6 +156,8 @@ const LineInput = forwardRef(
         );
     }
 );
+LineInput.displayName = 'LineInput';
+
 const LineTextarea = forwardRef(
     (
         {
@@ -211,7 +213,7 @@ const LineTextarea = forwardRef(
         const forceFocus = async (timeout = 0) => {
             if (input.current) {
                 input.current.blur();
-                let temp = document.createElement('input');
+                const temp = document.createElement('input');
                 temp.style.position = 'absolute';
                 temp.style.top = `${input.current.offsetTop + input.current.clientHeight}px`;
                 temp.style.height = '0px';
@@ -258,6 +260,7 @@ const LineTextarea = forwardRef(
         );
     }
 );
+LineTextarea.displayName = 'LineTextarea';
 
 const CheckBox = forwardRef(
     (
@@ -306,6 +309,7 @@ const CheckBox = forwardRef(
         );
     }
 );
+CheckBox.displayName = 'CheckBox';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

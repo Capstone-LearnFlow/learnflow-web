@@ -5,7 +5,7 @@
 interface AuthResponse {
     success: boolean;
     message?: string;
-    data?: any;
+    data?: unknown;
     token?: string;
 }
 

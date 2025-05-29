@@ -8,12 +8,6 @@ interface EditableFormData {
   evidences: string[];
 }
 
-// Type for the assertion form response
-interface AssertionResponse {
-  assertion: string;
-  evidences: string[];
-}
-
 interface CreateProps {
   isOpen: boolean;
   editData: EditableFormData | null;
@@ -26,7 +20,6 @@ interface CreateProps {
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onEvidenceItemChange: (index: number, value: string) => void;
-  editingMessageIndex: number | null;
 }
 
 const Create = ({
@@ -40,15 +33,14 @@ const Create = ({
   onSubmit,
   onSaveEdit,
   onCancelEdit,
-  onEvidenceItemChange,
-  editingMessageIndex
+  onEvidenceItemChange
 }: CreateProps) => {
-  
+
   // Render based on whether we're in edit mode or create mode
   if (!isOpen) {
     return null; // Don't render anything if not open
   }
-  
+
   // If we have edit data, show the edit panel
   if (editData) {
     return (
@@ -56,18 +48,18 @@ const Create = ({
         <div className={styles['create-panel__content']}>
           <div className={styles['create-panel__field']}>
             <div className={styles['create-panel__label']}>주장</div>
-            <textarea 
+            <textarea
               className={styles['create-panel__textarea']}
               value={editData.assertion}
               onChange={(e) => onAssertionChange(e.target.value)}
               rows={4}
             />
           </div>
-          
+
           {editData.evidences.map((evidence, idx) => (
             <div key={idx} className={styles['create-panel__field']}>
               <div className={styles['create-panel__label']}>근거 {idx + 1}</div>
-              <textarea 
+              <textarea
                 className={styles['create-panel__textarea']}
                 value={evidence}
                 onChange={(e) => onEvidenceItemChange(idx, e.target.value)}
@@ -75,11 +67,11 @@ const Create = ({
               />
             </div>
           ))}
-          
+
           <div className={styles['create-panel__actions']}>
             <button className={styles['create-panel__button']} onClick={onCancelEdit}>취소</button>
-            <button 
-              className={`${styles['create-panel__button']} ${styles['create-panel__button--primary']}`} 
+            <button
+              className={`${styles['create-panel__button']} ${styles['create-panel__button--primary']}`}
               onClick={onSaveEdit}
             >
               등록하기
@@ -88,8 +80,8 @@ const Create = ({
         </div>
       </div>
     );
-  } 
-  
+  }
+
   // Otherwise, show the form for creating a new assertion
   return (
     <div className={styles['create-panel']}>
@@ -97,7 +89,7 @@ const Create = ({
         <form onSubmit={onSubmit}>
           <div className={styles['assertion-form__field']}>
             <label htmlFor="assertion">주장</label>
-            <textarea 
+            <textarea
               id="assertion"
               value={assertion}
               onChange={(e) => onAssertionChange(e.target.value)}
@@ -109,7 +101,7 @@ const Create = ({
           </div>
           <div className={styles['assertion-form__field']}>
             <label htmlFor="evidence">근거</label>
-            <textarea 
+            <textarea
               id="evidence"
               value={evidence}
               onChange={(e) => onEvidenceChange(e.target.value)}
@@ -120,8 +112,8 @@ const Create = ({
             />
           </div>
           <div className={styles['assertion-form__actions']}>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className={`${styles['assertion-form__button']} ${styles['assertion-form__button--submit']}`}
               disabled={isSubmitting || !assertion.trim() || !evidence.trim()}
             >

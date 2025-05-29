@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiServices.auth.login(studentId);
 
       if (response.success && response.data) {
-        setUser(response.data);
+        setUser(response.data as User);
         // 세션 스토리지에 사용자 정보 저장
         sessionStorage.setItem('user', JSON.stringify(response.data));
         return true;

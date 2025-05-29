@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 const API_BASE_URL = 'http://100.65.217.64:8080/api';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
     try {
         // 클라이언트에서 받은 쿠키를 백엔드로 전달
         const cookieStore = await cookies();

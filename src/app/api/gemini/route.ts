@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
 
     // Create an encoder for streaming responses
     const encoder = new TextEncoder();
-    
+
     // Configure Gemini API client
     const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
@@ -26,14 +26,14 @@ export async function POST(request: NextRequest) {
     };
 
     const model = 'gemini-2.5-flash-preview-05-20';
-    
+
     // Prepare contents array with history if available
     let contents = [];
-    
+
     if (history && Array.isArray(history) && history.length > 0) {
       contents = history;
     }
-    
+
     // Add the new user message
     contents.push({
       role: 'user',
@@ -52,34 +52,33 @@ export async function POST(request: NextRequest) {
           });
 
           // Process API response
-          let fullText = '';
+          // let fullText = '';
           let lastChunk = null;
           let citationData = null;
 
           for await (const chunk of response) {
             // Send the raw chunk as JSON for client-side processing
             controller.enqueue(encoder.encode(JSON.stringify(chunk) + '\n'));
-            
+
             // Store the last chunk to extract grounding metadata
             lastChunk = chunk;
-            
             // Accumulate the text for full response
-            if (chunk.text) {
-              fullText += chunk.text;
-            } else if (chunk.candidates && chunk.candidates[0] && chunk.candidates[0].content) {
-              const candidateContent = chunk.candidates[0].content;
-              if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
-                fullText += candidateContent.parts[0].text;
-              }
-            }
+            // if (chunk.text) {
+            //   fullText += chunk.text;
+            // } else if (chunk.candidates && chunk.candidates[0] && chunk.candidates[0].content) {
+            //   const candidateContent = chunk.candidates[0].content;
+            //   if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
+            //     fullText += candidateContent.parts[0].text;
+            //   }
+            // }
           }
 
           // Extract citation data if available
-          if (lastChunk && 
-              lastChunk.candidates && 
-              lastChunk.candidates[0] && 
-              lastChunk.candidates[0].groundingMetadata) {
-            
+          if (lastChunk &&
+            lastChunk.candidates &&
+            lastChunk.candidates[0] &&
+            lastChunk.candidates[0].groundingMetadata) {
+
             const groundingMetadata = lastChunk.candidates[0].groundingMetadata;
             citationData = {
               type: 'citations',
@@ -89,7 +88,7 @@ export async function POST(request: NextRequest) {
                 citationIndices: support.groundingChunkIndices
               })) || []
             };
-            
+
             controller.enqueue(encoder.encode(JSON.stringify(citationData) + '\n'));
           }
 
@@ -97,8 +96,8 @@ export async function POST(request: NextRequest) {
         } catch (error) {
           console.error("Error in stream processing:", error);
           // Return an error message instead of falling back to mock data
-          controller.enqueue(encoder.encode(JSON.stringify({ 
-            text: "죄송합니다. 요청을 처리하는 동안 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." 
+          controller.enqueue(encoder.encode(JSON.stringify({
+            text: "죄송합니다. 요청을 처리하는 동안 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
           }) + '\n'));
           controller.close();
         }

@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef, useImperativeHandle, useLayoutEffect, useState } from 'react';
+import React, { forwardRef, useRef, useImperativeHandle, useLayoutEffect, useState, useCallback } from 'react';
 
 type Node = {
     nodeId: string;
@@ -140,15 +140,15 @@ const Tree = () => {
     const nodeRefs = useRef<Map<string, React.RefObject<NodeRef | null>>>(new Map());
 
     // Function to get or create a ref for a specific node
-    const getNodeRef = (nodeId: string): React.RefObject<NodeRef | null> => {
+    const getNodeRef = useCallback((nodeId: string): React.RefObject<NodeRef | null> => {
         if (!nodeRefs.current.has(nodeId)) {
             nodeRefs.current.set(nodeId, React.createRef<NodeRef | null>());
         }
         return nodeRefs.current.get(nodeId)!;
-    };
+    }, []);
 
     // Function to recursively collect all renderable nodes (arguments and questions)
-    const collectRenderableNodes = (node: Node | null, depth: number, parentId?: string, parentEvidenceIndex?: number): RenderableNode[] => {
+    const collectRenderableNodes = useCallback((node: Node | null, depth: number, parentId?: string, parentEvidenceIndex?: number): RenderableNode[] => {
         if (!node) return [];
 
         const result: RenderableNode[] = [];
@@ -195,10 +195,10 @@ const Tree = () => {
         }
 
         return result;
-    };
+    }, [getNodeRef]);
 
     // Calculate positions for all nodes
-    const calculatePositions = (): void => {
+    const calculatePositions = useCallback((): void => {
         if (renderableNodes.length === 0) return;
 
         const newPositions = new Map<string, Position>();
@@ -257,7 +257,7 @@ const Tree = () => {
         console.log('Calculated positions:', newPositions);
 
         setNodePositions(newPositions);
-    };
+    }, [renderableNodes, positionorigin.x, positionorigin.y, colWidth, rowGap, getNodeRef]);
 
     // Calculate renderable nodes when component mounts or tree changes
     useLayoutEffect(() => {
@@ -266,7 +266,7 @@ const Tree = () => {
             console.log('Collected renderable nodes:', nodes);
             setRenderableNodes(nodes);
         }
-    }, []);
+    }, [collectRenderableNodes]);
 
     // Calculate positions after nodes are collected and rendered
     useLayoutEffect(() => {
@@ -274,12 +274,13 @@ const Tree = () => {
             const timeoutId = setTimeout(calculatePositions, 1);
             return () => clearTimeout(timeoutId);
         }
-    }, [renderableNodes]);
+    }, [renderableNodes, calculatePositions]);
 
     // Recalculate positions when node refs are updated
+    const nodeHeights = renderableNodes.map(n => getNodeRef(n.id).current?.getHeight()).join(',');
     useLayoutEffect(() => {
         calculatePositions();
-    }, [renderableNodes.map(n => getNodeRef(n.id).current?.getHeight()).join(',')]);
+    }, [nodeHeights, calculatePositions]);
 
     return (
         <div className='tree'>
@@ -354,7 +355,6 @@ const ArgumentNode = forwardRef<NodeRef | null, {
         },
         getEvidencePosition: (index: number) => {
             if (elementRef.current && childRefs.current[index]?.current) {
-                const containerRect = elementRef.current.getBoundingClientRect();
                 const evidenceRect = childRefs.current[index].current!.getBoundingClientRect();
 
                 // Get the tree container to calculate relative positions

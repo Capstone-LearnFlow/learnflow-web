@@ -19,17 +19,16 @@ const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
     const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
     const [editData, setEditData] = useState<EditableFormData | null>(null);
     const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
-    const [assignmentId, setAssignmentId] = useState<string>('');
 
     // Resolve params on component mount
     useEffect(() => {
         params.then(resolvedParams => {
-            setAssignmentId(resolvedParams.assigmentId);
+            console.log('Assignment ID:', resolvedParams.assigmentId);
         });
     }, [params]);
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [isSubmitting] = useState<boolean>(false);
     // const { assigmentId } = params;
     // Handler for assertion changes in edit mode
     const handleAssertionChange = (value: string) => {
@@ -70,6 +69,7 @@ const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
         editData.evidences.forEach((evidence, index) => {
             formattedResponse += `${index + 1}. ${evidence}\n\n`;
         });
+        console.log('Formatted response:', formattedResponse);
 
         // Close the edit panel
         setIsEditPanelOpen(false);
@@ -116,7 +116,6 @@ const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
                                 onSaveEdit={handleSaveEdit}
                                 onCancelEdit={handleCancelEdit}
                                 onEvidenceItemChange={handleEvidenceItemChange}
-                                editingMessageIndex={editingMessageIndex}
                             />
                         </div>
                     )}

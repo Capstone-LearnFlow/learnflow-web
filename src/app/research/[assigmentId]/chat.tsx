@@ -16,26 +16,10 @@ interface GroundingChunk {
     web: WebSource;
 }
 
-interface TextSegment {
-    startIndex?: number;
-    endIndex?: number;
-    text: string;
-}
-
 // Define types for JSON edit panel
 interface EditableFormData {
     assertion: string;
     evidences: string[];
-}
-
-interface SegmentMapping {
-    segment: TextSegment;
-    citationIndices: number[];
-}
-
-interface GroundingMetadata {
-    groundingChunks?: GroundingChunk[];
-    webSearchQueries?: string[];
 }
 
 interface Citation {
@@ -43,12 +27,6 @@ interface Citation {
     url: string;
     title: string;
     index?: number;
-}
-
-// Type for inline citation references
-interface InlineCitation {
-    index: number;
-    position: number;
 }
 
 type ChatItem = {
@@ -89,7 +67,6 @@ interface AssertionResponse {
 const Chat = ({
     status,
     isClosable,
-    nodeId,
     mode,
     setMode,
     setIsEditPanelOpen,
@@ -110,7 +87,6 @@ const Chat = ({
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
     // Form state
-    const [activeFormMessageId, setActiveFormMessageId] = useState<number | null>(null);
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -121,7 +97,7 @@ const Chat = ({
     }, [status]);
 
     // Function to handle citation data without inserting inline citations
-    const insertInlineCitations = (text: string, segmentMappings: SegmentMapping[]): string => {
+    const insertInlineCitations = (text: string): string => {
         // No longer inserting inline citations, just return the original text
         return text;
     };
@@ -177,7 +153,7 @@ const Chat = ({
 
     // Remove additional auto-scroll effects
 
-    const fetchGeminiResponse = async (message: string) => {
+    const fetchGeminiResponse = useCallback(async (message: string) => {
         try {
             // Create a new AbortController for this request
             abortControllerRef.current = new AbortController();
@@ -280,7 +256,7 @@ const Chat = ({
                                 // If we have segment mapping, insert citation references into the text
                                 if (segmentMapping && segmentMapping.length > 0) {
                                     // Process the text to add inline citations
-                                    fullText = insertInlineCitations(fullText, segmentMapping);
+                                    fullText = insertInlineCitations(fullText);
                                     setStreamingMessage(fullText);
                                     // No auto-scrolling
                                 }
@@ -330,7 +306,7 @@ const Chat = ({
         } finally {
             abortControllerRef.current = null;
         }
-    };
+    }, [setChatLog, setStreamingMessage, setStreamingSuggestions, setStreamingCitations, setResponseStatus, setHasAskedQuestion, mode]);
 
     // Function to send an assertion to OpenAI API - modified to directly open edit panel
     const sendAssertionToOpenAI = async (assertionText: string, evidenceText: string) => {
@@ -358,8 +334,6 @@ const Chat = ({
             // Parse the response data with error handling
             const responseText = await response.text();
             console.log("Raw OpenAI response:", responseText);
-
-            let data: AssertionResponse;
 
             try {
                 // Try to parse the response - it might be a string representation of JSON
@@ -412,7 +386,6 @@ const Chat = ({
                 setIsEditPanelOpen(true);
 
                 // Keep form values (removed reset logic)
-                setActiveFormMessageId(null);
             } catch (parseError) {
                 console.error('Error parsing response:', parseError);
                 // Show error message in chat
@@ -453,7 +426,6 @@ const Chat = ({
             sendAssertionToOpenAI(assertion, evidence);
 
             // Clear active form after submission
-            setActiveFormMessageId(null);
         }
     };
 
