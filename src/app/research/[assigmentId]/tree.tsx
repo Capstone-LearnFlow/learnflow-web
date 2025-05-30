@@ -1,31 +1,54 @@
 import React, { forwardRef, useRef, useImperativeHandle, useLayoutEffect, useState, useCallback } from 'react';
 
-type Node = {
+export type NodeType = 'argument' | 'evidence' | 'counterargument' | 'question' | 'answer' | 'subject';
+export const getNodeTypeName: (t: NodeType) => string = (t) => {
+    switch (t) {
+        case 'argument':
+            return '주장';
+        case 'evidence':
+            return '근거';
+        case 'counterargument':
+            return '예상 반론';
+        case 'question':
+            return '예상 질문';
+        case 'answer':
+            return '답변';
+        case 'subject':
+            return '주제';
+        default:
+            return '';
+    }
+};
+export type Node = {
     nodeId: string;
-    type: 'argument' | 'evidence' | 'counterargument' | 'question' | 'answer' | 'subject';
+    type: NodeType;
     content: string;
-    children: Node | Node[] | null;
-}
+    summary?: string;
+    citation?: Array<string>;
+    index?: number;
+    children: Array<Node> | null;
+};
 type ArgNode = Node & {
     type: 'argument' | 'counterargument';
-    children: EvidenceNode[];
+    children: Array<EvidenceNode>;
 };
 type EvidenceNode = Node & {
     type: 'evidence';
-    children: ArgNode | QuestionNode | null;
+    index: number;
+    children: Array<ArgNode | QuestionNode> | null; // length = 1
 };
 type QuestionNode = Node & {
     type: 'question';
-    children: AnswerNode | null;
+    children: Array<AnswerNode> | null; // length = 1
 };
 type AnswerNode = Node & {
     type: 'answer';
     children: null;
 };
-type SummarizedSingleTree = Node & {
+type SubjectNode = Node & {
     type: 'subject';
-    children: ArgNode | null;
-}
+    children: Array<ArgNode> | null; // length = 1
+};
 
 type Position = {
     x: number;
@@ -47,11 +70,11 @@ type RenderableNode = {
 };
 
 const Tree = () => {
-    const exampleTree: SummarizedSingleTree = {
+    const exampleTree: SubjectNode = {
         nodeId: '0',
         type: 'subject',
         content: '인공지능의 사회적 영향',
-        children: {
+        children: [{
             nodeId: '1',
             type: 'argument',
             content: '인공지능은 생산성을 향상시킨다.',
@@ -59,14 +82,16 @@ const Tree = () => {
                 {
                     nodeId: '2',
                     type: 'evidence',
+                    index: 1,
                     content: 'AI 기술을 활용한 기업들이 생산성을 30% 향상시켰다.',
                     children: null
                 },
                 {
                     nodeId: '3',
                     type: 'evidence',
+                    index: 2,
                     content: 'AI는 반복적인 작업을 자동화하여 인력을 더 창의적인 작업에 집중시킨다.',
-                    children: {
+                    children: [{
                         nodeId: '5',
                         type: 'counterargument',
                         content: 'AI의 자동화로 인해 일자리가 감소할 수 있다.',
@@ -74,8 +99,9 @@ const Tree = () => {
                             {
                                 nodeId: '6',
                                 type: 'evidence',
+                                index: 1,
                                 content: '일부 산업에서는 AI 도입 후 일자리 감소가 보고되었다.',
-                                children: {
+                                children: [{
                                     nodeId: '7',
                                     type: 'argument',
                                     content: 'AI는 고객 서비스를 개선하고, 맞춤형 경험을 제공한다.',
@@ -83,49 +109,52 @@ const Tree = () => {
                                         {
                                             nodeId: '8',
                                             type: 'evidence',
+                                            index: 1,
                                             content: 'AI는 의료 분야에서 진단과 치료를 개선한다.',
                                             children: null
                                         },
                                         {
                                             nodeId: '9',
                                             type: 'evidence',
+                                            index: 2,
                                             content: 'AI는 환경 모니터링과 자원 관리에 기여한다.',
-                                            children: {
+                                            children: [{
                                                 nodeId: '10',
                                                 type: 'question',
                                                 content: 'AI는 교육 분야에서 개인화된 학습 경험을 제공할 수 있는가?',
-                                                children: {
+                                                children: [{
                                                     nodeId: '11',
                                                     type: 'answer',
                                                     content: 'AI는 학습자의 수준과 선호도에 맞춘 개인화된 학습 경로를 제공할 수 있다.',
                                                     children: null
-                                                }
-                                            }
+                                                }]
+                                            }]
                                         }
                                     ]
-                                }
+                                }]
                             }
                         ]
-                    },
+                    }],
                 },
                 {
                     nodeId: '4',
                     type: 'evidence',
+                    index: 3,
                     content: 'AI는 데이터 분석을 통해 더 나은 의사결정을 지원한다.',
-                    children: {
+                    children: [{
                         nodeId: '12',
                         type: 'question',
                         content: 'AI의 데이터 분석이 모든 산업에 적용될 수 있는가?',
-                        children: {
+                        children: [{
                             nodeId: '13',
                             type: 'answer',
                             content: 'AI는 다양한 산업에서 데이터 분석을 통해 의사결정을 지원할 수 있다.',
                             children: null
-                        }
-                    }
+                        }]
+                    }]
                 }
             ],
-        },
+        }],
     };
 
     const positionorigin: { x: number, y: number } = { x: 8, y: 90 };
@@ -169,27 +198,29 @@ const Tree = () => {
             // Process evidence children to find nested arguments/questions
             argNode.children.forEach((evidence, evidenceIndex) => {
                 if (evidence.children) {
-                    if (!Array.isArray(evidence.children) && evidence.children.type === 'question') {
-                        const questionNode = evidence.children as QuestionNode;
-                        const questionId = `question-${questionNode.nodeId}-${depth + 1}`;
+                    evidence.children.forEach(child => {
+                        if (child.type === 'question') {
+                            const questionNode = child as QuestionNode;
+                            const questionId = `question-${questionNode.nodeId}-${depth + 1}`;
 
-                        result.push({
-                            id: questionId,
-                            type: 'question',
-                            node: questionNode,
-                            depth: depth + 1,
-                            parentRef: getNodeRef(nodeId),
-                            parentEvidenceIndex: evidenceIndex
-                        });
-                    } else if (!Array.isArray(evidence.children)) {
-                        const nestedNodes = collectRenderableNodes(
-                            evidence.children,
-                            depth + 1,
-                            nodeId,
-                            evidenceIndex
-                        );
-                        result.push(...nestedNodes);
-                    }
+                            result.push({
+                                id: questionId,
+                                type: 'question',
+                                node: questionNode,
+                                depth: depth + 1,
+                                parentRef: getNodeRef(nodeId),
+                                parentEvidenceIndex: evidenceIndex
+                            });
+                        } else {
+                            const nestedNodes = collectRenderableNodes(
+                                child,
+                                depth + 1,
+                                nodeId,
+                                evidenceIndex
+                            );
+                            result.push(...nestedNodes);
+                        }
+                    });
                 }
             });
         }
@@ -262,7 +293,10 @@ const Tree = () => {
     // Calculate renderable nodes when component mounts or tree changes
     useLayoutEffect(() => {
         if (exampleTree.children) {
-            const nodes = collectRenderableNodes(exampleTree.children, 0);
+            const nodes: RenderableNode[] = [];
+            exampleTree.children.forEach(child => {
+                nodes.push(...collectRenderableNodes(child, 0));
+            });
             console.log('Collected renderable nodes:', nodes);
             setRenderableNodes(nodes);
         }
@@ -333,11 +367,12 @@ const SubjectNode = forwardRef<HTMLDivElement, { content: string }>(({ content }
 });
 SubjectNode.displayName = 'SubjectNode';
 
-const ArgumentNode = forwardRef<NodeRef | null, {
+interface ArgNodeProps {
     argNode: ArgNode,
     position: Position,
     parentposition?: Position
-}>(({ argNode, position, parentposition }, ref) => {
+};
+const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, position, parentposition }, ref) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const childRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
 
@@ -375,8 +410,8 @@ const ArgumentNode = forwardRef<NodeRef | null, {
         <div ref={elementRef} className={`tree__node tree__node--${argNode.type}`} style={{ left: position.x, top: position.y }}>
             {parentposition && <div className='tree__node__link' style={{ height: `${Math.abs(parentposition.y - position.y)}px` }}></div>}
             <div className='tree__node__content_container'>
-                <div className='tree__node__title'>{argNode.type === 'argument' ? '주장' : '예상 반론'}</div>
-                <div className='tree__node__content'>{argNode.content}</div>
+                <div className='tree__node__title'>{getNodeTypeName(argNode.type)}</div>
+                <div className='tree__node__content'>{argNode.summary || argNode.content}</div>
             </div>
             {argNode.children && (
                 <div className="tree__node__children_container">
@@ -384,8 +419,8 @@ const ArgumentNode = forwardRef<NodeRef | null, {
                         <div key={child.nodeId}>
                             <EvidenceNode
                                 ref={childRefs.current[i]}
-                                content={child.content}
-                                index={i + 1}
+                                content={child.summary || child.content}
+                                index={child.index || 0}
                             />
                         </div>
                     ))}
@@ -409,16 +444,17 @@ const EvidenceNode = forwardRef<HTMLDivElement, { content: string, index: number
 });
 EvidenceNode.displayName = 'EvidenceNode';
 
-const QuestionNode = forwardRef<NodeRef | null, {
+interface QuestionNodeProps {
     qNode: QuestionNode,
     position: Position,
     parentposition?: Position
-}>(({ qNode, position, parentposition }, ref) => {
+};
+const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, position, parentposition }, ref) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const childRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
 
     if (qNode.children) {
-        childRefs.current = [React.createRef<HTMLDivElement>()];
+        childRefs.current = qNode.children.map(() => React.createRef<HTMLDivElement>());
     }
 
     useImperativeHandle(ref, () => ({
@@ -437,10 +473,14 @@ const QuestionNode = forwardRef<NodeRef | null, {
             {parentposition && <div className='tree__node__link' style={{ height: `${Math.abs(parentposition.y - position.y)}px` }}></div>}
             <div className='tree__node__content_container'>
                 <div className='tree__node__title'>예상 질문</div>
-                <div className='tree__node__content'>{qNode.content}</div>
+                <div className='tree__node__content'>{qNode.summary || qNode.content}</div>
             </div>
             {qNode.children && (
-                <AnswerNode ref={childRefs.current[0]} content={qNode.children.content} />
+                <div className="tree__node__children_container">
+                    {qNode.children.map((child, i) => (
+                        <AnswerNode key={child.nodeId} ref={childRefs.current[i]} content={child.summary || child.content} />
+                    ))}
+                </div>
             )}
             <div className='btn tree__node__btn'></div>
         </div>
