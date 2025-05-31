@@ -196,6 +196,46 @@ const NodeEditor = ({
         autoResize(e.target);
     }, [autoResize, setNode]);
 
+    const handleChildKeyDown = useCallback((childId: string, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // Handle backspace on empty evidence content
+        if (e.key === 'Backspace') {
+            const target = e.target as HTMLTextAreaElement;
+            const content = target.value;
+
+            // Only delete if content is completely empty and there are multiple evidence nodes
+            if (content === '' && node.children && node.children.length > 1) {
+                const evidenceChildren = node.children.filter((child: Node) => child.type === 'evidence');
+
+                // Only delete if there are multiple evidence nodes
+                if (evidenceChildren.length > 1) {
+                    e.preventDefault();
+
+                    setNode((prevNode: Node) => {
+                        // Filter out the deleted child
+                        const filteredChildren = prevNode.children?.filter((child: Node) => child.nodeId !== childId) || [];
+
+                        // Update indexes only for evidence nodes
+                        let evidenceIndex = 1;
+                        const updatedChildren = filteredChildren.map((child: Node) => {
+                            if (child.type === 'evidence') {
+                                return {
+                                    ...child,
+                                    index: evidenceIndex++
+                                };
+                            }
+                            return child;
+                        });
+
+                        return {
+                            ...prevNode,
+                            children: updatedChildren.length > 0 ? updatedChildren : null
+                        };
+                    });
+                }
+            }
+        }
+    }, [node.children, setNode]);
+
     // Helper function to check if a child node should be editable
     const isChildEditable = useCallback((child: Node): boolean => {
         // evidence under counterargument is not editable (AI generated)
@@ -250,8 +290,11 @@ const NodeEditor = ({
     const handleAddChildNode = useCallback(() => {
         setNode((prevNode: Node) => {
             const currentChildren = prevNode.children || [];
-            const nextIndex = currentChildren.length + 1;
-            const newChildId = `new-evidence-${nextIndex}`;
+
+            // Count only evidence nodes to determine the next index
+            const evidenceChildren = currentChildren.filter((child: Node) => child.type === 'evidence');
+            const nextIndex = evidenceChildren.length + 1;
+            const newChildId = `new-evidence-${Date.now()}-${nextIndex}`; // Use timestamp to ensure uniqueness
 
             const newChild: Node = {
                 nodeId: newChildId,
@@ -338,6 +381,7 @@ const NodeEditor = ({
                                             placeholder='내용을 입력하세요'
                                             value={child.content}
                                             onChange={(e) => handleChildContentChange(child.nodeId, e.target.value, e)}
+                                            onKeyDown={(e) => handleChildKeyDown(child.nodeId, e)}
                                         ></textarea>
                                     )}
                                     {(child.citation && child.citation.length > 0) && (<>
