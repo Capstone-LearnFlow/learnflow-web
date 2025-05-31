@@ -256,6 +256,40 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                     </>)}
                 </div>
                 <div className='node_editor__chat'>
+                    <style jsx>{`
+                        .node_editor__chat {
+                            display: flex;
+                            flex: 1;
+                            height: 100%;
+                            overflow: hidden;
+                        }
+                        
+                        .node_editor__chat :global(.card.card--chat) {
+                            width: 100%;
+                            height: 100%;
+                            display: flex;
+                            flex-direction: column;
+                            border-radius: 0;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        
+                        .node_editor__chat :global(.chat-container) {
+                            height: calc(100% - 70px);
+                            overflow-y: auto;
+                        }
+                        
+                        .node_editor__chat :global(.chat__stack) {
+                            height: 100%;
+                            overflow-y: auto;
+                            padding: 16px;
+                        }
+                        
+                        .node_editor__chat :global(.chat__input) {
+                            margin-top: auto;
+                            padding: 16px;
+                        }
+                    `}</style>
                     <Chat
                         status='open'
                         isClosable={false}
