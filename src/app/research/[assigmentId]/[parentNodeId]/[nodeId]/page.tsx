@@ -2,9 +2,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { NodeType, Node, getNodeTypeName } from '../../tree';
+import Chat from '../../chat';
+
+// Define types for JSON edit panel
+interface EditableFormData {
+    assertion: string;
+    evidences: string[];
+}
+
+type ChatMode = 'ask' | 'create';
 
 const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentNodeId: string, nodeId: string }> }) => {
     const router = useRouter();
+    // Chat related state
+    const [mode, setMode] = useState<ChatMode>('ask');
+    const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
+    const [editData, setEditData] = useState<EditableFormData | null>(null);
+    const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
     // const [nodeType, setNodeType] = useState<NodeType>('subject'); // subject, argument, counterargument, question
     // const [status, setStatus] = useState<'view' | 'add' | 'edit'>('add');
     // const [editableNodeType, setEditableNodeType] = useState<NodeType>('argument'); // argument(with evidence), answer
@@ -242,7 +256,17 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                     </>)}
                 </div>
                 <div className='node_editor__chat'>
-                    {/* 채팅 */}
+                    <Chat
+                        status='open'
+                        isClosable={false}
+                        nodeId={node.nodeId}
+                        mode={mode}
+                        setMode={setMode}
+                        setIsEditPanelOpen={setIsEditPanelOpen}
+                        setEditData={setEditData}
+                        setEditingMessageIndex={setEditingMessageIndex}
+                        isEditPanelOpen={isEditPanelOpen}
+                    />
                 </div>
             </div>
         </div >
