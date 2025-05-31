@@ -56,6 +56,7 @@ interface ChatProps {
     setEditData: (data: EditableFormData | null) => void;
     setEditingMessageIndex: (index: number | null) => void;
     isEditPanelOpen: boolean;
+    hideButtons?: boolean; // Optional prop to hide mode toggle buttons
 };
 
 // Type for the assertion form response
@@ -72,7 +73,8 @@ const Chat = ({
     setIsEditPanelOpen,
     setEditData,
     setEditingMessageIndex,
-    isEditPanelOpen
+    isEditPanelOpen,
+    hideButtons = false // Default to showing buttons
 }: ChatProps) => {
     const [viewStatus, setViewStatus] = useState<'open' | 'closed'>(status);
     const [chatLog, setChatLog] = useState<ChatItem[]>([]);
@@ -633,22 +635,24 @@ const Chat = ({
                 {/* <div className="chat__input-container"> */}
                 {/* <div className="chat__input-stack"> */}
                 {/* Mode toggle buttons positioned horizontally above input */}
-                <div className="chat__toggle-area">
-                    <button
-                        className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
-                        onClick={() => setMode('ask')}
-                        disabled={responseStatus === 'streaming'}
-                    >
-                        질문하기
-                    </button>
-                    <button
-                        className={`chat__mode-button ${mode === 'create' ? 'chat__mode-button--active' : ''}`}
-                        onClick={() => setMode('create')}
-                        disabled={responseStatus === 'streaming' || !hasAskedQuestion}
-                    >
-                        생성하기
-                    </button>
-                </div>
+                {!hideButtons && (
+                    <div className="chat__toggle-area">
+                        <button
+                            className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
+                            onClick={() => setMode('ask')}
+                            disabled={responseStatus === 'streaming'}
+                        >
+                            질문하기
+                        </button>
+                        <button
+                            className={`chat__mode-button ${mode === 'create' ? 'chat__mode-button--active' : ''}`}
+                            onClick={() => setMode('create')}
+                            disabled={responseStatus === 'streaming' || !hasAskedQuestion}
+                        >
+                            생성하기
+                        </button>
+                    </div>
+                )}
 
                 {/* Input field with full width */}
                 <div className="chat__input">
