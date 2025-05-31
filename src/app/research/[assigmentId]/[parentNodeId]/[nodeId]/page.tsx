@@ -300,7 +300,7 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                             left: auto;
                             right: auto;
                             bottom: auto;
-                            width: auto;
+                            width: calc(100% - 32px);
                             margin: 10px 16px 16px 16px;
                         }
                     `}</style>
