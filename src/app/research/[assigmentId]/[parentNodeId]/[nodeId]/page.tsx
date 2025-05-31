@@ -255,7 +255,7 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                         </div>
                     </>)}
                 </div>
-                <div className='node_editor__chat'>
+                <div className='node_editor__chat' style={{ minWidth: '480px' }}>
                     <style jsx>{`
                         .node_editor__chat {
                             display: flex;
@@ -264,6 +264,7 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                             overflow: hidden;
                             position: relative;
                             padding: 0;
+                            border-radius: 28px;
                         }
                         
                         .node_editor__chat :global(.card.card--chat) {
@@ -302,6 +303,7 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                             bottom: auto;
                             width: calc(100% - 32px);
                             margin: 10px 16px 16px 16px;
+                            box-sizing: border-box;
                         }
                     `}</style>
                     <Chat
