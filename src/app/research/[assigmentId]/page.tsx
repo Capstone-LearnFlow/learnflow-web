@@ -19,11 +19,13 @@ const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
     const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
     const [editData, setEditData] = useState<EditableFormData | null>(null);
     const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+    const [assigmentId, setAssigmentId] = useState<string>('');
 
     // Resolve params on component mount
     useEffect(() => {
         params.then(resolvedParams => {
             console.log('Assignment ID:', resolvedParams.assigmentId);
+            setAssigmentId(resolvedParams.assigmentId);
         });
     }, [params]);
     const [assertion, setAssertion] = useState<string>('');
@@ -99,7 +101,7 @@ const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
 
             <div className='research-container'>
                 <div className='tree-container'>
-                    <Tree />
+                    <Tree assigmentId={assigmentId} />
 
                     {/* Create floating panel - positioned above Tree */}
                     {isEditPanelOpen && (

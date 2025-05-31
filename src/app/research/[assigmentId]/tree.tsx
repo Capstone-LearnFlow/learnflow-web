@@ -1,4 +1,5 @@
 import React, { forwardRef, useRef, useImperativeHandle, useLayoutEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
 export type NodeType = 'argument' | 'evidence' | 'counterargument' | 'question' | 'answer' | 'subject';
 export const getNodeTypeName: (t: NodeType) => string = (t) => {
@@ -66,96 +67,101 @@ type RenderableNode = {
     node: ArgNode | QuestionNode;
     depth: number;
     parentRef?: React.RefObject<NodeRef | null>;
+    parentNodeId: string;
     parentEvidenceIndex?: number;
 };
 
-const Tree = () => {
-    const exampleTree: SubjectNode = {
-        nodeId: '0',
-        type: 'subject',
-        content: '인공지능의 사회적 영향',
-        children: [{
-            nodeId: '1',
-            type: 'argument',
-            content: '인공지능은 생산성을 향상시킨다.',
-            children: [
-                {
-                    nodeId: '2',
-                    type: 'evidence',
-                    index: 1,
-                    content: 'AI 기술을 활용한 기업들이 생산성을 30% 향상시켰다.',
-                    children: null
-                },
-                {
-                    nodeId: '3',
-                    type: 'evidence',
-                    index: 2,
-                    content: 'AI는 반복적인 작업을 자동화하여 인력을 더 창의적인 작업에 집중시킨다.',
-                    children: [{
-                        nodeId: '5',
-                        type: 'counterargument',
-                        content: 'AI의 자동화로 인해 일자리가 감소할 수 있다.',
-                        children: [
-                            {
-                                nodeId: '6',
-                                type: 'evidence',
-                                index: 1,
-                                content: '일부 산업에서는 AI 도입 후 일자리 감소가 보고되었다.',
-                                children: [{
-                                    nodeId: '7',
-                                    type: 'argument',
-                                    content: 'AI는 고객 서비스를 개선하고, 맞춤형 경험을 제공한다.',
-                                    children: [
-                                        {
-                                            nodeId: '8',
-                                            type: 'evidence',
-                                            index: 1,
-                                            content: 'AI는 의료 분야에서 진단과 치료를 개선한다.',
-                                            children: null
-                                        },
-                                        {
-                                            nodeId: '9',
-                                            type: 'evidence',
-                                            index: 2,
-                                            content: 'AI는 환경 모니터링과 자원 관리에 기여한다.',
+
+export const exampleTree: SubjectNode = {
+    nodeId: '0',
+    type: 'subject',
+    content: '인공지능의 사회적 영향',
+    children: [{
+        nodeId: '1',
+        type: 'argument',
+        content: '인공지능은 생산성을 향상시킨다.',
+        children: [
+            {
+                nodeId: '2',
+                type: 'evidence',
+                index: 1,
+                content: 'AI 기술을 활용한 기업들이 생산성을 30% 향상시켰다.',
+                children: null
+            },
+            {
+                nodeId: '3',
+                type: 'evidence',
+                index: 2,
+                content: 'AI는 반복적인 작업을 자동화하여 인력을 더 창의적인 작업에 집중시킨다.',
+                children: [{
+                    nodeId: '5',
+                    type: 'counterargument',
+                    content: 'AI의 자동화로 인해 일자리가 감소할 수 있다.',
+                    children: [
+                        {
+                            nodeId: '6',
+                            type: 'evidence',
+                            index: 1,
+                            content: '일부 산업에서는 AI 도입 후 일자리 감소가 보고되었다.',
+                            children: [{
+                                nodeId: '7',
+                                type: 'argument',
+                                content: 'AI는 고객 서비스를 개선하고, 맞춤형 경험을 제공한다.',
+                                children: [
+                                    {
+                                        nodeId: '8',
+                                        type: 'evidence',
+                                        index: 1,
+                                        content: 'AI는 의료 분야에서 진단과 치료를 개선한다.',
+                                        children: null
+                                    },
+                                    {
+                                        nodeId: '9',
+                                        type: 'evidence',
+                                        index: 2,
+                                        content: 'AI는 환경 모니터링과 자원 관리에 기여한다.',
+                                        children: [{
+                                            nodeId: '10',
+                                            type: 'question',
+                                            content: 'AI는 교육 분야에서 개인화된 학습 경험을 제공할 수 있는가?',
                                             children: [{
-                                                nodeId: '10',
-                                                type: 'question',
-                                                content: 'AI는 교육 분야에서 개인화된 학습 경험을 제공할 수 있는가?',
-                                                children: [{
-                                                    nodeId: '11',
-                                                    type: 'answer',
-                                                    content: 'AI는 학습자의 수준과 선호도에 맞춘 개인화된 학습 경로를 제공할 수 있다.',
-                                                    children: null
-                                                }]
+                                                nodeId: '11',
+                                                type: 'answer',
+                                                content: 'AI는 학습자의 수준과 선호도에 맞춘 개인화된 학습 경로를 제공할 수 있다.',
+                                                children: null
                                             }]
-                                        }
-                                    ]
-                                }]
-                            }
-                        ]
-                    }],
-                },
-                {
-                    nodeId: '4',
-                    type: 'evidence',
-                    index: 3,
-                    content: 'AI는 데이터 분석을 통해 더 나은 의사결정을 지원한다.',
-                    children: [{
-                        nodeId: '12',
-                        type: 'question',
-                        content: 'AI의 데이터 분석이 모든 산업에 적용될 수 있는가?',
-                        children: [{
-                            nodeId: '13',
-                            type: 'answer',
-                            content: 'AI는 다양한 산업에서 데이터 분석을 통해 의사결정을 지원할 수 있다.',
-                            children: null
-                        }]
-                    }]
-                }
-            ],
-        }],
-    };
+                                        }]
+                                    }
+                                ]
+                            }]
+                        }
+                    ]
+                }],
+            },
+            {
+                nodeId: '4',
+                type: 'evidence',
+                index: 3,
+                content: 'AI는 데이터 분석을 통해 더 나은 의사결정을 지원한다.',
+                children: [{
+                    nodeId: '12',
+                    type: 'question',
+                    content: 'AI의 데이터 분석이 모든 산업에 적용될 수 있는가?',
+                    children: []
+                    // children: [{
+                    //     nodeId: '13',
+                    //     type: 'answer',
+                    //     content: 'AI는 다양한 산업에서 데이터 분석을 통해 의사결정을 지원할 수 있다.',
+                    //     children: null
+                    // }]
+                }]
+            }
+        ],
+    }],
+};
+
+const Tree = ({ assigmentId }: { assigmentId: string }) => {
+    const router = useRouter();
 
     const positionorigin: { x: number, y: number } = { x: 8, y: 90 };
     const nodeWidth: number = 462;
@@ -177,7 +183,7 @@ const Tree = () => {
     }, []);
 
     // Function to recursively collect all renderable nodes (arguments and questions)
-    const collectRenderableNodes = useCallback((node: Node | null, depth: number, parentId?: string, parentEvidenceIndex?: number): RenderableNode[] => {
+    const collectRenderableNodes = useCallback((node: Node | null, depth: number, parentId?: string, parentEvidenceIndex?: number, parentNodeId?: string): RenderableNode[] => {
         if (!node) return [];
 
         const result: RenderableNode[] = [];
@@ -192,7 +198,8 @@ const Tree = () => {
                 node: argNode,
                 depth,
                 parentRef: parentId ? getNodeRef(parentId) : undefined,
-                parentEvidenceIndex: parentEvidenceIndex
+                parentEvidenceIndex: parentEvidenceIndex,
+                parentNodeId: parentNodeId || '0' // 최상위는 subject node (nodeId: '0')
             });
 
             // Process evidence children to find nested arguments/questions
@@ -209,14 +216,16 @@ const Tree = () => {
                                 node: questionNode,
                                 depth: depth + 1,
                                 parentRef: getNodeRef(nodeId),
-                                parentEvidenceIndex: evidenceIndex
+                                parentEvidenceIndex: evidenceIndex,
+                                parentNodeId: evidence.nodeId // evidence 노드가 부모
                             });
                         } else {
                             const nestedNodes = collectRenderableNodes(
                                 child,
                                 depth + 1,
                                 nodeId,
-                                evidenceIndex
+                                evidenceIndex,
+                                evidence.nodeId // evidence 노드가 부모
                             );
                             result.push(...nestedNodes);
                         }
@@ -337,6 +346,8 @@ const Tree = () => {
                             qNode={nodeData.node as QuestionNode}
                             position={position}
                             parentposition={parentEvidencePosition}
+                            assigmentId={assigmentId}
+                            parentNodeId={nodeData.parentNodeId}
                         />
                     );
                 } else {
@@ -347,6 +358,8 @@ const Tree = () => {
                             argNode={nodeData.node as ArgNode}
                             position={position}
                             parentposition={parentEvidencePosition}
+                            assigmentId={assigmentId}
+                            parentNodeId={nodeData.parentNodeId}
                         />
                     );
                 }
@@ -370,15 +383,24 @@ SubjectNode.displayName = 'SubjectNode';
 interface ArgNodeProps {
     argNode: ArgNode,
     position: Position,
-    parentposition?: Position
+    parentposition?: Position,
+    assigmentId: string,
+    parentNodeId: string
 };
-const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, position, parentposition }, ref) => {
+const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, position, parentposition, assigmentId, parentNodeId }, ref) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const childRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
+    const router = useRouter();
 
     if (argNode.children) {
         childRefs.current = argNode.children.map(() => React.createRef<HTMLDivElement>());
     }
+
+    const handleNodeBtnClick = () => {
+        // Navigate to the node page: /research/[assigmentId]/[parentNodeId]/[nodeId]
+        // For ArgumentNode, we use the actual parent node ID and the current argument node as nodeId
+        router.push(`/research/${assigmentId}/${parentNodeId}/${argNode.nodeId}`);
+    };
 
     useImperativeHandle(ref, () => ({
         element: elementRef.current,
@@ -426,7 +448,7 @@ const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, positi
                     ))}
                 </div>
             )}
-            <div className='btn tree__node__btn'></div>
+            <div className='btn tree__node__btn' onClick={handleNodeBtnClick}></div>
         </div>
     );
 });
@@ -447,15 +469,24 @@ EvidenceNode.displayName = 'EvidenceNode';
 interface QuestionNodeProps {
     qNode: QuestionNode,
     position: Position,
-    parentposition?: Position
+    parentposition?: Position,
+    assigmentId: string,
+    parentNodeId: string
 };
-const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, position, parentposition }, ref) => {
+const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, position, parentposition, assigmentId, parentNodeId }, ref) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const childRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
+    const router = useRouter();
 
     if (qNode.children) {
         childRefs.current = qNode.children.map(() => React.createRef<HTMLDivElement>());
     }
+
+    const handleNodeBtnClick = () => {
+        // Navigate to the node page: /research/[assigmentId]/[parentNodeId]/[nodeId]
+        // For QuestionNode, we use the actual parent node ID and the current question node as nodeId
+        router.push(`/research/${assigmentId}/${parentNodeId}/${qNode.nodeId}`);
+    };
 
     useImperativeHandle(ref, () => ({
         element: elementRef.current,
@@ -475,14 +506,14 @@ const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, pos
                 <div className='tree__node__title'>예상 질문</div>
                 <div className='tree__node__content'>{qNode.summary || qNode.content}</div>
             </div>
-            {qNode.children && (
+            {(qNode.children && qNode.children.length > 0) && (
                 <div className="tree__node__children_container">
                     {qNode.children.map((child, i) => (
                         <AnswerNode key={child.nodeId} ref={childRefs.current[i]} content={child.summary || child.content} />
                     ))}
                 </div>
             )}
-            <div className='btn tree__node__btn'></div>
+            <div className='btn tree__node__btn' onClick={handleNodeBtnClick}></div>
         </div>
     );
 });
