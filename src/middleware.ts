@@ -4,12 +4,13 @@ export function middleware(request: NextRequest) {
     const sessionCookie = request.cookies.get('user')?.value;
     console.log('Session Cookie:', sessionCookie);
 
-    const protectedPaths: Array<string> = []; // ['/'];
+    const protectedPaths: Array<string> = ['/']; // ['/'];
 
     const isLoginPath = request.nextUrl.pathname === '/signin';
 
     const isProtectedPath = !isLoginPath && protectedPaths.some(path =>
-        request.nextUrl.pathname.startsWith(path)
+        // request.nextUrl.pathname.startsWith(path)
+        request.nextUrl.pathname === path
     );
 
 
