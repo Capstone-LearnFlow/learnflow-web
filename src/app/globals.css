@@ -657,6 +657,7 @@ button {
 }
 
 .node_editor {
+  position: relative;
   display: flex;
   padding: 40px 40px 16px 40px;
   flex-direction: column;
@@ -733,12 +734,42 @@ button {
   align-self: stretch;
 }
 
-.node_editor__node__add_btn {
+.node_editor__node__add_argument_btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 24px;
+  height: 24px;
+  padding: 0px;
+  margin: 0px;
+  background: url('data:image/svg+xml,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.9954 24C5.38962 24 -1.90735e-06 18.6104 -1.90735e-06 11.9954C-1.90735e-06 5.38964 5.38962 0 11.9954 0C18.6104 0 24 5.38964 24 11.9954C24 18.6104 18.6104 24 11.9954 24ZM17.818 11.3965L13.8933 7.36125C13.7367 7.19538 13.5616 7.11248 13.3405 7.11248C12.9167 7.11248 12.6035 7.42575 12.6035 7.85872C12.6035 8.06144 12.6864 8.29175 12.8614 8.43916L14.9527 10.4384L15.7728 11.2307L13.9762 11.1662H6.7163C6.27408 11.1662 5.89635 11.5439 5.89635 12.0046C5.89635 12.4561 6.27408 12.843 6.7163 12.843H13.9762L15.7728 12.7785L14.9527 13.5616L12.8614 15.5608C12.6864 15.7083 12.6035 15.9294 12.6035 16.1321C12.6035 16.5651 12.9167 16.8967 13.3405 16.8967C13.5616 16.8967 13.7367 16.8046 13.8933 16.648L17.818 12.6035C18.0299 12.4007 18.0944 12.2165 18.0944 12.0046C18.0944 11.7835 18.0299 11.6085 17.818 11.3965Z" fill="%23CC2A53"/></svg>') no-repeat center;
+}
+
+.node_editor__add_evidence_btn {
   width: 24px;
   height: 24px;
   padding: 0px;
   margin: 0px;
   background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M24 12C24 18.6117 18.6235 24 12 24C5.38823 24 0 18.6117 0 12C0 5.37646 5.38823 0 12 0C18.6235 0 24 5.37646 24 12ZM10.9765 7.29411V10.9765H7.29411C6.68235 10.9765 6.25881 11.4 6.25881 12.0117C6.25881 12.6118 6.68235 13.0118 7.29411 13.0118H10.9765V16.7059C10.9765 17.3058 11.3882 17.7412 11.9882 17.7412C12.6 17.7412 13.0235 17.3176 13.0235 16.7059V13.0118H16.7177C17.3176 13.0118 17.7529 12.6118 17.7529 12.0117C17.7529 11.4 17.3176 10.9765 16.7177 10.9765H13.0235V7.29411C13.0235 6.68235 12.6 6.24706 11.9882 6.24706C11.3882 6.24706 10.9765 6.68235 10.9765 7.29411Z" fill="%233C3C43" fill-opacity="0.6"/></svg>') no-repeat center;
+}
+
+.node_editor__register_node_btn {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 7;
+  background-color: var(--c-fill-gray-secondary-alpha);
+  color: var(--c-fill);
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+
+.node_editor__register_node_btn--active {
+  background-color: var(--c-fill-green);
+  opacity: 1;
+  pointer-events: all;
+  transition: all 150ms ease-out;
 }
 
 .node_editor__node--subject {
