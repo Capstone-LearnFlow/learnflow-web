@@ -2,9 +2,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { NodeType, Node, getNodeTypeName } from '../../tree';
+import Chat from '../../chat';
+
+// Define types for JSON edit panel
+interface EditableFormData {
+    assertion: string;
+    evidences: string[];
+}
+
+type ChatMode = 'ask' | 'create';
 
 const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentNodeId: string, nodeId: string }> }) => {
     const router = useRouter();
+    // Chat related state
+    const [mode, setMode] = useState<ChatMode>('ask');
+    const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
+    const [editData, setEditData] = useState<EditableFormData | null>(null);
+    const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
     // const [nodeType, setNodeType] = useState<NodeType>('subject'); // subject, argument, counterargument, question
     // const [status, setStatus] = useState<'view' | 'add' | 'edit'>('add');
     // const [editableNodeType, setEditableNodeType] = useState<NodeType>('argument'); // argument(with evidence), answer
@@ -189,7 +203,7 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                 </div>
             </div>
 
-            <div className='node_editor__container'>
+            <div className='node_editor__container' style={{ height: 'calc(100vh - 70px)' }}>
                 <div className='node_editor'>
                     {parentNode.nodeId && (<>
                         {/* parent node */}
@@ -241,8 +255,69 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                         </div>
                     </>)}
                 </div>
-                <div className='node_editor__chat'>
-                    {/* 채팅 */}
+                <div className='node_editor__chat' style={{ minWidth: '480px' }}>
+                    <style jsx>{`
+                        .node_editor__chat {
+                            display: flex;
+                            flex: 1;
+                            height: 100%;
+                            overflow: hidden;
+                            position: relative;
+                            padding: 0;
+                            border-radius: 28px;
+                        }
+                        
+                        .node_editor__chat :global(.card.card--chat) {
+                            width: 100%;
+                            height: 100%;
+                            display: flex;
+                            flex-direction: column;
+                            border-radius: 20px;
+                            margin: 0;
+                            padding: 0;
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                        }
+                        
+                        .node_editor__chat :global(.chat-container) {
+                            height: calc(100% - 60px);
+                            flex: 1;
+                            display: flex;
+                            flex-direction: column;
+                        }
+                        
+                        .node_editor__chat :global(.chat__stack) {
+                            flex: 1;
+                            padding: 16px;
+                            padding-top: 20px;
+                            overflow-y: auto;
+                        }
+                        
+                        .node_editor__chat :global(.chat__input) {
+                            position: relative;
+                            left: auto;
+                            right: auto;
+                            bottom: auto;
+                            width: calc(100% - 32px);
+                            margin: 10px 16px 16px 16px;
+                            box-sizing: border-box;
+                        }
+                    `}</style>
+                    <Chat
+                        status='open'
+                        isClosable={false}
+                        nodeId={node.nodeId}
+                        mode={mode}
+                        setMode={setMode}
+                        setIsEditPanelOpen={setIsEditPanelOpen}
+                        setEditData={setEditData}
+                        setEditingMessageIndex={setEditingMessageIndex}
+                        isEditPanelOpen={isEditPanelOpen}
+                        hideButtons={true}
+                    />
                 </div>
             </div>
         </div >
