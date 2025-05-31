@@ -255,57 +255,7 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                         </div>
                     </>)}
                 </div>
-                <div className='node_editor__chat' style={{ minWidth: '480px' }}>
-                    <style jsx>{`
-                        .node_editor__chat {
-                            display: flex;
-                            flex: 1;
-                            height: 100%;
-                            overflow: hidden;
-                            position: relative;
-                            padding: 0;
-                            border-radius: 28px;
-                        }
-                        
-                        .node_editor__chat :global(.card.card--chat) {
-                            width: 100%;
-                            height: 100%;
-                            display: flex;
-                            flex-direction: column;
-                            border-radius: 20px;
-                            margin: 0;
-                            padding: 0;
-                            position: absolute;
-                            top: 0;
-                            left: 0;
-                            right: 0;
-                            bottom: 0;
-                        }
-                        
-                        .node_editor__chat :global(.chat-container) {
-                            height: calc(100% - 60px);
-                            flex: 1;
-                            display: flex;
-                            flex-direction: column;
-                        }
-                        
-                        .node_editor__chat :global(.chat__stack) {
-                            flex: 1;
-                            padding: 16px;
-                            padding-top: 20px;
-                            overflow-y: auto;
-                        }
-                        
-                        .node_editor__chat :global(.chat__input) {
-                            position: relative;
-                            left: auto;
-                            right: auto;
-                            bottom: auto;
-                            width: calc(100% - 32px);
-                            margin: 10px 16px 16px 16px;
-                            box-sizing: border-box;
-                        }
-                    `}</style>
+                <div className='node_editor__chat'>
                     <Chat
                         status='open'
                         isClosable={false}
