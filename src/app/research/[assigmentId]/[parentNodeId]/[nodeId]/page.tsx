@@ -266,6 +266,7 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                         setEditData={setEditData}
                         setEditingMessageIndex={setEditingMessageIndex}
                         isEditPanelOpen={isEditPanelOpen}
+                        hideButtons={true}
                     />
                 </div>
             </div>
