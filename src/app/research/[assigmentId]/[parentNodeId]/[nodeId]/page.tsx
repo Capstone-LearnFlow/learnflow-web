@@ -203,7 +203,7 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                 </div>
             </div>
 
-            <div className='node_editor__container'>
+            <div className='node_editor__container' style={{ height: 'calc(100vh - 70px)' }}>
                 <div className='node_editor'>
                     {parentNode.nodeId && (<>
                         {/* parent node */}
@@ -262,6 +262,8 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                             flex: 1;
                             height: 100%;
                             overflow: hidden;
+                            position: relative;
+                            padding: 0;
                         }
                         
                         .node_editor__chat :global(.card.card--chat) {
@@ -269,25 +271,37 @@ const NodeEditor = ({ params }: { params: Promise<{ assigmentId: string, parentN
                             height: 100%;
                             display: flex;
                             flex-direction: column;
-                            border-radius: 0;
+                            border-radius: 20px;
                             margin: 0;
                             padding: 0;
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
                         }
                         
                         .node_editor__chat :global(.chat-container) {
-                            height: calc(100% - 70px);
-                            overflow-y: auto;
+                            height: calc(100% - 60px);
+                            flex: 1;
+                            display: flex;
+                            flex-direction: column;
                         }
                         
                         .node_editor__chat :global(.chat__stack) {
-                            height: 100%;
-                            overflow-y: auto;
+                            flex: 1;
                             padding: 16px;
+                            padding-top: 20px;
+                            overflow-y: auto;
                         }
                         
                         .node_editor__chat :global(.chat__input) {
-                            margin-top: auto;
-                            padding: 16px;
+                            position: relative;
+                            left: auto;
+                            right: auto;
+                            bottom: auto;
+                            width: auto;
+                            margin: 10px 16px 16px 16px;
                         }
                     `}</style>
                     <Chat
