@@ -117,8 +117,8 @@ const Chat = ({
             }
 
             try {
-                // Optionally filter by user ID if needed for personalized chat logs
-                const result = await loadChatMessages(assignmentId, parentNodeId, nodeId, user?.id);
+                // Load all messages for this node without filtering by user
+                const result = await loadChatMessages(assignmentId, parentNodeId, nodeId);
                 
                 if (result.success && result.data) {
                     // Convert Supabase messages to ChatItem format
