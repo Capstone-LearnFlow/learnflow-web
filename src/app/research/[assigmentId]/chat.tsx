@@ -537,22 +537,41 @@ const Chat = ({
             addFormMessageToChat();
         }
     }, [mode, addFormMessageToChat, responseStatus]);
-    // Ref to track if a message is currently being processed to prevent duplicate sends
+    // Track last message timestamp and processing status to prevent duplicate sends
     const isProcessingMessageRef = useRef<boolean>(false);
+    const lastMessageTimestampRef = useRef<number>(0);
+    const THROTTLE_TIME_MS = 1000; // Minimum 1 second between messages
 
     const sendMessage = useCallback(async (text: string = inputValue) => {
-        // Prevent sending if text is empty, we're already streaming, or another message is being processed
-        if (text.trim() === '' || responseStatus === 'streaming' || isProcessingMessageRef.current) return;
+        const now = Date.now();
         
-        // Set flag to prevent duplicate submissions
+        // Comprehensive prevention of duplicate submissions:
+        // 1. Empty check
+        // 2. Already streaming check
+        // 3. Processing flag check
+        // 4. Timestamp-based throttling
+        if (
+            text.trim() === '' || 
+            responseStatus === 'streaming' || 
+            isProcessingMessageRef.current ||
+            (now - lastMessageTimestampRef.current < THROTTLE_TIME_MS)
+        ) {
+            console.log('Prevented duplicate submission');
+            return;
+        }
+        
+        // Update timestamp and set processing flag
+        lastMessageTimestampRef.current = now;
         isProcessingMessageRef.current = true;
 
         try {
+            console.log('Sending message:', text.trim());
+            
             // Create user message
             const newChatItem: ChatItem = {
                 sender: "USER",
                 message: text.trim(),
-                created_at: Date.now(),
+                created_at: now,
                 mode: mode,
             };
 
@@ -567,11 +586,13 @@ const Chat = ({
             if (mode === 'ask') {
                 await fetchGeminiResponse(text.trim());
             }
+        } catch (error) {
+            console.error('Error sending message:', error);
         } finally {
             // Reset the processing flag after everything is complete
             setTimeout(() => {
                 isProcessingMessageRef.current = false;
-            }, 500); // Add a small delay to ensure any potential duplicate events are blocked
+            }, 500); // Small delay to ensure potential duplicate events are blocked
         }
     }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
