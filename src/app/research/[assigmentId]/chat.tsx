@@ -565,16 +565,28 @@ const Chat = ({
 
         // Advanced check - look for very recent identical content regardless of timestamp
         let isDuplicate = false;
-        // Extract just the text part from message IDs
-        for (const existingId of sentMessagesRef.current) {
-            const [existingText, timestampStr] = existingId.split('_');
-            const timestamp = parseInt(timestampStr, 10);
+        
+        // Convert Set to Array for iteration (fixes TypeScript error)
+        const recentMessages = Array.from(sentMessagesRef.current);
+        
+        // Check for any recent identical message content
+        for (let i = 0; i < recentMessages.length; i++) {
+            const existingId = recentMessages[i];
+            const parts = existingId.split('_');
             
-            // If we find the same message text sent within the last 3 seconds
-            if (existingText === trimmedText && (now - timestamp) < DUPLICATE_PREVENTION_TIMEOUT) {
-                isDuplicate = true;
-                console.log('Prevented near-duplicate message', existingText);
-                break;
+            // Ensure we have valid parts
+            if (parts.length >= 2) {
+                const existingText = parts[0];
+                const timestampStr = parts[parts.length - 1]; // Take the last part as timestamp
+                const timestamp = parseInt(timestampStr, 10);
+                
+                // If we find the same message text sent within the prevention timeout window
+                if (existingText === trimmedText && !isNaN(timestamp) && 
+                    (now - timestamp) < DUPLICATE_PREVENTION_TIMEOUT) {
+                    isDuplicate = true;
+                    console.log('Prevented duplicate message:', existingText);
+                    break;
+                }
             }
         }
         
