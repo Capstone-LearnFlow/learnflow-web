@@ -537,62 +537,89 @@ const Chat = ({
             addFormMessageToChat();
         }
     }, [mode, addFormMessageToChat, responseStatus]);
-    // Track last message timestamp and processing status to prevent duplicate sends
+    // Advanced duplicate prevention system
     const isProcessingMessageRef = useRef<boolean>(false);
-    const lastMessageTimestampRef = useRef<number>(0);
-    const THROTTLE_TIME_MS = 1000; // Minimum 1 second between messages
+    const sentMessagesRef = useRef<Set<string>>(new Set());
+    const DUPLICATE_PREVENTION_TIMEOUT = 3000; // 3 seconds to prevent exact duplicate messages
+    
+    // Generate a unique ID for each message to track duplicates
+    const generateMessageId = (text: string, timestamp: number): string => {
+        return `${text.trim()}_${timestamp}`;
+    };
 
     const sendMessage = useCallback(async (text: string = inputValue) => {
-        const now = Date.now();
+        const trimmedText = text.trim();
         
-        // Comprehensive prevention of duplicate submissions:
-        // 1. Empty check
-        // 2. Already streaming check
-        // 3. Processing flag check
-        // 4. Timestamp-based throttling
-        if (
-            text.trim() === '' || 
-            responseStatus === 'streaming' || 
-            isProcessingMessageRef.current ||
-            (now - lastMessageTimestampRef.current < THROTTLE_TIME_MS)
-        ) {
-            console.log('Prevented duplicate submission');
+        // Basic validation
+        if (trimmedText === '' || responseStatus === 'streaming') return;
+        
+        // Create a timestamp for this message attempt
+        const now = Date.now();
+        const messageId = generateMessageId(trimmedText, now);
+        
+        // Check if we're already processing a message or if this exact message was sent recently
+        if (isProcessingMessageRef.current || sentMessagesRef.current.has(messageId)) {
+            console.log('Prevented duplicate submission:', trimmedText);
             return;
         }
-        
-        // Update timestamp and set processing flag
-        lastMessageTimestampRef.current = now;
-        isProcessingMessageRef.current = true;
 
+        // Advanced check - look for very recent identical content regardless of timestamp
+        let isDuplicate = false;
+        // Extract just the text part from message IDs
+        for (const existingId of sentMessagesRef.current) {
+            const [existingText, timestampStr] = existingId.split('_');
+            const timestamp = parseInt(timestampStr, 10);
+            
+            // If we find the same message text sent within the last 3 seconds
+            if (existingText === trimmedText && (now - timestamp) < DUPLICATE_PREVENTION_TIMEOUT) {
+                isDuplicate = true;
+                console.log('Prevented near-duplicate message', existingText);
+                break;
+            }
+        }
+        
+        if (isDuplicate) return;
+        
+        // Mark as processing and remember this message
+        isProcessingMessageRef.current = true;
+        sentMessagesRef.current.add(messageId);
+        
+        // Clean up old message IDs periodically
+        setTimeout(() => {
+            sentMessagesRef.current.delete(messageId);
+        }, DUPLICATE_PREVENTION_TIMEOUT);
+        
         try {
-            console.log('Sending message:', text.trim());
+            console.log('Sending message:', trimmedText, 'with ID:', messageId);
             
             // Create user message
             const newChatItem: ChatItem = {
                 sender: "USER",
-                message: text.trim(),
+                message: trimmedText,
                 created_at: now,
                 mode: mode,
             };
 
+            // Update UI with new message
             setChatLog((prev) => [...prev, newChatItem]);
-            // Save user message to Supabase
+            
+            // Save message to database
             await saveChatMessageToSupabase(newChatItem);
             
+            // Clear input field
             setInputValue('');
 
             // Only send to Gemini API in 'ask' mode
-            // In 'create' mode, the form is already visible via useEffect
             if (mode === 'ask') {
-                await fetchGeminiResponse(text.trim());
+                await fetchGeminiResponse(trimmedText);
             }
         } catch (error) {
             console.error('Error sending message:', error);
         } finally {
-            // Reset the processing flag after everything is complete
+            // Reset processing flag with a short delay
             setTimeout(() => {
                 isProcessingMessageRef.current = false;
-            }, 500); // Small delay to ensure potential duplicate events are blocked
+            }, 300);
         }
     }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
