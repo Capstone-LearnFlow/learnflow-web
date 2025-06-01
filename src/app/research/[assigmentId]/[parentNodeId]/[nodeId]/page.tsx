@@ -177,10 +177,10 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
                     <div className='btn chat__close_btn' onClick={handleChatClose}></div>
                     {/* Only render Chat component when we have valid parameters to prevent empty values */}
                     {assignmentId && parentNodeId && node.nodeId && (
+                        // Use '0' for new nodes to ensure consistent chat storage
                         <Chat
                             status='open'
                             isClosable={false}
-                            {/* Use '0' for new nodes to ensure consistent chat storage */}
                             nodeId={node.nodeId === 'new' ? '0' : node.nodeId}
                             mode={mode}
                             setMode={setMode}
