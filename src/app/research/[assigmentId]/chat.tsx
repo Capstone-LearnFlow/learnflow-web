@@ -216,8 +216,6 @@ const Chat = ({
         }
     }, []);
             
-            // Save AI response to Supabase
-            saveChatMessageToSupabase(aiResponse);
     // Only scroll for the very first message, then let user control
     useEffect(() => {
         if (chatLog.length === 1) {
