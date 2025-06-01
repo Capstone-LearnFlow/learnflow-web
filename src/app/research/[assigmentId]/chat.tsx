@@ -383,8 +383,6 @@ const Chat = ({
         }
     }, [setChatLog, setStreamingMessage, setStreamingSuggestions, setStreamingCitations, setResponseStatus, setHasAskedQuestion, mode, assignmentId, parentNodeId, nodeId]);
         
-        // Save form message to Supabase
-        saveChatMessageToSupabase(aiFormMessage);
     // Function to send an assertion to OpenAI API - modified to directly open edit panel
     const sendAssertionToOpenAI = async (assertionText: string, evidenceText: string) => {
         try {
