@@ -364,6 +364,9 @@ const Chat = ({
             };
 
             setChatLog((prev) => [...prev, aiResponse]);
+            // Save AI response to Supabase
+            await saveChatMessageToSupabase(aiResponse);
+            
             setStreamingMessage('');
             setStreamingSuggestions([]);
             setStreamingCitations([]);
@@ -463,23 +466,27 @@ const Chat = ({
                 // Keep form values (removed reset logic)
             } catch (parseError) {
                 console.error('Error parsing response:', parseError);
-                // Show error message in chat
-                setChatLog((prev) => [...prev, {
-                    sender: "AI",
-                    message: "죄송합니다. 응답을 처리하는 중 오류가 발생했습니다.",
-                    created_at: Date.now(),
-                    mode: 'create',
-                }]);
+        // Show error message in chat
+        const errorMessage: ChatItem = {
+            sender: "AI",
+            message: "죄송합니다. 응답을 처리하는 중 오류가 발생했습니다.",
+            created_at: Date.now(),
+            mode: 'create',
+        };
+        setChatLog((prev) => [...prev, errorMessage]);
+        await saveChatMessageToSupabase(errorMessage);
             }
         } catch (error) {
             console.error('Error calling OpenAI API:', error);
-            // Show error message in chat
-            setChatLog((prev) => [...prev, {
-                sender: "AI",
-                message: "죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.",
-                created_at: Date.now(),
-                mode: 'create',
-            }]);
+        // Show error message in chat
+        const errorMessage: ChatItem = {
+            sender: "AI",
+            message: "죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.",
+            created_at: Date.now(),
+            mode: 'create',
+        };
+        setChatLog((prev) => [...prev, errorMessage]);
+        await saveChatMessageToSupabase(errorMessage);
         } finally {
             setIsSubmitting(false);
             setResponseStatus('success');
@@ -515,6 +522,9 @@ const Chat = ({
         };
 
         setChatLog((prev) => [...prev, aiFormMessage]);
+        // Save form message to Supabase
+        await saveChatMessageToSupabase(aiFormMessage);
+        
         // Reset form fields and submission state
         setAssertion('');
         setEvidence('');
@@ -539,6 +549,9 @@ const Chat = ({
         };
 
         setChatLog((prev) => [...prev, newChatItem]);
+        // Save user message to Supabase
+        await saveChatMessageToSupabase(newChatItem);
+        
         setInputValue('');
 
         // Only send to Gemini API in 'ask' mode
