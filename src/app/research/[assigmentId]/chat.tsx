@@ -791,7 +791,14 @@ const Chat = ({
                     />
                     <button
                         className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`}
-                        onClick={() => sendMessage()}
+                        onClick={(e) => {
+                            // Ensure event isn't processed more than once
+                            e.stopPropagation();
+                            // Only process if button isn't disabled
+                            if (responseStatus !== 'streaming' && inputValue.trim() !== '') {
+                                sendMessage();
+                            }
+                        }}
                         disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
                     ></button>
                 </div>
