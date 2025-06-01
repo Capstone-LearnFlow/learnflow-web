@@ -168,6 +168,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
                 />
                 <div className='node_editor__chat'>
                     <div className='btn chat__close_btn' onClick={handleChatClose}></div>
+                    {/* Pass assignmentId and parentNodeId explicitly to ensure chat logs are saved correctly */}
                     <Chat
                         status='open'
                         isClosable={false}
@@ -179,6 +180,8 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
                         setEditingMessageIndex={setEditingMessageIndex}
                         isEditPanelOpen={isEditPanelOpen}
                         hideButtons={true}
+                        assignmentId={params.then(p => p.assigmentId)}
+                        parentNodeId={params.then(p => p.parentNodeId)}
                     />
                 </div>
             </div>
