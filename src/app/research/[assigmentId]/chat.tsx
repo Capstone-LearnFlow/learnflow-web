@@ -512,7 +512,7 @@ const Chat = ({
     };
 
     // Function to add form message to chat
-    const addFormMessageToChat = useCallback(() => {
+    const addFormMessageToChat = useCallback(async () => {
         const aiFormMessage: ChatItem = {
             sender: "AI",
             message: "주장과 근거를 작성해주세요:", // "Please write your assertion and evidence:"
@@ -537,7 +537,7 @@ const Chat = ({
             addFormMessageToChat();
         }
     }, [mode, addFormMessageToChat, responseStatus]);
-    const sendMessage = useCallback((text: string = inputValue) => {
+    const sendMessage = useCallback(async (text: string = inputValue) => {
         if (text.trim() === '' || responseStatus === 'streaming') return;
 
         // Create user message
