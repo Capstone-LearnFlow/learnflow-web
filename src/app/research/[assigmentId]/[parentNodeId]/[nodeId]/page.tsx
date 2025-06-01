@@ -175,21 +175,23 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
                 />
                 <div className='node_editor__chat'>
                     <div className='btn chat__close_btn' onClick={handleChatClose}></div>
-                    {/* Pass assignmentId and parentNodeId explicitly to ensure chat logs are saved correctly */}
-                    <Chat
-                        status='open'
-                        isClosable={false}
-                        nodeId={node.nodeId}
-                        mode={mode}
-                        setMode={setMode}
-                        setIsEditPanelOpen={setIsEditPanelOpen}
-                        setEditData={setEditData}
-                        setEditingMessageIndex={setEditingMessageIndex}
-                        isEditPanelOpen={isEditPanelOpen}
-                        hideButtons={true}
-                        assignmentId={assignmentId}
-                        parentNodeId={parentNodeId}
-                    />
+                    {/* Only render Chat component when we have valid parameters to prevent empty values */}
+                    {assignmentId && parentNodeId && node.nodeId && (
+                        <Chat
+                            status='open'
+                            isClosable={false}
+                            nodeId={node.nodeId === 'new' ? '0' : node.nodeId} {/* Use '0' for new nodes */}
+                            mode={mode}
+                            setMode={setMode}
+                            setIsEditPanelOpen={setIsEditPanelOpen}
+                            setEditData={setEditData}
+                            setEditingMessageIndex={setEditingMessageIndex}
+                            isEditPanelOpen={isEditPanelOpen}
+                            hideButtons={true}
+                            assignmentId={assignmentId}
+                            parentNodeId={parentNodeId}
+                        />
+                    )}
                 </div>
             </div>
         </div >
