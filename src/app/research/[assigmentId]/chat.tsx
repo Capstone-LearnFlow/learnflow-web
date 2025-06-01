@@ -2,6 +2,8 @@
 import { useEffect, useState, useCallback, useRef, FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import StreamingMessage from './components/StreamingMessage';
+import { saveChatMessage, loadChatMessages, ChatMessage } from '../../../services/supabase';
+import { useParams } from 'next/navigation';
 
 type ChatMode = 'ask' | 'create';
 type ChatItemSender = "USER" | "AI";
@@ -57,6 +59,8 @@ interface ChatProps {
     setEditingMessageIndex: (index: number | null) => void;
     isEditPanelOpen: boolean;
     hideButtons?: boolean; // Optional prop to hide mode toggle buttons
+    assignmentId?: string; // Optional prop for assignment ID
+    parentNodeId?: string; // Optional prop for parent node ID
 };
 
 // Type for the assertion form response
@@ -68,14 +72,21 @@ interface AssertionResponse {
 const Chat = ({
     status,
     isClosable,
+    nodeId,
     mode,
     setMode,
     setIsEditPanelOpen,
     setEditData,
     setEditingMessageIndex,
     isEditPanelOpen,
-    hideButtons = false // Default to showing buttons
+    hideButtons = false, // Default to showing buttons
+    assignmentId: propAssignmentId,
+    parentNodeId: propParentNodeId
 }: ChatProps) => {
+    // Get parameters from route if not provided as props
+    const params = useParams<{ assigmentId: string, parentNodeId: string, nodeId: string }>();
+    const assignmentId = propAssignmentId || params?.assigmentId || '';
+    const parentNodeId = propParentNodeId || params?.parentNodeId || '0';
     const [viewStatus, setViewStatus] = useState<'open' | 'closed'>(status);
     const [chatLog, setChatLog] = useState<ChatItem[]>([]);
     const [inputValue, setInputValue] = useState<string>('');
@@ -87,30 +98,96 @@ const Chat = ({
     const abortControllerRef = useRef<AbortController | null>(null);
     const apiHistoryRef = useRef<ApiContentItem[]>([]);
     const chatContainerRef = useRef<HTMLDivElement>(null);
-
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     // Form state
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+    // Load chat logs from Supabase on component mount
+    useEffect(() => {
+        const fetchChatLogs = async () => {
+            if (!assignmentId || !nodeId) {
+                setIsLoading(false);
+                return;
+            }
 
+            try {
+                const result = await loadChatMessages(assignmentId, parentNodeId, nodeId);
+                
+                if (result.success && result.data) {
+                    // Convert Supabase messages to ChatItem format
+                    const loadedMessages: ChatItem[] = result.data.map(message => ({
+                        sender: message.sender,
+                        message: message.message,
+                        created_at: new Date(message.created_at || Date.now()).getTime(),
+                        mode: message.mode,
+                        suggestions: message.suggestions,
+                        citations: message.citations,
+                        hasForm: false
+                    }));
+                    
+                    // Add any existing messages to API history for context
+                    const apiHistory: ApiContentItem[] = [];
+                    loadedMessages.forEach(msg => {
+                        apiHistory.push({
+                            role: msg.sender === 'USER' ? 'user' : 'model',
+                            parts: [{ text: msg.message }]
+                        });
+                    });
+                    
+                    if (apiHistory.length > 0) {
+                        apiHistoryRef.current = apiHistory;
+                    }
+                    
+                    // Set loaded messages to state
+                    if (loadedMessages.length > 0) {
+                        setChatLog(loadedMessages);
+                        setHasAskedQuestion(loadedMessages.some(msg => msg.sender === 'USER'));
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading chat logs:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchChatLogs();
+    }, [assignmentId, parentNodeId, nodeId]);
     useEffect(() => {
         setViewStatus(status);
     }, [status]);
-
+    // Function to save chat message to Supabase
+    const saveChatMessageToSupabase = async (message: ChatItem) => {
+        if (!assignmentId || !nodeId) return;
+        
+        try {
+            await saveChatMessage({
+                assignment_id: assignmentId,
+                parent_node_id: parentNodeId,
+                node_id: nodeId,
+                sender: message.sender,
+                message: message.message,
+                mode: message.mode,
+                suggestions: message.suggestions,
+                citations: message.citations
+            });
+        } catch (error) {
+            console.error('Error saving chat message to Supabase:', error);
+        }
+    };
     // Function to handle citation data without inserting inline citations
     const insertInlineCitations = (text: string): string => {
         // No longer inserting inline citations, just return the original text
         return text;
     };
-
     // Function to scroll to the bottom of the chat
     const scrollToBottom = useCallback(() => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, []);
-
     useEffect(() => {
         // Clean up any ongoing fetch request when component unmounts
         return () => {
@@ -119,22 +196,18 @@ const Chat = ({
             }
         };
     }, []);
-
     // Scroll to bottom when chat log changes
     useEffect(() => {
         scrollToBottom();
     }, [chatLog, scrollToBottom]);
-
     // Scroll to bottom when streaming message changes
     useEffect(() => {
         if (streamingMessage) {
             scrollToBottom();
         }
     }, [streamingMessage, scrollToBottom]);
-
     // Reference for the scroll anchor element
     // const scrollAnchorRef = useRef<HTMLDivElement>(null);
-
     // Disable auto scrolling completely
     // This basic scroll function is only used for initial messages
     const manualScrollToBottom = useCallback(() => {
@@ -142,7 +215,9 @@ const Chat = ({
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, []);
-
+            
+            // Save AI response to Supabase
+            saveChatMessageToSupabase(aiResponse);
     // Only scroll for the very first message, then let user control
     useEffect(() => {
         if (chatLog.length === 1) {
@@ -308,8 +383,10 @@ const Chat = ({
         } finally {
             abortControllerRef.current = null;
         }
-    }, [setChatLog, setStreamingMessage, setStreamingSuggestions, setStreamingCitations, setResponseStatus, setHasAskedQuestion, mode]);
-
+    }, [setChatLog, setStreamingMessage, setStreamingSuggestions, setStreamingCitations, setResponseStatus, setHasAskedQuestion, mode, assignmentId, parentNodeId, nodeId]);
+        
+        // Save form message to Supabase
+        saveChatMessageToSupabase(aiFormMessage);
     // Function to send an assertion to OpenAI API - modified to directly open edit panel
     const sendAssertionToOpenAI = async (assertionText: string, evidenceText: string) => {
         try {
@@ -446,8 +523,10 @@ const Chat = ({
         setAssertion('');
         setEvidence('');
         setFormSubmitted(false);
-    }, [setChatLog, setAssertion, setEvidence]);
-
+    }, [setChatLog, setAssertion, setEvidence, assignmentId, parentNodeId, nodeId]);
+        
+        // Save user message to Supabase
+        saveChatMessageToSupabase(newChatItem);
     // Add form message when mode changes to 'create'
     useEffect(() => {
         if (mode === 'create' && responseStatus === 'success') {
@@ -473,20 +552,18 @@ const Chat = ({
         if (mode === 'ask') {
             fetchGeminiResponse(text.trim());
         }
-    }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue]);
+    }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue.trim() !== '' && responseStatus !== 'streaming') {
             sendMessage();
         }
     };
-
     // Handle suggestion button click
     const handleSuggestionClick = (suggestion: string) => {
         if (responseStatus !== 'streaming') {
             sendMessage(suggestion);
         }
     };
-
     // Render a citation link
     const renderCitation = (citation: Citation) => {
         return (
@@ -501,7 +578,6 @@ const Chat = ({
             </a>
         );
     };
-
     // Render markdown content with proper citation display
     const renderMarkdown = (message: string) => {
         return (
@@ -518,6 +594,12 @@ const Chat = ({
         viewStatus === 'open' ? (
             <div className="card card--chat">
                 {isClosable && (<div className='btn chat__close_btn' onClick={() => setViewStatus('closed')}></div>)}
+                {isLoading && (
+                    <div className="chat__loading">
+                        <div className="chat__loading-spinner"></div>
+                        <p>채팅 기록을 불러오는 중...</p>
+                    </div>
+                )}
                 <div className="chat-container">
                     <div className={`chat__stack ${isEditPanelOpen ? 'chat__stack--with-panel' : ''}`} ref={chatContainerRef}>
                         {/* Streaming message using dedicated component for consistent white background */}
@@ -529,7 +611,36 @@ const Chat = ({
                                 onSuggestionClick={handleSuggestionClick}
                             />
                         )}
-
+                
+                /* Loading state */
+                .chat__loading {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: rgba(255, 255, 255, 0.9);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10;
+                }
+                
+                .chat__loading-spinner {
+                    width: 40px;
+                    height: 40px;
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #0078ff;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin-bottom: 16px;
+                }
+                
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
                         {/* Existing chat log */}
                         {chatLog.toReversed().map((item, i) => (
                             <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
