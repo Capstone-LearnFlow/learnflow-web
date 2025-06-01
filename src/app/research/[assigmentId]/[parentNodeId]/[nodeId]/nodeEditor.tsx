@@ -131,7 +131,7 @@ const NodeEditor = ({
     }, [node, checkForChanges, setHasChanges]);
 
     // Handler for register button click
-    const handleRegisterNode = useCallback(() => {
+    const handleRegisterNode = useCallback(async () => {
         if (!hasChanges) {
             console.log('No changes to register');
             return;
@@ -143,30 +143,78 @@ const NodeEditor = ({
             return;
         }
 
-        // Prepare data for server submission
-        const nodeData = {
-            nodeId: node.nodeId,
-            type: node.type,
-            content: node.content,
-            children: node.children?.map((child: Node) => ({
-                nodeId: child.nodeId,
-                type: child.type,
-                content: child.content,
-                citation: child.citation,
-                index: child.index
-            })) || null,
-            parentNodeId: parentNode.nodeId,
-            timestamp: new Date().toISOString()
-        };
+        try {
+            // Get the assignment ID from params
+            const resolvedParams = await params;
+            const assignmentId = resolvedParams.assigmentId;
 
-        console.log('Registering node:', nodeData);
+            // For main node creation (when parentNodeId is '0' and nodeId is 'new')
+            if (parentNode.nodeId === '0' && node.nodeId === 'new') {
+                // Format data according to the API requirements for main node
+                const evidences = node.children
+                    ? node.children.filter(child => child.type === 'evidence').map(child => ({
+                        content: child.content,
+                        source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
+                        url: child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source"
+                    }))
+                    : [];
 
-        // Reset changes state after successful registration
-        setHasChanges(false);
-        setOriginalNode(JSON.parse(JSON.stringify(node))); // Update original node to current state
+                const mainNodeData = {
+                    title: parentNode.content, // Using subject node content as title
+                    content: node.content,     // Using argument content as content
+                    evidences: evidences
+                };
 
-        // TODO: Replace with actual server submission
-        // await submitNodeData(nodeData);
+                console.log('Creating main node:', mainNodeData);
+
+                // Call the API to create the main node
+                const response = await fetch(`/api/student/assignments/${assignmentId}/nodes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(mainNodeData),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to create node: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Node creation result:', result);
+
+                // Navigate back to the assignment page to show the new tree
+                if (result.status === 'success') {
+                    router.push(`/research/${assignmentId}`);
+                }
+            } else {
+                // Prepare data for other node types (not main node)
+                const nodeData = {
+                    nodeId: node.nodeId,
+                    type: node.type,
+                    content: node.content,
+                    children: node.children?.map((child: Node) => ({
+                        nodeId: child.nodeId,
+                        type: child.type,
+                        content: child.content,
+                        citation: child.citation,
+                        index: child.index
+                    })) || null,
+                    parentNodeId: parentNode.nodeId,
+                    timestamp: new Date().toISOString()
+                };
+
+                console.log('Registering node:', nodeData);
+                // TODO: Implement API call for other node types
+                
+                // Reset changes state after successful registration
+                setHasChanges(false);
+                setOriginalNode(JSON.parse(JSON.stringify(node))); // Update original node to current state
+            }
+        } catch (error) {
+            console.error('Error registering node:', error);
+            alert('노드 등록에 실패했습니다.');
+        }
     }, [hasChanges, node, parentNode.nodeId, isArgumentValid, setHasChanges, setOriginalNode]);
 
     // Textarea auto-resize

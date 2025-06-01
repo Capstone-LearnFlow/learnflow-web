@@ -1,7 +1,9 @@
-import React, { forwardRef, useRef, useImperativeHandle, useLayoutEffect, useState, useCallback } from 'react';
+"use client";
+import React, { forwardRef, useRef, useImperativeHandle, useLayoutEffect, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export type NodeType = 'argument' | 'evidence' | 'counterargument' | 'question' | 'answer' | 'subject';
+export type ApiNodeType = 'CLAIM' | 'COUNTER';
 export const getNodeTypeName: (t: NodeType) => string = (t) => {
     switch (t) {
         case 'argument':
@@ -72,96 +74,154 @@ type RenderableNode = {
 };
 
 
-export const exampleTree: SubjectNode = {
-    nodeId: '0',
-    type: 'subject',
-    content: '인공지능의 사회적 영향',
-    children: [{
-        nodeId: '1',
-        type: 'argument',
-        content: '인공지능은 생산성을 향상시킨다.',
-        children: [
-            {
-                nodeId: '2',
-                type: 'evidence',
-                index: 1,
-                content: 'AI 기술을 활용한 기업들이 생산성을 30% 향상시켰다.',
-                children: null
-            },
-            {
-                nodeId: '3',
-                type: 'evidence',
-                index: 2,
-                content: 'AI는 반복적인 작업을 자동화하여 인력을 더 창의적인 작업에 집중시킨다.',
-                children: [{
-                    nodeId: '5',
-                    type: 'counterargument',
-                    content: 'AI의 자동화로 인해 일자리가 감소할 수 있다.',
-                    children: [
-                        {
-                            nodeId: '6',
-                            type: 'evidence',
-                            index: 1,
-                            content: '일부 산업에서는 AI 도입 후 일자리 감소가 보고되었다.',
-                            children: [{
-                                nodeId: '7',
-                                type: 'argument',
-                                content: 'AI는 고객 서비스를 개선하고, 맞춤형 경험을 제공한다.',
-                                children: [
-                                    {
-                                        nodeId: '8',
-                                        type: 'evidence',
-                                        index: 1,
-                                        content: 'AI는 의료 분야에서 진단과 치료를 개선한다.',
-                                        children: null
-                                    },
-                                    {
-                                        nodeId: '9',
-                                        type: 'evidence',
-                                        index: 2,
-                                        content: 'AI는 환경 모니터링과 자원 관리에 기여한다.',
-                                        children: [{
-                                            nodeId: '10',
-                                            type: 'question',
-                                            content: 'AI는 교육 분야에서 개인화된 학습 경험을 제공할 수 있는가?',
-                                            children: [{
-                                                nodeId: '11',
-                                                type: 'answer',
-                                                content: 'AI는 학습자의 수준과 선호도에 맞춘 개인화된 학습 경로를 제공할 수 있다.',
-                                                children: null
-                                            }]
-                                        }]
-                                    }
-                                ]
-                            }]
-                        }
-                    ]
-                }],
-            },
-            {
-                nodeId: '4',
-                type: 'evidence',
-                index: 3,
-                content: 'AI는 데이터 분석을 통해 더 나은 의사결정을 지원한다.',
-                children: [{
-                    nodeId: '12',
-                    type: 'question',
-                    content: 'AI의 데이터 분석이 모든 산업에 적용될 수 있는가?',
-                    children: []
-                    // children: [{
-                    //     nodeId: '13',
-                    //     type: 'answer',
-                    //     content: 'AI는 다양한 산업에서 데이터 분석을 통해 의사결정을 지원할 수 있다.',
-                    //     children: null
-                    // }]
-                }]
+// Interface for API response
+interface ApiEvidence {
+    id: number;
+    content: string;
+    summary: string;
+    source: string | null;
+    url: string | null;
+}
+
+interface ApiNode {
+    id: number;
+    content: string;
+    summary: string;
+    type: ApiNodeType;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+    evidences: ApiEvidence[];
+    children: ApiNode[];
+    triggeredByEvidenceId: number | null;
+}
+
+interface ApiTreeResponse {
+    status: string;
+    data: ApiNode;
+}
+
+// Map API node types to component node types
+const mapApiNodeTypeToNodeType = (apiType: ApiNodeType): NodeType => {
+    switch (apiType) {
+        case 'CLAIM':
+            return 'argument';
+        case 'COUNTER':
+            return 'counterargument';
+        default:
+            return 'argument';
+    }
+};
+
+// Convert API node to component node
+const convertApiNodeToNode = (apiNode: ApiNode): Node => {
+    const nodeType = mapApiNodeTypeToNodeType(apiNode.type);
+    
+    // Create evidence nodes from API evidences
+    const evidenceNodes: EvidenceNode[] = apiNode.evidences.map((evidence, index) => ({
+        nodeId: evidence.id.toString(),
+        type: 'evidence',
+        content: evidence.content,
+        summary: evidence.summary,
+        index: index + 1,
+        children: null
+    }));
+    
+    // Create child nodes (recursively)
+    const childNodes = apiNode.children.map(child => convertApiNodeToNode(child));
+    
+    // Connect child nodes to appropriate evidence nodes if possible
+    if (childNodes.length > 0 && evidenceNodes.length > 0) {
+        childNodes.forEach(childNode => {
+            const apiChildNode = apiNode.children.find(c => c.id.toString() === childNode.nodeId);
+            if (apiChildNode && apiChildNode.triggeredByEvidenceId) {
+                const evidenceIndex = evidenceNodes.findIndex(
+                    e => e.nodeId === apiChildNode.triggeredByEvidenceId?.toString()
+                );
+                if (evidenceIndex >= 0 && evidenceNodes[evidenceIndex]) {
+                    // Initialize children array if it doesn't exist
+                    if (!evidenceNodes[evidenceIndex].children) {
+                        evidenceNodes[evidenceIndex].children = [];
+                    }
+                    // Add this child to the evidence's children
+                    evidenceNodes[evidenceIndex].children?.push(childNode as any);
+                }
             }
-        ],
-    }],
+        });
+    }
+    
+    return {
+        nodeId: apiNode.id.toString(),
+        type: nodeType,
+        content: apiNode.content,
+        summary: apiNode.summary,
+        children: nodeType === 'argument' || nodeType === 'counterargument' 
+            ? evidenceNodes 
+            : childNodes.length > 0 ? childNodes : null
+    };
+};
+
+// Create a subject node from API data
+const createSubjectNodeFromApi = (apiNode: ApiNode): SubjectNode => {
+    const rootNode = convertApiNodeToNode(apiNode);
+    return {
+        nodeId: '0',
+        type: 'subject',
+        content: apiNode.content,
+        children: [rootNode] as ArgNode[]
+    };
 };
 
 const Tree = ({ assigmentId }: { assigmentId: string }) => {
     const router = useRouter();
+    const [treeData, setTreeData] = useState<SubjectNode | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch tree data from API
+    useEffect(() => {
+        const fetchTreeData = async () => {
+            if (!assigmentId) return;
+            
+            try {
+                setIsLoading(true);
+                const response = await fetch(`/api/student/assignments/${assigmentId}/nodes/tree`);
+                
+                if (!response.ok) {
+                    // Try to parse error response
+                    const errorData = await response.json();
+                    
+                    // Check if this is the "main node not found" error (400 error)
+                    if (response.status === 400 && 
+                        errorData.status === 'error' && 
+                        errorData.data === '메인 노드를 찾을 수 없습니다.') {
+                        // Redirect to create new main node
+                        console.log('Main node not found, redirecting to create page');
+                        router.push(`/research/${assigmentId}/0/new`);
+                        return;
+                    }
+                    
+                    throw new Error(`Error fetching tree data: ${response.status}`);
+                }
+                
+                const apiData: ApiTreeResponse = await response.json();
+                
+                if (apiData.status === 'success' && apiData.data) {
+                    const transformedData = createSubjectNodeFromApi(apiData.data);
+                    setTreeData(transformedData);
+                } else {
+                    throw new Error('Invalid API response format');
+                }
+            } catch (err) {
+                console.error('Failed to fetch tree data:', err);
+                setError(err instanceof Error ? err.message : 'Unknown error occurred');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        fetchTreeData();
+    }, [assigmentId]);
 
     const positionorigin: { x: number, y: number } = { x: 8, y: 90 };
     const nodeWidth: number = 462;
@@ -301,15 +361,15 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
 
     // Calculate renderable nodes when component mounts or tree changes
     useLayoutEffect(() => {
-        if (exampleTree.children) {
+        if (treeData?.children) {
             const nodes: RenderableNode[] = [];
-            exampleTree.children.forEach(child => {
+            treeData.children.forEach(child => {
                 nodes.push(...collectRenderableNodes(child, 0));
             });
             console.log('Collected renderable nodes:', nodes);
             setRenderableNodes(nodes);
         }
-    }, [collectRenderableNodes]);
+    }, [collectRenderableNodes, treeData]);
 
     // Calculate positions after nodes are collected and rendered
     useLayoutEffect(() => {
@@ -325,9 +385,21 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
         calculatePositions();
     }, [nodeHeights, calculatePositions]);
 
+    if (isLoading) {
+        return <div className="tree__loading">트리 데이터를 불러오는 중...</div>;
+    }
+
+    if (error) {
+        return <div className="tree__error">트리 데이터를 불러오는데 실패했습니다: {error}</div>;
+    }
+
+    if (!treeData) {
+        return <div className="tree__empty">트리 데이터가 없습니다.</div>;
+    }
+
     return (
         <div className='tree'>
-            <SubjectNode content={exampleTree.content} />
+            <SubjectNode content={treeData.content} />
 
             {renderableNodes.map((nodeData) => {
                 const position = nodePositions.get(nodeData.id) || { x: positionorigin.x + (colWidth * nodeData.depth), y: positionorigin.y };
