@@ -17,6 +17,8 @@ export interface ChatMessage {
   message: string;
   created_at?: string;
   mode: 'ask' | 'create';
+  user_id?: string;       // User ID for identifying which user sent the message
+  user_name?: string;     // User name for display purposes
   suggestions?: string[];
   citations?: {
     text: string;
@@ -39,6 +41,8 @@ export const saveChatMessage = async (message: ChatMessage): Promise<{ success: 
           sender: message.sender,
           message: message.message,
           mode: message.mode,
+          user_id: message.user_id || null,    // Include user ID in saved message
+          user_name: message.user_name || null, // Include user name in saved message
           suggestions: message.suggestions || [],
           citations: message.citations || [],
         },
@@ -57,16 +61,23 @@ export const saveChatMessage = async (message: ChatMessage): Promise<{ success: 
 export const loadChatMessages = async (
   assignmentId: string,
   parentNodeId: string,
-  nodeId: string
+  nodeId: string,
+  userId?: string // Optional user ID to filter messages by user
 ): Promise<{ success: boolean; data?: ChatMessage[]; error?: any }> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('chat_messages')
       .select('*')
       .eq('assignment_id', assignmentId)
       .eq('parent_node_id', parentNodeId)
-      .eq('node_id', nodeId)
-      .order('created_at', { ascending: true });
+      .eq('node_id', nodeId);
+      
+    // If userId is provided, filter messages by that user
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: true });
 
     if (error) throw error;
     
