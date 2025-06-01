@@ -562,6 +562,7 @@ const Chat = ({
     }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue.trim() !== '' && responseStatus !== 'streaming') {
+            e.preventDefault(); // Prevent default behavior to avoid double submission
             sendMessage();
         }
     };
