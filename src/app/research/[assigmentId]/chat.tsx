@@ -537,27 +537,41 @@ const Chat = ({
             addFormMessageToChat();
         }
     }, [mode, addFormMessageToChat, responseStatus]);
+    // Ref to track if a message is currently being processed to prevent duplicate sends
+    const isProcessingMessageRef = useRef<boolean>(false);
+
     const sendMessage = useCallback(async (text: string = inputValue) => {
-        if (text.trim() === '' || responseStatus === 'streaming') return;
-
-        // Create user message
-        const newChatItem: ChatItem = {
-            sender: "USER",
-            message: text.trim(),
-            created_at: Date.now(),
-            mode: mode,
-        };
-
-        setChatLog((prev) => [...prev, newChatItem]);
-        // Save user message to Supabase
-        await saveChatMessageToSupabase(newChatItem);
+        // Prevent sending if text is empty, we're already streaming, or another message is being processed
+        if (text.trim() === '' || responseStatus === 'streaming' || isProcessingMessageRef.current) return;
         
-        setInputValue('');
+        // Set flag to prevent duplicate submissions
+        isProcessingMessageRef.current = true;
 
-        // Only send to Gemini API in 'ask' mode
-        // In 'create' mode, the form is already visible via useEffect
-        if (mode === 'ask') {
-            fetchGeminiResponse(text.trim());
+        try {
+            // Create user message
+            const newChatItem: ChatItem = {
+                sender: "USER",
+                message: text.trim(),
+                created_at: Date.now(),
+                mode: mode,
+            };
+
+            setChatLog((prev) => [...prev, newChatItem]);
+            // Save user message to Supabase
+            await saveChatMessageToSupabase(newChatItem);
+            
+            setInputValue('');
+
+            // Only send to Gemini API in 'ask' mode
+            // In 'create' mode, the form is already visible via useEffect
+            if (mode === 'ask') {
+                await fetchGeminiResponse(text.trim());
+            }
+        } finally {
+            // Reset the processing flag after everything is complete
+            setTimeout(() => {
+                isProcessingMessageRef.current = false;
+            }, 500); // Add a small delay to ensure any potential duplicate events are blocked
         }
     }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
