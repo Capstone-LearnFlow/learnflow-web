@@ -30,7 +30,7 @@ export interface ChatMessage {
 export const saveChatMessage = async (message: ChatMessage): Promise<{ success: boolean; error?: any }> => {
   try {
     const { error } = await supabase
-      .from('chat_logs')
+      .from('chat_messages')
       .insert([
         {
           assignment_id: message.assignment_id,
@@ -61,7 +61,7 @@ export const loadChatMessages = async (
 ): Promise<{ success: boolean; data?: ChatMessage[]; error?: any }> => {
   try {
     const { data, error } = await supabase
-      .from('chat_logs')
+      .from('chat_messages')
       .select('*')
       .eq('assignment_id', assignmentId)
       .eq('parent_node_id', parentNodeId)
@@ -85,7 +85,7 @@ export const deleteChatMessages = async (
 ): Promise<{ success: boolean; error?: any }> => {
   try {
     const { error } = await supabase
-      .from('chat_logs')
+      .from('chat_messages')
       .delete()
       .eq('assignment_id', assignmentId)
       .eq('parent_node_id', parentNodeId)
