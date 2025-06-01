@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import StreamingMessage from './components/StreamingMessage';
 import { saveChatMessage, loadChatMessages, ChatMessage } from '../../../services/supabase';
 import { useParams } from 'next/navigation';
+import { useAuth } from '../../../engine/Auth';
 
 type ChatMode = 'ask' | 'create';
 type ChatItemSender = "USER" | "AI";
@@ -104,6 +105,9 @@ const Chat = ({
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+    // Get user information from auth context
+    const { user } = useAuth();
+    
     // Load chat logs from Supabase on component mount
     useEffect(() => {
         const fetchChatLogs = async () => {
@@ -113,7 +117,8 @@ const Chat = ({
             }
 
             try {
-                const result = await loadChatMessages(assignmentId, parentNodeId, nodeId);
+                // Optionally filter by user ID if needed for personalized chat logs
+                const result = await loadChatMessages(assignmentId, parentNodeId, nodeId, user?.id);
                 
                 if (result.success && result.data) {
                     // Convert Supabase messages to ChatItem format
@@ -170,6 +175,8 @@ const Chat = ({
                 sender: message.sender,
                 message: message.message,
                 mode: message.mode,
+                user_id: user?.id,        // Include user ID if available
+                user_name: user?.name,    // Include user name if available
                 suggestions: message.suggestions,
                 citations: message.citations
             });
