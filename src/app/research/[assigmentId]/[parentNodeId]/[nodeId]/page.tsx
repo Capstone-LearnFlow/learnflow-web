@@ -180,7 +180,8 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
                         <Chat
                             status='open'
                             isClosable={false}
-                            nodeId={node.nodeId === 'new' ? '0' : node.nodeId} {/* Use '0' for new nodes */}
+                            {/* Use '0' for new nodes to ensure consistent chat storage */}
+                            nodeId={node.nodeId === 'new' ? '0' : node.nodeId}
                             mode={mode}
                             setMode={setMode}
                             setIsEditPanelOpen={setIsEditPanelOpen}
