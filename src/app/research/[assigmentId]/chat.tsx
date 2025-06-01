@@ -521,8 +521,6 @@ const Chat = ({
         setFormSubmitted(false);
     }, [setChatLog, setAssertion, setEvidence, assignmentId, parentNodeId, nodeId]);
         
-        // Save user message to Supabase
-        saveChatMessageToSupabase(newChatItem);
     // Add form message when mode changes to 'create'
     useEffect(() => {
         if (mode === 'create' && responseStatus === 'success') {
