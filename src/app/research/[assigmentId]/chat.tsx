@@ -2,6 +2,9 @@
 import { useEffect, useState, useCallback, useRef, FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import StreamingMessage from './components/StreamingMessage';
+import { saveChatMessage, loadChatMessages, ChatMessage } from '../../../services/supabase';
+import { useParams } from 'next/navigation';
+import { useAuth } from '../../../engine/Auth';
 
 type ChatMode = 'ask' | 'create';
 type ChatItemSender = "USER" | "AI";
@@ -57,6 +60,8 @@ interface ChatProps {
     setEditingMessageIndex: (index: number | null) => void;
     isEditPanelOpen: boolean;
     hideButtons?: boolean; // Optional prop to hide mode toggle buttons
+    assignmentId?: string; // Optional prop for assignment ID
+    parentNodeId?: string; // Optional prop for parent node ID
 };
 
 // Type for the assertion form response
@@ -68,14 +73,21 @@ interface AssertionResponse {
 const Chat = ({
     status,
     isClosable,
+    nodeId,
     mode,
     setMode,
     setIsEditPanelOpen,
     setEditData,
     setEditingMessageIndex,
     isEditPanelOpen,
-    hideButtons = false // Default to showing buttons
+    hideButtons = false, // Default to showing buttons
+    assignmentId: propAssignmentId,
+    parentNodeId: propParentNodeId
 }: ChatProps) => {
+    // Get parameters from route if not provided as props
+    const params = useParams<{ assigmentId: string, parentNodeId: string, nodeId: string }>();
+    const assignmentId = propAssignmentId || params?.assigmentId || '';
+    const parentNodeId = propParentNodeId || params?.parentNodeId || '0';
     const [viewStatus, setViewStatus] = useState<'open' | 'closed'>(status);
     const [chatLog, setChatLog] = useState<ChatItem[]>([]);
     const [inputValue, setInputValue] = useState<string>('');
@@ -87,30 +99,102 @@ const Chat = ({
     const abortControllerRef = useRef<AbortController | null>(null);
     const apiHistoryRef = useRef<ApiContentItem[]>([]);
     const chatContainerRef = useRef<HTMLDivElement>(null);
-
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     // Form state
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+    // Get user information from auth context
+    const { user } = useAuth();
+    
+    // Load chat logs from Supabase on component mount
+    useEffect(() => {
+        const fetchChatLogs = async () => {
+            if (!assignmentId || !nodeId) {
+                setIsLoading(false);
+                return;
+            }
 
+            try {
+                // Load all messages for this node without filtering by user
+                const result = await loadChatMessages(assignmentId, parentNodeId, nodeId);
+                
+                if (result.success && result.data) {
+                    // Convert Supabase messages to ChatItem format
+                    const loadedMessages: ChatItem[] = result.data.map(message => ({
+                        sender: message.sender,
+                        message: message.message,
+                        created_at: new Date(message.created_at || Date.now()).getTime(),
+                        mode: message.mode,
+                        suggestions: message.suggestions,
+                        citations: message.citations,
+                        hasForm: false
+                    }));
+                    
+                    // Add any existing messages to API history for context
+                    const apiHistory: ApiContentItem[] = [];
+                    loadedMessages.forEach(msg => {
+                        apiHistory.push({
+                            role: msg.sender === 'USER' ? 'user' : 'model',
+                            parts: [{ text: msg.message }]
+                        });
+                    });
+                    
+                    if (apiHistory.length > 0) {
+                        apiHistoryRef.current = apiHistory;
+                    }
+                    
+                    // Set loaded messages to state
+                    if (loadedMessages.length > 0) {
+                        setChatLog(loadedMessages);
+                        setHasAskedQuestion(loadedMessages.some(msg => msg.sender === 'USER'));
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading chat logs:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchChatLogs();
+    }, [assignmentId, parentNodeId, nodeId]);
     useEffect(() => {
         setViewStatus(status);
     }, [status]);
-
+    // Function to save chat message to Supabase
+    const saveChatMessageToSupabase = async (message: ChatItem) => {
+        if (!assignmentId || !nodeId) return;
+        
+        try {
+            await saveChatMessage({
+                assignment_id: assignmentId,
+                parent_node_id: parentNodeId,
+                node_id: nodeId,
+                sender: message.sender,
+                message: message.message,
+                mode: message.mode,
+                user_id: user?.id,        // Include user ID if available
+                user_name: user?.name,    // Include user name if available
+                suggestions: message.suggestions,
+                citations: message.citations
+            });
+        } catch (error) {
+            console.error('Error saving chat message to Supabase:', error);
+        }
+    };
     // Function to handle citation data without inserting inline citations
     const insertInlineCitations = (text: string): string => {
         // No longer inserting inline citations, just return the original text
         return text;
     };
-
     // Function to scroll to the bottom of the chat
     const scrollToBottom = useCallback(() => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, []);
-
     useEffect(() => {
         // Clean up any ongoing fetch request when component unmounts
         return () => {
@@ -119,22 +203,18 @@ const Chat = ({
             }
         };
     }, []);
-
     // Scroll to bottom when chat log changes
     useEffect(() => {
         scrollToBottom();
     }, [chatLog, scrollToBottom]);
-
     // Scroll to bottom when streaming message changes
     useEffect(() => {
         if (streamingMessage) {
             scrollToBottom();
         }
     }, [streamingMessage, scrollToBottom]);
-
     // Reference for the scroll anchor element
     // const scrollAnchorRef = useRef<HTMLDivElement>(null);
-
     // Disable auto scrolling completely
     // This basic scroll function is only used for initial messages
     const manualScrollToBottom = useCallback(() => {
@@ -142,7 +222,7 @@ const Chat = ({
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, []);
-
+            
     // Only scroll for the very first message, then let user control
     useEffect(() => {
         if (chatLog.length === 1) {
@@ -291,6 +371,9 @@ const Chat = ({
             };
 
             setChatLog((prev) => [...prev, aiResponse]);
+            // Save AI response to Supabase
+            await saveChatMessageToSupabase(aiResponse);
+            
             setStreamingMessage('');
             setStreamingSuggestions([]);
             setStreamingCitations([]);
@@ -308,8 +391,8 @@ const Chat = ({
         } finally {
             abortControllerRef.current = null;
         }
-    }, [setChatLog, setStreamingMessage, setStreamingSuggestions, setStreamingCitations, setResponseStatus, setHasAskedQuestion, mode]);
-
+    }, [setChatLog, setStreamingMessage, setStreamingSuggestions, setStreamingCitations, setResponseStatus, setHasAskedQuestion, mode, assignmentId, parentNodeId, nodeId]);
+        
     // Function to send an assertion to OpenAI API - modified to directly open edit panel
     const sendAssertionToOpenAI = async (assertionText: string, evidenceText: string) => {
         try {
@@ -390,23 +473,27 @@ const Chat = ({
                 // Keep form values (removed reset logic)
             } catch (parseError) {
                 console.error('Error parsing response:', parseError);
-                // Show error message in chat
-                setChatLog((prev) => [...prev, {
-                    sender: "AI",
-                    message: "죄송합니다. 응답을 처리하는 중 오류가 발생했습니다.",
-                    created_at: Date.now(),
-                    mode: 'create',
-                }]);
+        // Show error message in chat
+        const errorMessage: ChatItem = {
+            sender: "AI",
+            message: "죄송합니다. 응답을 처리하는 중 오류가 발생했습니다.",
+            created_at: Date.now(),
+            mode: 'create',
+        };
+        setChatLog((prev) => [...prev, errorMessage]);
+        await saveChatMessageToSupabase(errorMessage);
             }
         } catch (error) {
             console.error('Error calling OpenAI API:', error);
-            // Show error message in chat
-            setChatLog((prev) => [...prev, {
-                sender: "AI",
-                message: "죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.",
-                created_at: Date.now(),
-                mode: 'create',
-            }]);
+        // Show error message in chat
+        const errorMessage: ChatItem = {
+            sender: "AI",
+            message: "죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.",
+            created_at: Date.now(),
+            mode: 'create',
+        };
+        setChatLog((prev) => [...prev, errorMessage]);
+        await saveChatMessageToSupabase(errorMessage);
         } finally {
             setIsSubmitting(false);
             setResponseStatus('success');
@@ -432,7 +519,7 @@ const Chat = ({
     };
 
     // Function to add form message to chat
-    const addFormMessageToChat = useCallback(() => {
+    const addFormMessageToChat = useCallback(async () => {
         const aiFormMessage: ChatItem = {
             sender: "AI",
             message: "주장과 근거를 작성해주세요:", // "Please write your assertion and evidence:"
@@ -442,51 +529,130 @@ const Chat = ({
         };
 
         setChatLog((prev) => [...prev, aiFormMessage]);
+        // Save form message to Supabase
+        await saveChatMessageToSupabase(aiFormMessage);
+        
         // Reset form fields and submission state
         setAssertion('');
         setEvidence('');
         setFormSubmitted(false);
-    }, [setChatLog, setAssertion, setEvidence]);
-
+    }, [setChatLog, setAssertion, setEvidence, assignmentId, parentNodeId, nodeId]);
+        
     // Add form message when mode changes to 'create'
     useEffect(() => {
         if (mode === 'create' && responseStatus === 'success') {
             addFormMessageToChat();
         }
     }, [mode, addFormMessageToChat, responseStatus]);
-    const sendMessage = useCallback((text: string = inputValue) => {
-        if (text.trim() === '' || responseStatus === 'streaming') return;
+    // Advanced duplicate prevention system
+    const isProcessingMessageRef = useRef<boolean>(false);
+    const sentMessagesRef = useRef<Set<string>>(new Set());
+    const DUPLICATE_PREVENTION_TIMEOUT = 3000; // 3 seconds to prevent exact duplicate messages
+    
+    // Generate a unique ID for each message to track duplicates
+    const generateMessageId = (text: string, timestamp: number): string => {
+        return `${text.trim()}_${timestamp}`;
+    };
 
-        // Create user message
-        const newChatItem: ChatItem = {
-            sender: "USER",
-            message: text.trim(),
-            created_at: Date.now(),
-            mode: mode,
-        };
-
-        setChatLog((prev) => [...prev, newChatItem]);
-        setInputValue('');
-
-        // Only send to Gemini API in 'ask' mode
-        // In 'create' mode, the form is already visible via useEffect
-        if (mode === 'ask') {
-            fetchGeminiResponse(text.trim());
+    const sendMessage = useCallback(async (text: string = inputValue) => {
+        const trimmedText = text.trim();
+        
+        // Basic validation
+        if (trimmedText === '' || responseStatus === 'streaming') return;
+        
+        // Create a timestamp for this message attempt
+        const now = Date.now();
+        const messageId = generateMessageId(trimmedText, now);
+        
+        // Check if we're already processing a message or if this exact message was sent recently
+        if (isProcessingMessageRef.current || sentMessagesRef.current.has(messageId)) {
+            console.log('Prevented duplicate submission:', trimmedText);
+            return;
         }
-    }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue]);
+
+        // Advanced check - look for very recent identical content regardless of timestamp
+        let isDuplicate = false;
+        
+        // Convert Set to Array for iteration (fixes TypeScript error)
+        const recentMessages = Array.from(sentMessagesRef.current);
+        
+        // Check for any recent identical message content
+        for (let i = 0; i < recentMessages.length; i++) {
+            const existingId = recentMessages[i];
+            const parts = existingId.split('_');
+            
+            // Ensure we have valid parts
+            if (parts.length >= 2) {
+                const existingText = parts[0];
+                const timestampStr = parts[parts.length - 1]; // Take the last part as timestamp
+                const timestamp = parseInt(timestampStr, 10);
+                
+                // If we find the same message text sent within the prevention timeout window
+                if (existingText === trimmedText && !isNaN(timestamp) && 
+                    (now - timestamp) < DUPLICATE_PREVENTION_TIMEOUT) {
+                    isDuplicate = true;
+                    console.log('Prevented duplicate message:', existingText);
+                    break;
+                }
+            }
+        }
+        
+        if (isDuplicate) return;
+        
+        // Mark as processing and remember this message
+        isProcessingMessageRef.current = true;
+        sentMessagesRef.current.add(messageId);
+        
+        // Clean up old message IDs periodically
+        setTimeout(() => {
+            sentMessagesRef.current.delete(messageId);
+        }, DUPLICATE_PREVENTION_TIMEOUT);
+        
+        try {
+            console.log('Sending message:', trimmedText, 'with ID:', messageId);
+            
+            // Create user message
+            const newChatItem: ChatItem = {
+                sender: "USER",
+                message: trimmedText,
+                created_at: now,
+                mode: mode,
+            };
+
+            // Update UI with new message
+            setChatLog((prev) => [...prev, newChatItem]);
+            
+            // Save message to database
+            await saveChatMessageToSupabase(newChatItem);
+            
+            // Clear input field
+            setInputValue('');
+
+            // Only send to Gemini API in 'ask' mode
+            if (mode === 'ask') {
+                await fetchGeminiResponse(trimmedText);
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+        } finally {
+            // Reset processing flag with a short delay
+            setTimeout(() => {
+                isProcessingMessageRef.current = false;
+            }, 300);
+        }
+    }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue.trim() !== '' && responseStatus !== 'streaming') {
+            e.preventDefault(); // Prevent default behavior to avoid double submission
             sendMessage();
         }
     };
-
     // Handle suggestion button click
     const handleSuggestionClick = (suggestion: string) => {
         if (responseStatus !== 'streaming') {
             sendMessage(suggestion);
         }
     };
-
     // Render a citation link
     const renderCitation = (citation: Citation) => {
         return (
@@ -501,7 +667,6 @@ const Chat = ({
             </a>
         );
     };
-
     // Render markdown content with proper citation display
     const renderMarkdown = (message: string) => {
         return (
@@ -518,6 +683,12 @@ const Chat = ({
         viewStatus === 'open' ? (
             <div className="card card--chat">
                 {isClosable && (<div className='btn chat__close_btn' onClick={() => setViewStatus('closed')}></div>)}
+                {isLoading && (
+                    <div className="chat__loading">
+                        <div className="chat__loading-spinner"></div>
+                        <p>채팅 기록을 불러오는 중...</p>
+                    </div>
+                )}
                 <div className="chat-container">
                     <div className={`chat__stack ${isEditPanelOpen ? 'chat__stack--with-panel' : ''}`} ref={chatContainerRef}>
                         {/* Streaming message using dedicated component for consistent white background */}
@@ -529,7 +700,6 @@ const Chat = ({
                                 onSuggestionClick={handleSuggestionClick}
                             />
                         )}
-
                         {/* Existing chat log */}
                         {chatLog.toReversed().map((item, i) => (
                             <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
@@ -667,7 +837,14 @@ const Chat = ({
                     />
                     <button
                         className={`chat__input__button ${(inputValue && responseStatus !== 'streaming') && 'chat__input__button--active'}`}
-                        onClick={() => sendMessage()}
+                        onClick={(e) => {
+                            // Ensure event isn't processed more than once
+                            e.stopPropagation();
+                            // Only process if button isn't disabled
+                            if (responseStatus !== 'streaming' && inputValue.trim() !== '') {
+                                sendMessage();
+                            }
+                        }}
                         disabled={responseStatus === 'streaming' || inputValue.trim() === ''}
                     ></button>
                 </div>

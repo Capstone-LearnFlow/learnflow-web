@@ -22,6 +22,9 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
     const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
     const [hasChanges, setHasChanges] = useState<boolean>(false);
     const [originalNode, setOriginalNode] = useState<Node | null>(null);
+    // Store route params for chat component
+    const [assignmentId, setAssignmentId] = useState<string>('');
+    const [parentNodeId, setParentNodeId] = useState<string>('');
 
     const [parentNode, setParentNode] = useState<Node>({
         nodeId: '',
@@ -72,6 +75,10 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
             console.log('Assignment ID:', resolvedParams.assigmentId);
             console.log('Parent Node ID:', resolvedParams.parentNodeId);
             console.log('Node ID:', resolvedParams.nodeId); // 새 노드 추가인 경우 'new'
+            
+            // Store route params for chat component
+            setAssignmentId(resolvedParams.assigmentId);
+            setParentNodeId(resolvedParams.parentNodeId);
 
             // Get parent node from exampleTree
             const parentNodeFromTree = findNodeById(exampleTree, resolvedParams.parentNodeId);
@@ -168,10 +175,11 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
                 />
                 <div className='node_editor__chat'>
                     <div className='btn chat__close_btn' onClick={handleChatClose}></div>
+                    {/* Always show chat, but only save logs when parameters are available */}
                     <Chat
                         status='open'
                         isClosable={false}
-                        nodeId={node.nodeId}
+                        nodeId={node.nodeId === 'new' ? '0' : node.nodeId || '0'}
                         mode={mode}
                         setMode={setMode}
                         setIsEditPanelOpen={setIsEditPanelOpen}
@@ -179,6 +187,8 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
                         setEditingMessageIndex={setEditingMessageIndex}
                         isEditPanelOpen={isEditPanelOpen}
                         hideButtons={true}
+                        assignmentId={assignmentId}
+                        parentNodeId={parentNodeId}
                     />
                 </div>
             </div>
