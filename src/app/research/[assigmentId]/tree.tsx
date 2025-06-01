@@ -188,6 +188,19 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
                 const response = await fetch(`/api/student/assignments/${assigmentId}/nodes/tree`);
                 
                 if (!response.ok) {
+                    // Try to parse error response
+                    const errorData = await response.json();
+                    
+                    // Check if this is the "main node not found" error (400 error)
+                    if (response.status === 400 && 
+                        errorData.status === 'error' && 
+                        errorData.data === '메인 노드를 찾을 수 없습니다.') {
+                        // Redirect to create new main node
+                        console.log('Main node not found, redirecting to create page');
+                        router.push(`/research/${assigmentId}/0/new`);
+                        return;
+                    }
+                    
                     throw new Error(`Error fetching tree data: ${response.status}`);
                 }
                 
