@@ -235,14 +235,14 @@ const collectRenderableNodes = (node: Node | null, depth: number, parentNodeId: 
                             node: questionNode,
                             depth: depth + 1,
                             parentNodeId: nodeId, // current node is the parent
-                            parentEvidenceIndex: evidenceIndex,
+                            parentEvidenceIndex: evidence.index ? (evidence.index - 1) : undefined,
                         });
                     } else {
                         const nestedNodes = collectRenderableNodes(
                             child,
                             depth + 1,
                             nodeId, // current node is the parent
-                            evidenceIndex
+                            evidence.index ? (evidence.index - 1) : undefined
                         );
                         result.push(...nestedNodes);
                     }

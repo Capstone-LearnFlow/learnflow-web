@@ -94,7 +94,8 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
 
             if (node.parentEvidenceIndex !== undefined) {
                 // Find the parent node that contains this evidence
-                const parentNode = nodes.find(n => n.node.nodeId === node.parentNodeId);
+                // parentNodeId is the id of the renderable node, not the nodeId
+                const parentNode = nodes.find(n => n.id === node.parentNodeId);
                 if (parentNode) {
                     parentRef = getNodeRef(parentNode.id);
                 }
@@ -194,15 +195,17 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
     }, [nodeHeights, calculatePositions]);
 
     if (isLoading) {
-        return <div className="tree__loading">트리 데이터를 불러오는 중...</div>;
+        return (<></>);
     }
 
     if (error) {
-        return <div className="tree__error">트리 데이터를 불러오는데 실패했습니다: {error}</div>;
+        router.push(`/`);
+        return;
     }
 
     if (!treeData) {
-        return <div className="tree__empty">트리 데이터가 없습니다.</div>;
+        router.push(`/`);
+        return;
     }
 
     return (
