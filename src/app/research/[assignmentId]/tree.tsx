@@ -179,11 +179,22 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
     // Calculate renderable nodes when tree data is loaded
     useLayoutEffect(() => {
         if (treeData?.renderableNodes) {
+            // Check if there are any argument nodes directly connected to the subject (depth 0)
+            const hasArgumentNodes = treeData.renderableNodes.some(node =>
+                (node.type === 'argument' || node.type === 'counterargument') && node.depth === 0
+            );
+
+            // If no argument nodes exist at depth 0, redirect to new argument creation page
+            if (!hasArgumentNodes) {
+                router.push(`/research/${assignmentId}/s-0/new`);
+                return;
+            }
+
             // Add parent refs to the pre-processed renderable nodes
             const enrichedNodes = enrichRenderableNodes(treeData.renderableNodes);
             setRenderableNodes(enrichedNodes);
         }
-    }, [treeData, enrichRenderableNodes]);
+    }, [treeData, enrichRenderableNodes, router, assignmentId]);
 
     // Calculate positions after nodes are collected and rendered
     useLayoutEffect(() => {

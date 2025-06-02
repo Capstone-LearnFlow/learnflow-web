@@ -1,6 +1,5 @@
 "use client";
 import { useState, FormEvent, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Chat from './chat';
 import Tree from './tree';
 import Create from './create';
@@ -16,7 +15,6 @@ interface EditableFormData {
 type ChatMode = 'ask' | 'create';
 
 const Research = ({ params }: { params: Promise<{ assignmentId: string }> }) => {
-    const router = useRouter();
     // Shared state between Chat and Create components
     const [mode, setMode] = useState<ChatMode>('ask');
     const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
@@ -33,7 +31,6 @@ const Research = ({ params }: { params: Promise<{ assignmentId: string }> }) => 
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting] = useState<boolean>(false);
-    // const { assignmentId } = params;
     // Handler for assertion changes in edit mode
     const handleAssertionChange = (value: string) => {
         if (editData) {

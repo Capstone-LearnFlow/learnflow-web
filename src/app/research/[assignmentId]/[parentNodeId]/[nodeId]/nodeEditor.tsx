@@ -149,7 +149,8 @@ const NodeEditor = ({
             const assignmentId = resolvedParams.assignmentId;
 
             // For main node creation (when parentNodeId is '0' and nodeId is 'new')
-            if (parentNode.nodeId === '0' && node.nodeId === 'new') {
+            // This handles adding an argument to a subject
+            if (parentNode.type === 'subject' && node.nodeId === 'new' && node.type === 'argument') {
                 // Format data according to the API requirements for main node
                 const evidences = node.children
                     ? node.children.filter(child => child.type === 'evidence').map(child => ({
@@ -179,10 +180,13 @@ const NodeEditor = ({
                 }
 
                 const result = await response.json();
+                console.log('Node created successfully:', result);
 
                 // Navigate back to the assignment page to show the new tree
                 if (result.status === 'success') {
                     router.push(`/research/${assignmentId}`);
+                } else {
+                    throw new Error('Failed to create argument node');
                 }
             } else {
                 // Prepare data for other node types (not main node)
