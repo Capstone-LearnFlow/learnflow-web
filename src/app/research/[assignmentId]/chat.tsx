@@ -85,8 +85,8 @@ const Chat = ({
     parentNodeId: propParentNodeId
 }: ChatProps) => {
     // Get parameters from route if not provided as props
-    const params = useParams<{ assigmentId: string, parentNodeId: string, nodeId: string }>();
-    const assignmentId = propAssignmentId || params?.assigmentId || '';
+    const params = useParams<{ assignmentId: string, parentNodeId: string, nodeId: string }>();
+    const assignmentId = propAssignmentId || params?.assignmentId || '';
     const parentNodeId = propParentNodeId || params?.parentNodeId || '0';
     const [viewStatus, setViewStatus] = useState<'open' | 'closed'>(status);
     const [chatLog, setChatLog] = useState<ChatItem[]>([]);

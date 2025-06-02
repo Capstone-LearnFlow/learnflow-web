@@ -8,7 +8,7 @@ interface NodeEditorProps {
     node: Node;
     setNode: React.Dispatch<React.SetStateAction<Node>>;
     hasChanges: boolean;
-    params: Promise<{ assigmentId: string, parentNodeId: string, nodeId: string }>;
+    params: Promise<{ assignmentId: string, parentNodeId: string, nodeId: string }>;
     originalNode: Node | null;
     setHasChanges: React.Dispatch<React.SetStateAction<boolean>>;
     setOriginalNode: React.Dispatch<React.SetStateAction<Node | null>>;
@@ -146,7 +146,7 @@ const NodeEditor = ({
         try {
             // Get the assignment ID from params
             const resolvedParams = await params;
-            const assignmentId = resolvedParams.assigmentId;
+            const assignmentId = resolvedParams.assignmentId;
 
             // For main node creation (when parentNodeId is '0' and nodeId is 'new')
             if (parentNode.nodeId === '0' && node.nodeId === 'new') {
@@ -297,7 +297,7 @@ const NodeEditor = ({
     const handleAddArgumentToEvidence = useCallback((evidenceNodeId: string) => {
         params.then(resolvedParams => {
             // Navigate to create a new argument under the specified evidence
-            router.push(`/research/${resolvedParams.assigmentId}/${evidenceNodeId}/new`);
+            router.push(`/research/${resolvedParams.assignmentId}/${evidenceNodeId}/new`);
         });
     }, [params, router]);
 
@@ -320,7 +320,7 @@ const NodeEditor = ({
                     const grandParentNode = findParentNode(treeData.root, argumentNode.nodeId);
                     const grandParentId = grandParentNode?.nodeId || '0';
 
-                    router.push(`/research/${resolvedParams.assigmentId}/${grandParentId}/${argumentNode.nodeId}`);
+                    router.push(`/research/${resolvedParams.assignmentId}/${grandParentId}/${argumentNode.nodeId}`);
                     return;
                 }
             }
@@ -329,7 +329,7 @@ const NodeEditor = ({
             const grandParentNode = findParentNode(treeData.root, parentNode.nodeId);
             const grandParentId = grandParentNode?.nodeId || '0'; // Use '0' as fallback for root
 
-            router.push(`/research/${resolvedParams.assigmentId}/${grandParentId}/${parentNode.nodeId}`);
+            router.push(`/research/${resolvedParams.assignmentId}/${grandParentId}/${parentNode.nodeId}`);
         });
     }, [parentNode, params, router]);
 

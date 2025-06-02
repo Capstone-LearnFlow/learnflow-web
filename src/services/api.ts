@@ -47,7 +47,7 @@ interface AssignmentPhase {
     endDate: string;
 }
 
-interface StudentAssignmentDetail {
+export interface StudentAssignmentDetail {
     id: number;
     subject: string;
     chapter: string;

@@ -34,7 +34,7 @@ type NodeRef = {
     getEvidencePosition: (index: number) => Position | null;
 };
 
-const Tree = ({ assigmentId }: { assigmentId: string }) => {
+const Tree = ({ assignmentId }: { assignmentId: string }) => {
     const router = useRouter();
     const [treeData, setTreeData] = useState<TreeData | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -43,11 +43,11 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
     // Fetch tree data from API
     useEffect(() => {
         const fetchTreeData = async () => {
-            if (!assigmentId) return;
+            if (!assignmentId) return;
 
             try {
                 setIsLoading(true);
-                const transformedData = await studentAPI.getAssignmentTree(assigmentId);
+                const transformedData = await studentAPI.getAssignmentTree(assignmentId);
                 console.log('Fetched tree data:', transformedData);
                 setTreeData(transformedData);
             } catch (err) {
@@ -55,7 +55,7 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
 
                 // Handle specific "main node not found" error
                 if (err instanceof Error && err.name === 'MainNodeNotFoundError') {
-                    router.push(`/research/${assigmentId}/0/new`);
+                    router.push(`/research/${assignmentId}/0/new`);
                     return;
                 }
 
@@ -66,7 +66,7 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
         };
 
         fetchTreeData();
-    }, [assigmentId, router]);
+    }, [assignmentId, router]);
 
     const positionorigin: { x: number, y: number } = { x: 8, y: 90 };
     const nodeWidth: number = 462;
@@ -234,7 +234,7 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
                             qNode={nodeData.node as QuestionNode}
                             position={position}
                             parentposition={parentEvidencePosition}
-                            assigmentId={assigmentId}
+                            assignmentId={assignmentId}
                             parentNodeId={nodeData.parentNodeId}
                         />
                     );
@@ -246,7 +246,7 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
                             argNode={nodeData.node as ArgNode}
                             position={position}
                             parentposition={parentEvidencePosition}
-                            assigmentId={assigmentId}
+                            assignmentId={assignmentId}
                             parentNodeId={nodeData.parentNodeId}
                         />
                     );
@@ -272,10 +272,10 @@ interface ArgNodeProps {
     argNode: ArgNode,
     position: Position,
     parentposition?: Position,
-    assigmentId: string,
+    assignmentId: string,
     parentNodeId: string
 };
-const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, position, parentposition, assigmentId, parentNodeId }, ref) => {
+const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, position, parentposition, assignmentId, parentNodeId }, ref) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const childRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
     const router = useRouter();
@@ -285,9 +285,9 @@ const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, positi
     }
 
     const handleNodeBtnClick = () => {
-        // Navigate to the node page: /research/[assigmentId]/[parentNodeId]/[nodeId]
+        // Navigate to the node page: /research/[assignmentId]/[parentNodeId]/[nodeId]
         // For ArgumentNode, we use the actual parent node ID and the current argument node as nodeId
-        router.push(`/research/${assigmentId}/${parentNodeId}/${argNode.nodeId}`);
+        router.push(`/research/${assignmentId}/${parentNodeId}/${argNode.nodeId}`);
     };
 
     useImperativeHandle(ref, () => ({
@@ -358,10 +358,10 @@ interface QuestionNodeProps {
     qNode: QuestionNode,
     position: Position,
     parentposition?: Position,
-    assigmentId: string,
+    assignmentId: string,
     parentNodeId: string
 };
-const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, position, parentposition, assigmentId, parentNodeId }, ref) => {
+const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, position, parentposition, assignmentId, parentNodeId }, ref) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const childRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
     const router = useRouter();
@@ -371,9 +371,9 @@ const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, pos
     }
 
     const handleNodeBtnClick = () => {
-        // Navigate to the node page: /research/[assigmentId]/[parentNodeId]/[nodeId]
+        // Navigate to the node page: /research/[assignmentId]/[parentNodeId]/[nodeId]
         // For QuestionNode, we use the actual parent node ID and the current question node as nodeId
-        router.push(`/research/${assigmentId}/${parentNodeId}/${qNode.nodeId}`);
+        router.push(`/research/${assignmentId}/${parentNodeId}/${qNode.nodeId}`);
     };
 
     useImperativeHandle(ref, () => ({

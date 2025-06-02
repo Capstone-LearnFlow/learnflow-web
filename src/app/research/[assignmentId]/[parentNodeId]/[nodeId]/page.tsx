@@ -5,6 +5,7 @@ import { NodeType, Node, TreeData } from '../../tree';
 import { studentAPI } from '../../../../../services/api';
 import Chat from '../../chat';
 import NodeEditor from './nodeEditor';
+import ResearchNavigation from '../../../components/ResearchNavigation';
 
 // Define types for JSON edit panel
 interface EditableFormData {
@@ -14,7 +15,7 @@ interface EditableFormData {
 
 type ChatMode = 'ask' | 'create';
 
-const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string, parentNodeId: string, nodeId: string }> }) => {
+const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: string, parentNodeId: string, nodeId: string }> }) => {
     const router = useRouter();
     // Chat related state
     const [mode, setMode] = useState<ChatMode>('ask');
@@ -24,8 +25,8 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
     const [hasChanges, setHasChanges] = useState<boolean>(false);
     const [originalNode, setOriginalNode] = useState<Node | null>(null);
     // Store route params for chat component
-    const [assignmentId, setAssignmentId] = useState<string>('');
-    const [parentNodeId, setParentNodeId] = useState<string>('');
+    const [resolvedAssignmentId, setResolvedAssignmentId] = useState<string>('');
+    const [resolvedParentNodeId, setResolvedParentNodeId] = useState<string>('');
     // Tree data state
     const [treeData, setTreeData] = useState<TreeData | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -78,13 +79,14 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
         const fetchTreeData = async () => {
             try {
                 const resolvedParams = await params;
-                setAssignmentId(resolvedParams.assigmentId);
-                setParentNodeId(resolvedParams.parentNodeId);
+                setResolvedAssignmentId(resolvedParams.assignmentId);
+                setResolvedParentNodeId(resolvedParams.parentNodeId);
 
                 setIsLoading(true);
 
                 // Fetch tree data from API
-                const fetchedTreeData = await studentAPI.getAssignmentTree(resolvedParams.assigmentId);
+                console.log('Fetching tree data for assignment:', resolvedParams.assignmentId);
+                const fetchedTreeData = await studentAPI.getAssignmentTree(resolvedParams.assignmentId);
                 setTreeData(fetchedTreeData);
 
                 // Process nodes after tree data is loaded
@@ -95,7 +97,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
                 // Handle specific error for main node not found
                 if (error instanceof Error && error.name === 'MainNodeNotFoundError') {
                     const resolvedParams = await params;
-                    router.push(`/research/${resolvedParams.assigmentId}/0/new`);
+                    router.push(`/research/${resolvedParams.assignmentId}/0/new`);
                     return;
                 }
                 router.back();
@@ -108,7 +110,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
     }, [params, router]);
 
     // Helper function to process nodes after tree data is loaded
-    const processNodes = async (resolvedParams: { assigmentId: string, parentNodeId: string, nodeId: string }, fetchedTreeData: TreeData) => {
+    const processNodes = async (resolvedParams: { assignmentId: string, parentNodeId: string, nodeId: string }, fetchedTreeData: TreeData) => {
         // Handle special case for root node (parentNodeId === '0')
         let parentNodeFromTree: Node;
 
@@ -180,22 +182,13 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
     // Handler for chat close button
     const handleChatClose = useCallback(() => {
         params.then(resolvedParams => {
-            router.push(`/research/${resolvedParams.assigmentId}`);
+            router.push(`/research/${resolvedParams.assignmentId}`);
         });
     }, [params, router]);
 
     return (
         <div className='node_editor__page'>
-            <div className='navigation'>
-                <div className='navigation__content navigation__content--large'>
-                    <div className='navigation__menu_container'>
-                        <div className='navigation__menu navigation__menu--logo navigation__menu--inactive'>LearnFlow</div>
-                        <div className='navigation__menu navigation__menu--inactive'>사회(김민지 선생님)</div>
-                        <div className='navigation__menu'>토의 준비하기</div>
-                    </div>
-                    <div className='navigation__menu'>최민준</div>
-                </div>
-            </div>
+            <ResearchNavigation assignmentId={resolvedAssignmentId} />
 
             <div className='node_editor__container'>
                 <NodeEditor
@@ -223,8 +216,8 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
                         setEditingMessageIndex={setEditingMessageIndex}
                         isEditPanelOpen={isEditPanelOpen}
                         hideButtons={true}
-                        assignmentId={assignmentId}
-                        parentNodeId={parentNodeId}
+                        assignmentId={resolvedAssignmentId}
+                        parentNodeId={resolvedParentNodeId}
                     />
                 </div>
             </div>

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Chat from './chat';
 import Tree from './tree';
 import Create from './create';
+import ResearchNavigation from '../components/ResearchNavigation';
 import styles from './page.module.css';
 
 // Define types for JSON edit panel
@@ -14,25 +15,25 @@ interface EditableFormData {
 
 type ChatMode = 'ask' | 'create';
 
-const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
+const Research = ({ params }: { params: Promise<{ assignmentId: string }> }) => {
     const router = useRouter();
     // Shared state between Chat and Create components
     const [mode, setMode] = useState<ChatMode>('ask');
     const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
     const [editData, setEditData] = useState<EditableFormData | null>(null);
     const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
-    const [assigmentId, setAssigmentId] = useState<string>('');
+    const [assignmentId, setAssignmentId] = useState<string>('');
 
     // Resolve params on component mount
     useEffect(() => {
         params.then(resolvedParams => {
-            setAssigmentId(resolvedParams.assigmentId);
+            setAssignmentId(resolvedParams.assignmentId);
         });
     }, [params]);
     const [assertion, setAssertion] = useState<string>('');
     const [evidence, setEvidence] = useState<string>('');
     const [isSubmitting] = useState<boolean>(false);
-    // const { assigmentId } = params;
+    // const { assignmentId } = params;
     // Handler for assertion changes in edit mode
     const handleAssertionChange = (value: string) => {
         if (editData) {
@@ -89,20 +90,11 @@ const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
 
     return (
         <div className='research'>
-            <div className='navigation'>
-                <div className='navigation__content navigation__content--large'>
-                    <div className='navigation__menu_container'>
-                        <div className='navigation__menu navigation__menu--logo navigation__menu--inactive' onClick={() => router.replace('/')}>LearnFlow</div>
-                        <div className='navigation__menu navigation__menu--inactive'>사회(김민지 선생님)</div>
-                        <div className='navigation__menu'>토의 준비하기</div>
-                    </div>
-                    <div className='navigation__menu'>최민준</div>
-                </div>
-            </div>
+            <ResearchNavigation assignmentId={assignmentId} />
 
             <div className='research-container'>
                 <div className='tree-container'>
-                    <Tree assigmentId={assigmentId} />
+                    <Tree assignmentId={assignmentId} />
 
                     {/* Create floating panel - positioned above Tree */}
                     {isEditPanelOpen && (
