@@ -151,6 +151,9 @@ button {
 .section--large {
   width: 90%;
   max-width: 1024px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .section--scroll {
