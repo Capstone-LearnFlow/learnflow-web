@@ -57,6 +57,234 @@ interface StudentAssignmentDetail {
     phases: AssignmentPhase[];
 }
 
+// Tree API Types
+export type NodeType = 'argument' | 'evidence' | 'counterargument' | 'question' | 'answer' | 'subject';
+export type ApiNodeType = 'CLAIM' | 'COUNTER' | 'SUBJECT';
+
+export type Node = {
+    nodeId: string;
+    type: NodeType;
+    content: string;
+    summary?: string;
+    citation?: Array<string>;
+    index?: number;
+    children: Array<Node> | null;
+};
+
+export type ArgNode = Node & {
+    type: 'argument' | 'counterargument';
+    children: Array<EvidenceNode>;
+};
+
+export type EvidenceNode = Node & {
+    type: 'evidence';
+    index: number;
+    children: Array<ArgNode | QuestionNode> | null;
+};
+
+export type QuestionNode = Node & {
+    type: 'question';
+    children: Array<AnswerNode> | null;
+};
+
+export type AnswerNode = Node & {
+    type: 'answer';
+    children: null;
+};
+
+export type SubjectNode = Node & {
+    type: 'subject';
+    children: Array<ArgNode> | null;
+};
+
+// Enhanced tree structure for rendering
+export type RenderableNode = {
+    id: string;
+    type: 'argument' | 'counterargument' | 'question';
+    node: ArgNode | QuestionNode;
+    depth: number;
+    parentNodeId: string;
+    parentEvidenceIndex?: number;
+    parentRef?: React.RefObject<any>; // Added for tree component usage
+};
+
+export type TreeData = {
+    subject: SubjectNode;
+    renderableNodes: RenderableNode[];
+};
+
+// Interface for API response
+interface ApiEvidence {
+    id: number;
+    content: string;
+    summary: string;
+    source: string | null;
+    url: string | null;
+}
+
+interface ApiNode {
+    id: number;
+    content: string;
+    summary: string;
+    type: ApiNodeType;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+    evidences: ApiEvidence[];
+    children: ApiNode[];
+    triggeredByEvidenceId: number | null;
+}
+
+interface ApiTreeResponse {
+    status: string;
+    data: ApiNode;
+}
+
+// Map API node types to component node types
+export const mapApiNodeTypeToNodeType = (apiType: ApiNodeType): NodeType => {
+    switch (apiType) {
+        case 'CLAIM':
+            return 'argument';
+        case 'COUNTER':
+            return 'counterargument';
+        case 'SUBJECT':
+            return 'subject';
+        default:
+            return 'argument';
+    }
+};
+
+// Convert API node to component node
+export const convertApiNodeToNode = (apiNode: ApiNode): Node => {
+    const nodeType = mapApiNodeTypeToNodeType(apiNode.type);
+
+    // Create evidence nodes from API evidences
+    const evidenceNodes: EvidenceNode[] = apiNode.evidences.map((evidence, index) => ({
+        nodeId: evidence.id.toString(),
+        type: 'evidence',
+        content: evidence.content,
+        summary: evidence.summary,
+        index: index + 1,
+        children: null
+    }));
+
+    // Create child nodes (recursively)
+    const childNodes = apiNode.children.map(child => convertApiNodeToNode(child));
+
+    // Connect child nodes to appropriate evidence nodes if possible
+    if (childNodes.length > 0 && evidenceNodes.length > 0) {
+        childNodes.forEach(childNode => {
+            const apiChildNode = apiNode.children.find(c => c.id.toString() === childNode.nodeId);
+            if (apiChildNode && apiChildNode.triggeredByEvidenceId) {
+                const evidenceIndex = evidenceNodes.findIndex(
+                    e => e.nodeId === apiChildNode.triggeredByEvidenceId?.toString()
+                );
+                if (evidenceIndex >= 0 && evidenceNodes[evidenceIndex]) {
+                    // Initialize children array if it doesn't exist
+                    if (!evidenceNodes[evidenceIndex].children) {
+                        evidenceNodes[evidenceIndex].children = [];
+                    }
+                    // Add this child to the evidence's children
+                    evidenceNodes[evidenceIndex].children?.push(childNode as any);
+                }
+            }
+        });
+    }
+
+    return {
+        nodeId: apiNode.id.toString(),
+        type: nodeType,
+        content: apiNode.content,
+        summary: apiNode.summary,
+        children: nodeType === 'argument' || nodeType === 'counterargument'
+            ? evidenceNodes
+            : childNodes.length > 0 ? childNodes : null
+    };
+};
+
+// Function to recursively collect all renderable nodes (arguments and questions)
+const collectRenderableNodes = (node: Node | null, depth: number, parentNodeId: string, parentEvidenceIndex?: number): RenderableNode[] => {
+    if (!node) return [];
+
+    const result: RenderableNode[] = [];
+
+    if (node.type === 'argument' || node.type === 'counterargument') {
+        const argNode = node as ArgNode;
+        const nodeId = `${argNode.type}-${argNode.nodeId}-${depth}`;
+
+        result.push({
+            id: nodeId,
+            type: argNode.type,
+            node: argNode,
+            depth,
+            parentNodeId: parentNodeId,
+            parentEvidenceIndex: parentEvidenceIndex,
+        });
+
+        // Process evidence children to find nested arguments/questions
+        argNode.children.forEach((evidence, evidenceIndex) => {
+            if (evidence.children) {
+                evidence.children.forEach(child => {
+                    if (child.type === 'question') {
+                        const questionNode = child as QuestionNode;
+                        const questionId = `question-${questionNode.nodeId}-${depth + 1}`;
+
+                        result.push({
+                            id: questionId,
+                            type: 'question',
+                            node: questionNode,
+                            depth: depth + 1,
+                            parentNodeId: nodeId, // current node is the parent
+                            parentEvidenceIndex: evidenceIndex,
+                        });
+                    } else {
+                        const nestedNodes = collectRenderableNodes(
+                            child,
+                            depth + 1,
+                            nodeId, // current node is the parent
+                            evidenceIndex
+                        );
+                        result.push(...nestedNodes);
+                    }
+                });
+            }
+        });
+    }
+
+    return result;
+};
+
+// Create a subject node from API data
+export const createSubjectNodeFromApi = (apiNode: ApiNode): SubjectNode => {
+    // The apiNode itself is the subject node now
+    const childNodes = apiNode.children.map(child => convertApiNodeToNode(child));
+
+    return {
+        nodeId: apiNode.id.toString(),
+        type: 'subject',
+        content: apiNode.content || '주제',
+        children: childNodes as ArgNode[]
+    };
+};
+
+// Create tree data with pre-processed renderable nodes
+export const createTreeDataFromApi = (apiNode: ApiNode): TreeData => {
+    const subjectNode = createSubjectNodeFromApi(apiNode);
+
+    // Collect all renderable nodes
+    const renderableNodes: RenderableNode[] = [];
+    if (subjectNode.children) {
+        subjectNode.children.forEach(child => {
+            renderableNodes.push(...collectRenderableNodes(child, 0, subjectNode.nodeId));
+        });
+    }
+
+    return {
+        subject: subjectNode,
+        renderableNodes: renderableNodes
+    };
+};
+
 // Authentication API
 export const authAPI = {
     login: async (number: string): Promise<AuthResponse> => {
@@ -125,6 +353,69 @@ export const studentAPI = {
             return data.data; // Extract the data field from the response
         } catch (error) {
             console.error('Get assignment detail API error:', error);
+            throw error;
+        }
+    },
+
+    // Get tree data for assignment and convert to TreeData
+    getAssignmentTree: async (assignmentId: string): Promise<TreeData> => {
+        try {
+            const response = await fetch(`/api/student/assignments/${assignmentId}/nodes/tree`, {
+                method: 'GET',
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                // Try to parse error response
+                const errorData = await response.json();
+
+                // Check if this is the "main node not found" error (400 error)
+                if (response.status === 400 &&
+                    errorData.status === 'error' &&
+                    errorData.data === '메인 노드를 찾을 수 없습니다.') {
+                    // Throw specific error for main node not found
+                    const error = new Error('Main node not found');
+                    error.name = 'MainNodeNotFoundError';
+                    throw error;
+                }
+
+                throw new Error(`Error fetching tree data: ${response.status}`);
+            }
+
+            const apiData: ApiTreeResponse = await response.json();
+
+            if (apiData.status === 'success' && apiData.data) {
+                // Check if the root node is a SUBJECT type
+                if (apiData.data.type === 'SUBJECT') {
+                    return createTreeDataFromApi(apiData.data);
+                } else {
+                    // Legacy support: if root is not SUBJECT, wrap it as before
+                    const rootNode = convertApiNodeToNode(apiData.data);
+                    const wrappedSubjectNode: SubjectNode = {
+                        nodeId: '0',
+                        type: 'subject',
+                        content: apiData.data.content || '주제',
+                        children: [rootNode] as ArgNode[]
+                    };
+
+                    // Create tree data from wrapped subject node
+                    const renderableNodes: RenderableNode[] = [];
+                    if (wrappedSubjectNode.children) {
+                        wrappedSubjectNode.children.forEach(child => {
+                            renderableNodes.push(...collectRenderableNodes(child, 0, wrappedSubjectNode.nodeId));
+                        });
+                    }
+
+                    return {
+                        subject: wrappedSubjectNode,
+                        renderableNodes: renderableNodes
+                    };
+                }
+            } else {
+                throw new Error('Invalid API response format');
+            }
+        } catch (error) {
+            console.error('Get assignment tree API error:', error);
             throw error;
         }
     },

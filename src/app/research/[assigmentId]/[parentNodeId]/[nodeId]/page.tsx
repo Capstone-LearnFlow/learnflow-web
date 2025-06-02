@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { exampleTree, NodeType, Node } from '../../tree';
+import { NodeType, Node } from '../../tree';
 import Chat from '../../chat';
 import NodeEditor from './nodeEditor';
 
@@ -40,17 +40,17 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
     });
 
     // Helper function to find a node by ID in the tree
-    const findNodeById = (tree: Node, targetId: string): Node | null => {
-        if (tree.nodeId === targetId) {
-            return tree;
-        }
+    const findNodeById = (targetId: string): Node | null => {
+        // if (tree.nodeId === targetId) {
+        //     return tree;
+        // }
 
-        if (tree.children) {
-            for (const child of tree.children) {
-                const found = findNodeById(child, targetId);
-                if (found) return found;
-            }
-        }
+        // if (tree.children) {
+        //     for (const child of tree.children) {
+        //         const found = findNodeById(child, targetId);
+        //         if (found) return found;
+        //     }
+        // }
 
         return null;
     };
@@ -75,13 +75,13 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
             console.log('Assignment ID:', resolvedParams.assigmentId);
             console.log('Parent Node ID:', resolvedParams.parentNodeId);
             console.log('Node ID:', resolvedParams.nodeId); // 새 노드 추가인 경우 'new'
-            
+
             // Store route params for chat component
             setAssignmentId(resolvedParams.assigmentId);
             setParentNodeId(resolvedParams.parentNodeId);
 
             // Get parent node from exampleTree
-            const parentNodeFromTree = findNodeById(exampleTree, resolvedParams.parentNodeId);
+            const parentNodeFromTree = findNodeById(resolvedParams.parentNodeId);
 
             if (!parentNodeFromTree) {
                 console.error('Parent node not found');
@@ -112,7 +112,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
                 }
             } else {
                 // Get existing node from exampleTree
-                const nodeFromTree = findNodeById(exampleTree, resolvedParams.nodeId);
+                const nodeFromTree = findNodeById(resolvedParams.nodeId);
 
                 if (!nodeFromTree) {
                     console.error('Node not found');

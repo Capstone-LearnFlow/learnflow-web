@@ -1,7 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import {
+    NodeType,
+    ApiNodeType,
+    Node,
+    ArgNode,
+    EvidenceNode,
+    QuestionNode,
+    AnswerNode,
+    SubjectNode,
+    mapApiNodeTypeToNodeType,
+    convertApiNodeToNode,
+    createSubjectNodeFromApi
+} from '../../../../../../../services/api';
 
 const API_BASE_URL = 'http://100.65.217.64:8080/api';
+
+// Interface for API response (keeping these here as they're only used in this route)
+interface ApiEvidence {
+    id: number;
+    content: string;
+    summary: string;
+    source: string | null;
+    url: string | null;
+}
+
+interface ApiNode {
+    id: number;
+    content: string;
+    summary: string;
+    type: ApiNodeType;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+    evidences: ApiEvidence[];
+    children: ApiNode[];
+    triggeredByEvidenceId: number | null;
+}
+
+interface ApiTreeResponse {
+    status: string;
+    data: ApiNode;
+}
 
 export async function GET(
     request: NextRequest,

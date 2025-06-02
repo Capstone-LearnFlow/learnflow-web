@@ -1,9 +1,10 @@
 "use client";
 import React, { forwardRef, useRef, useImperativeHandle, useLayoutEffect, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { studentAPI, type NodeType, type Node, type ArgNode, type EvidenceNode, type QuestionNode, type AnswerNode, type SubjectNode, type TreeData, type RenderableNode } from '../../../services/api';
 
-export type NodeType = 'argument' | 'evidence' | 'counterargument' | 'question' | 'answer' | 'subject';
-export type ApiNodeType = 'CLAIM' | 'COUNTER';
+export type { NodeType, Node, ArgNode, EvidenceNode, QuestionNode, AnswerNode, SubjectNode, TreeData, RenderableNode };
+
 export const getNodeTypeName: (t: NodeType) => string = (t) => {
     switch (t) {
         case 'argument':
@@ -22,36 +23,6 @@ export const getNodeTypeName: (t: NodeType) => string = (t) => {
             return '';
     }
 };
-export type Node = {
-    nodeId: string;
-    type: NodeType;
-    content: string;
-    summary?: string;
-    citation?: Array<string>;
-    index?: number;
-    children: Array<Node> | null;
-};
-type ArgNode = Node & {
-    type: 'argument' | 'counterargument';
-    children: Array<EvidenceNode>;
-};
-type EvidenceNode = Node & {
-    type: 'evidence';
-    index: number;
-    children: Array<ArgNode | QuestionNode> | null; // length = 1
-};
-type QuestionNode = Node & {
-    type: 'question';
-    children: Array<AnswerNode> | null; // length = 1
-};
-type AnswerNode = Node & {
-    type: 'answer';
-    children: null;
-};
-type SubjectNode = Node & {
-    type: 'subject';
-    children: Array<ArgNode> | null; // length = 1
-};
 
 type Position = {
     x: number;
@@ -63,118 +34,9 @@ type NodeRef = {
     getEvidencePosition: (index: number) => Position | null;
 };
 
-type RenderableNode = {
-    id: string;
-    type: 'argument' | 'counterargument' | 'question';
-    node: ArgNode | QuestionNode;
-    depth: number;
-    parentRef?: React.RefObject<NodeRef | null>;
-    parentNodeId: string;
-    parentEvidenceIndex?: number;
-};
-
-
-// Interface for API response
-interface ApiEvidence {
-    id: number;
-    content: string;
-    summary: string;
-    source: string | null;
-    url: string | null;
-}
-
-interface ApiNode {
-    id: number;
-    content: string;
-    summary: string;
-    type: ApiNodeType;
-    createdBy: string;
-    createdAt: string;
-    updatedAt: string;
-    evidences: ApiEvidence[];
-    children: ApiNode[];
-    triggeredByEvidenceId: number | null;
-}
-
-interface ApiTreeResponse {
-    status: string;
-    data: ApiNode;
-}
-
-// Map API node types to component node types
-const mapApiNodeTypeToNodeType = (apiType: ApiNodeType): NodeType => {
-    switch (apiType) {
-        case 'CLAIM':
-            return 'argument';
-        case 'COUNTER':
-            return 'counterargument';
-        default:
-            return 'argument';
-    }
-};
-
-// Convert API node to component node
-const convertApiNodeToNode = (apiNode: ApiNode): Node => {
-    const nodeType = mapApiNodeTypeToNodeType(apiNode.type);
-    
-    // Create evidence nodes from API evidences
-    const evidenceNodes: EvidenceNode[] = apiNode.evidences.map((evidence, index) => ({
-        nodeId: evidence.id.toString(),
-        type: 'evidence',
-        content: evidence.content,
-        summary: evidence.summary,
-        index: index + 1,
-        children: null
-    }));
-    
-    // Create child nodes (recursively)
-    const childNodes = apiNode.children.map(child => convertApiNodeToNode(child));
-    
-    // Connect child nodes to appropriate evidence nodes if possible
-    if (childNodes.length > 0 && evidenceNodes.length > 0) {
-        childNodes.forEach(childNode => {
-            const apiChildNode = apiNode.children.find(c => c.id.toString() === childNode.nodeId);
-            if (apiChildNode && apiChildNode.triggeredByEvidenceId) {
-                const evidenceIndex = evidenceNodes.findIndex(
-                    e => e.nodeId === apiChildNode.triggeredByEvidenceId?.toString()
-                );
-                if (evidenceIndex >= 0 && evidenceNodes[evidenceIndex]) {
-                    // Initialize children array if it doesn't exist
-                    if (!evidenceNodes[evidenceIndex].children) {
-                        evidenceNodes[evidenceIndex].children = [];
-                    }
-                    // Add this child to the evidence's children
-                    evidenceNodes[evidenceIndex].children?.push(childNode as any);
-                }
-            }
-        });
-    }
-    
-    return {
-        nodeId: apiNode.id.toString(),
-        type: nodeType,
-        content: apiNode.content,
-        summary: apiNode.summary,
-        children: nodeType === 'argument' || nodeType === 'counterargument' 
-            ? evidenceNodes 
-            : childNodes.length > 0 ? childNodes : null
-    };
-};
-
-// Create a subject node from API data
-const createSubjectNodeFromApi = (apiNode: ApiNode): SubjectNode => {
-    const rootNode = convertApiNodeToNode(apiNode);
-    return {
-        nodeId: '0',
-        type: 'subject',
-        content: apiNode.content,
-        children: [rootNode] as ArgNode[]
-    };
-};
-
 const Tree = ({ assigmentId }: { assigmentId: string }) => {
     const router = useRouter();
-    const [treeData, setTreeData] = useState<SubjectNode | null>(null);
+    const [treeData, setTreeData] = useState<TreeData | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -182,46 +44,29 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
     useEffect(() => {
         const fetchTreeData = async () => {
             if (!assigmentId) return;
-            
+
             try {
                 setIsLoading(true);
-                const response = await fetch(`/api/student/assignments/${assigmentId}/nodes/tree`);
-                
-                if (!response.ok) {
-                    // Try to parse error response
-                    const errorData = await response.json();
-                    
-                    // Check if this is the "main node not found" error (400 error)
-                    if (response.status === 400 && 
-                        errorData.status === 'error' && 
-                        errorData.data === '메인 노드를 찾을 수 없습니다.') {
-                        // Redirect to create new main node
-                        console.log('Main node not found, redirecting to create page');
-                        router.push(`/research/${assigmentId}/0/new`);
-                        return;
-                    }
-                    
-                    throw new Error(`Error fetching tree data: ${response.status}`);
-                }
-                
-                const apiData: ApiTreeResponse = await response.json();
-                
-                if (apiData.status === 'success' && apiData.data) {
-                    const transformedData = createSubjectNodeFromApi(apiData.data);
-                    setTreeData(transformedData);
-                } else {
-                    throw new Error('Invalid API response format');
-                }
+                const transformedData = await studentAPI.getAssignmentTree(assigmentId);
+                setTreeData(transformedData);
             } catch (err) {
                 console.error('Failed to fetch tree data:', err);
+
+                // Handle specific "main node not found" error
+                if (err instanceof Error && err.name === 'MainNodeNotFoundError') {
+                    console.log('Main node not found, redirecting to create page');
+                    router.push(`/research/${assigmentId}/0/new`);
+                    return;
+                }
+
                 setError(err instanceof Error ? err.message : 'Unknown error occurred');
             } finally {
                 setIsLoading(false);
             }
         };
-        
+
         fetchTreeData();
-    }, [assigmentId]);
+    }, [assigmentId, router]);
 
     const positionorigin: { x: number, y: number } = { x: 8, y: 90 };
     const nodeWidth: number = 462;
@@ -242,59 +87,24 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
         return nodeRefs.current.get(nodeId)!;
     }, []);
 
-    // Function to recursively collect all renderable nodes (arguments and questions)
-    const collectRenderableNodes = useCallback((node: Node | null, depth: number, parentId?: string, parentEvidenceIndex?: number, parentNodeId?: string): RenderableNode[] => {
-        if (!node) return [];
+    // Add parent refs to renderable nodes when tree data is loaded
+    const enrichRenderableNodes = useCallback((nodes: RenderableNode[]): RenderableNode[] => {
+        return nodes.map(node => {
+            let parentRef: React.RefObject<NodeRef | null> | undefined = undefined;
 
-        const result: RenderableNode[] = [];
-
-        if (node.type === 'argument' || node.type === 'counterargument') {
-            const argNode = node as ArgNode;
-            const nodeId = `${argNode.type}-${argNode.nodeId}-${depth}`;
-
-            result.push({
-                id: nodeId,
-                type: argNode.type,
-                node: argNode,
-                depth,
-                parentRef: parentId ? getNodeRef(parentId) : undefined,
-                parentEvidenceIndex: parentEvidenceIndex,
-                parentNodeId: parentNodeId || '0' // 최상위는 subject node (nodeId: '0')
-            });
-
-            // Process evidence children to find nested arguments/questions
-            argNode.children.forEach((evidence, evidenceIndex) => {
-                if (evidence.children) {
-                    evidence.children.forEach(child => {
-                        if (child.type === 'question') {
-                            const questionNode = child as QuestionNode;
-                            const questionId = `question-${questionNode.nodeId}-${depth + 1}`;
-
-                            result.push({
-                                id: questionId,
-                                type: 'question',
-                                node: questionNode,
-                                depth: depth + 1,
-                                parentRef: getNodeRef(nodeId),
-                                parentEvidenceIndex: evidenceIndex,
-                                parentNodeId: evidence.nodeId // evidence 노드가 부모
-                            });
-                        } else {
-                            const nestedNodes = collectRenderableNodes(
-                                child,
-                                depth + 1,
-                                nodeId,
-                                evidenceIndex,
-                                evidence.nodeId // evidence 노드가 부모
-                            );
-                            result.push(...nestedNodes);
-                        }
-                    });
+            if (node.parentEvidenceIndex !== undefined) {
+                // Find the parent node that contains this evidence
+                const parentNode = nodes.find(n => n.node.nodeId === node.parentNodeId);
+                if (parentNode) {
+                    parentRef = getNodeRef(parentNode.id);
                 }
-            });
-        }
+            }
 
-        return result;
+            return {
+                ...node,
+                parentRef
+            };
+        });
     }, [getNodeRef]);
 
     // Calculate positions for all nodes
@@ -359,17 +169,15 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
         setNodePositions(newPositions);
     }, [renderableNodes, positionorigin.x, positionorigin.y, colWidth, rowGap, getNodeRef]);
 
-    // Calculate renderable nodes when component mounts or tree changes
+    // Calculate renderable nodes when tree data is loaded (now simplified!)
     useLayoutEffect(() => {
-        if (treeData?.children) {
-            const nodes: RenderableNode[] = [];
-            treeData.children.forEach(child => {
-                nodes.push(...collectRenderableNodes(child, 0));
-            });
-            console.log('Collected renderable nodes:', nodes);
-            setRenderableNodes(nodes);
+        if (treeData?.renderableNodes) {
+            // Add parent refs to the pre-processed renderable nodes
+            const enrichedNodes = enrichRenderableNodes(treeData.renderableNodes);
+            console.log('Using pre-processed renderable nodes:', enrichedNodes);
+            setRenderableNodes(enrichedNodes);
         }
-    }, [collectRenderableNodes, treeData]);
+    }, [treeData, enrichRenderableNodes]);
 
     // Calculate positions after nodes are collected and rendered
     useLayoutEffect(() => {
@@ -399,7 +207,7 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
 
     return (
         <div className='tree'>
-            <SubjectNode content={treeData.content} />
+            <SubjectNode content={treeData.subject.content} />
 
             {renderableNodes.map((nodeData) => {
                 const position = nodePositions.get(nodeData.id) || { x: positionorigin.x + (colWidth * nodeData.depth), y: positionorigin.y };
