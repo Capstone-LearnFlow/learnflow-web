@@ -93,11 +93,19 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
             let parentRef: React.RefObject<NodeRef | null> | undefined = undefined;
 
             if (node.parentEvidenceIndex !== undefined) {
-                // Find the parent node that contains this evidence
-                // parentNodeId is the id of the renderable node, not the nodeId
-                const parentNode = nodes.find(n => n.id === node.parentNodeId);
-                if (parentNode) {
-                    parentRef = getNodeRef(parentNode.id);
+                // For nodes with evidence parents (counterarguments, questions), 
+                // find the argument node that contains the evidence with the given parentNodeId
+                const parentArgumentNode = nodes.find(n => {
+                    // Check if this argument node has evidence children with matching nodeId
+                    if (n.node.type === 'argument' || n.node.type === 'counterargument') {
+                        const argNode = n.node as ArgNode;
+                        return argNode.children.some(evidence => evidence.nodeId === node.parentNodeId);
+                    }
+                    return false;
+                });
+
+                if (parentArgumentNode) {
+                    parentRef = getNodeRef(parentArgumentNode.id);
                 }
             }
 

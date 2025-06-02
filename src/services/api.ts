@@ -258,14 +258,14 @@ const collectRenderableNodes = (node: Node | null, depth: number, parentNodeId: 
                             type: 'question',
                             node: questionNode,
                             depth: depth + 1,
-                            parentNodeId: nodeId, // current node is the parent
+                            parentNodeId: evidence.nodeId, // evidence is the parent for questions
                             parentEvidenceIndex: evidence.index ? (evidence.index - 1) : undefined,
                         });
                     } else {
                         const nestedNodes = collectRenderableNodes(
                             child,
                             depth + 1,
-                            nodeId, // current node is the parent
+                            evidence.nodeId, // evidence is the parent for counterarguments
                             evidence.index ? (evidence.index - 1) : undefined
                         );
                         result.push(...nestedNodes);

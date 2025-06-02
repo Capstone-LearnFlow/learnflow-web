@@ -1,5 +1,6 @@
 "use client";
 import { useState, FormEvent, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Chat from './chat';
 import Tree from './tree';
 import Create from './create';
@@ -14,6 +15,7 @@ interface EditableFormData {
 type ChatMode = 'ask' | 'create';
 
 const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
+    const router = useRouter();
     // Shared state between Chat and Create components
     const [mode, setMode] = useState<ChatMode>('ask');
     const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
@@ -90,7 +92,7 @@ const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
             <div className='navigation'>
                 <div className='navigation__content navigation__content--large'>
                     <div className='navigation__menu_container'>
-                        <div className='navigation__menu navigation__menu--logo navigation__menu--inactive'>LearnFlow</div>
+                        <div className='navigation__menu navigation__menu--logo navigation__menu--inactive' onClick={() => router.replace('/')}>LearnFlow</div>
                         <div className='navigation__menu navigation__menu--inactive'>사회(김민지 선생님)</div>
                         <div className='navigation__menu'>토의 준비하기</div>
                     </div>

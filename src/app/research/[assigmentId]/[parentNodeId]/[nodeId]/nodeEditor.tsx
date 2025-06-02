@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { NodeType, Node, getNodeTypeName } from '../../tree';
+import { NodeType, Node, getNodeTypeName, TreeData } from '../../tree';
 
 interface NodeEditorProps {
     parentNode: Node;
@@ -12,6 +12,7 @@ interface NodeEditorProps {
     originalNode: Node | null;
     setHasChanges: React.Dispatch<React.SetStateAction<boolean>>;
     setOriginalNode: React.Dispatch<React.SetStateAction<Node | null>>;
+    treeData: TreeData | null;
 }
 
 const NodeEditor = ({
@@ -22,37 +23,38 @@ const NodeEditor = ({
     params,
     originalNode,
     setHasChanges,
-    setOriginalNode
+    setOriginalNode,
+    treeData
 }: NodeEditorProps) => {
     const router = useRouter();
 
     // Helper function to find a node by ID in the tree
-    const findNodeById = (targetId: string): Node | null => {
-        // if (tree.nodeId === targetId) {
-        //     return tree;
-        // }
+    const findNodeById = (tree: Node, targetId: string): Node | null => {
+        if (tree.nodeId === targetId) {
+            return tree;
+        }
 
-        // if (tree.children) {
-        //     for (const child of tree.children) {
-        //         const found = findNodeById(child, targetId);
-        //         if (found) return found;
-        //     }
-        // }
+        if (tree.children) {
+            for (const child of tree.children) {
+                const found = findNodeById(child, targetId);
+                if (found) return found;
+            }
+        }
 
         return null;
     };
 
     // Helper function to find parent node of a given nodeId
-    const findParentNode = (targetId: string): Node | null => {
-        // if (tree.children) {
-        //     for (const child of tree.children) {
-        //         if (child.nodeId === targetId) {
-        //             return tree;
-        //         }
-        //         const found = findParentNode(child, targetId);
-        //         if (found) return found;
-        //     }
-        // }
+    const findParentNode = (tree: Node, targetId: string): Node | null => {
+        if (tree.children) {
+            for (const child of tree.children) {
+                if (child.nodeId === targetId) {
+                    return tree;
+                }
+                const found = findParentNode(child, targetId);
+                if (found) return found;
+            }
+        }
         return null;
     };
 
@@ -307,13 +309,15 @@ const NodeEditor = ({
         }
 
         params.then(resolvedParams => {
+            if (!treeData) return;
+
             // If parent is evidence, redirect to the argument/counterargument that contains it
             if (parentNode.type === 'evidence') {
                 // Find the argument/counterargument node that contains this evidence
-                const argumentNode = findParentNode(parentNode.nodeId);
+                const argumentNode = findParentNode(treeData.root, parentNode.nodeId);
                 if (argumentNode && (argumentNode.type === 'argument' || argumentNode.type === 'counterargument')) {
                     // Find the grandparent of the argument node
-                    const grandParentNode = findParentNode(argumentNode.nodeId);
+                    const grandParentNode = findParentNode(treeData.root, argumentNode.nodeId);
                     const grandParentId = grandParentNode?.nodeId || '0';
 
                     router.push(`/research/${resolvedParams.assigmentId}/${grandParentId}/${argumentNode.nodeId}`);
@@ -322,7 +326,7 @@ const NodeEditor = ({
             }
 
             // For other node types (argument, counterargument, question, answer)
-            const grandParentNode = findParentNode(parentNode.nodeId);
+            const grandParentNode = findParentNode(treeData.root, parentNode.nodeId);
             const grandParentId = grandParentNode?.nodeId || '0'; // Use '0' as fallback for root
 
             router.push(`/research/${resolvedParams.assigmentId}/${grandParentId}/${parentNode.nodeId}`);
