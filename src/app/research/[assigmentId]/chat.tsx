@@ -107,7 +107,7 @@ const Chat = ({
     const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
     // Get user information from auth context
     const { user } = useAuth();
-    
+
     // Load chat logs from Supabase on component mount
     useEffect(() => {
         const fetchChatLogs = async () => {
@@ -119,7 +119,7 @@ const Chat = ({
             try {
                 // Load all messages for this node without filtering by user
                 const result = await loadChatMessages(assignmentId, parentNodeId, nodeId);
-                
+
                 if (result.success && result.data) {
                     // Convert Supabase messages to ChatItem format
                     const loadedMessages: ChatItem[] = result.data.map(message => ({
@@ -131,7 +131,7 @@ const Chat = ({
                         citations: message.citations,
                         hasForm: false
                     }));
-                    
+
                     // Add any existing messages to API history for context
                     const apiHistory: ApiContentItem[] = [];
                     loadedMessages.forEach(msg => {
@@ -140,11 +140,11 @@ const Chat = ({
                             parts: [{ text: msg.message }]
                         });
                     });
-                    
+
                     if (apiHistory.length > 0) {
                         apiHistoryRef.current = apiHistory;
                     }
-                    
+
                     // Set loaded messages to state
                     if (loadedMessages.length > 0) {
                         setChatLog(loadedMessages);
@@ -166,7 +166,7 @@ const Chat = ({
     // Function to save chat message to Supabase
     const saveChatMessageToSupabase = async (message: ChatItem) => {
         if (!assignmentId || !nodeId) return;
-        
+
         try {
             await saveChatMessage({
                 assignment_id: assignmentId,
@@ -222,7 +222,7 @@ const Chat = ({
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, []);
-            
+
     // Only scroll for the very first message, then let user control
     useEffect(() => {
         if (chatLog.length === 1) {
@@ -373,7 +373,7 @@ const Chat = ({
             setChatLog((prev) => [...prev, aiResponse]);
             // Save AI response to Supabase
             await saveChatMessageToSupabase(aiResponse);
-            
+
             setStreamingMessage('');
             setStreamingSuggestions([]);
             setStreamingCitations([]);
@@ -383,7 +383,7 @@ const Chat = ({
             setHasAskedQuestion(true);
         } catch (error) {
             if (error instanceof DOMException && error.name === 'AbortError') {
-                console.log('Fetch aborted');
+                // Fetch was aborted
             } else {
                 console.error('Error fetching Gemini response:', error);
                 setResponseStatus('error');
@@ -392,7 +392,7 @@ const Chat = ({
             abortControllerRef.current = null;
         }
     }, [setChatLog, setStreamingMessage, setStreamingSuggestions, setStreamingCitations, setResponseStatus, setHasAskedQuestion, mode, assignmentId, parentNodeId, nodeId]);
-        
+
     // Function to send an assertion to OpenAI API - modified to directly open edit panel
     const sendAssertionToOpenAI = async (assertionText: string, evidenceText: string) => {
         try {
@@ -418,7 +418,6 @@ const Chat = ({
 
             // Parse the response data with error handling
             const responseText = await response.text();
-            console.log("Raw OpenAI response:", responseText);
 
             try {
                 // Try to parse the response - it might be a string representation of JSON
@@ -459,8 +458,6 @@ const Chat = ({
                     evidences: Array.isArray(parsedData.evidences) ? parsedData.evidences : []
                 };
 
-                console.log("Successfully parsed response data:", safeData);
-
                 // Directly set the edit data and open the edit panel
                 setEditData(safeData);
 
@@ -473,27 +470,27 @@ const Chat = ({
                 // Keep form values (removed reset logic)
             } catch (parseError) {
                 console.error('Error parsing response:', parseError);
-        // Show error message in chat
-        const errorMessage: ChatItem = {
-            sender: "AI",
-            message: "죄송합니다. 응답을 처리하는 중 오류가 발생했습니다.",
-            created_at: Date.now(),
-            mode: 'create',
-        };
-        setChatLog((prev) => [...prev, errorMessage]);
-        await saveChatMessageToSupabase(errorMessage);
+                // Show error message in chat
+                const errorMessage: ChatItem = {
+                    sender: "AI",
+                    message: "죄송합니다. 응답을 처리하는 중 오류가 발생했습니다.",
+                    created_at: Date.now(),
+                    mode: 'create',
+                };
+                setChatLog((prev) => [...prev, errorMessage]);
+                await saveChatMessageToSupabase(errorMessage);
             }
         } catch (error) {
             console.error('Error calling OpenAI API:', error);
-        // Show error message in chat
-        const errorMessage: ChatItem = {
-            sender: "AI",
-            message: "죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.",
-            created_at: Date.now(),
-            mode: 'create',
-        };
-        setChatLog((prev) => [...prev, errorMessage]);
-        await saveChatMessageToSupabase(errorMessage);
+            // Show error message in chat
+            const errorMessage: ChatItem = {
+                sender: "AI",
+                message: "죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.",
+                created_at: Date.now(),
+                mode: 'create',
+            };
+            setChatLog((prev) => [...prev, errorMessage]);
+            await saveChatMessageToSupabase(errorMessage);
         } finally {
             setIsSubmitting(false);
             setResponseStatus('success');
@@ -531,13 +528,13 @@ const Chat = ({
         setChatLog((prev) => [...prev, aiFormMessage]);
         // Save form message to Supabase
         await saveChatMessageToSupabase(aiFormMessage);
-        
+
         // Reset form fields and submission state
         setAssertion('');
         setEvidence('');
         setFormSubmitted(false);
     }, [setChatLog, setAssertion, setEvidence, assignmentId, parentNodeId, nodeId]);
-        
+
     // Add form message when mode changes to 'create'
     useEffect(() => {
         if (mode === 'create' && responseStatus === 'success') {
@@ -548,7 +545,7 @@ const Chat = ({
     const isProcessingMessageRef = useRef<boolean>(false);
     const sentMessagesRef = useRef<Set<string>>(new Set());
     const DUPLICATE_PREVENTION_TIMEOUT = 3000; // 3 seconds to prevent exact duplicate messages
-    
+
     // Generate a unique ID for each message to track duplicates
     const generateMessageId = (text: string, timestamp: number): string => {
         return `${text.trim()}_${timestamp}`;
@@ -556,14 +553,14 @@ const Chat = ({
 
     const sendMessage = useCallback(async (text: string = inputValue) => {
         const trimmedText = text.trim();
-        
+
         // Basic validation
         if (trimmedText === '' || responseStatus === 'streaming') return;
-        
+
         // Create a timestamp for this message attempt
         const now = Date.now();
         const messageId = generateMessageId(trimmedText, now);
-        
+
         // Check if we're already processing a message or if this exact message was sent recently
         if (isProcessingMessageRef.current || sentMessagesRef.current.has(messageId)) {
             console.log('Prevented duplicate submission:', trimmedText);
@@ -572,23 +569,23 @@ const Chat = ({
 
         // Advanced check - look for very recent identical content regardless of timestamp
         let isDuplicate = false;
-        
+
         // Convert Set to Array for iteration (fixes TypeScript error)
         const recentMessages = Array.from(sentMessagesRef.current);
-        
+
         // Check for any recent identical message content
         for (let i = 0; i < recentMessages.length; i++) {
             const existingId = recentMessages[i];
             const parts = existingId.split('_');
-            
+
             // Ensure we have valid parts
             if (parts.length >= 2) {
                 const existingText = parts[0];
                 const timestampStr = parts[parts.length - 1]; // Take the last part as timestamp
                 const timestamp = parseInt(timestampStr, 10);
-                
+
                 // If we find the same message text sent within the prevention timeout window
-                if (existingText === trimmedText && !isNaN(timestamp) && 
+                if (existingText === trimmedText && !isNaN(timestamp) &&
                     (now - timestamp) < DUPLICATE_PREVENTION_TIMEOUT) {
                     isDuplicate = true;
                     console.log('Prevented duplicate message:', existingText);
@@ -596,21 +593,21 @@ const Chat = ({
                 }
             }
         }
-        
+
         if (isDuplicate) return;
-        
+
         // Mark as processing and remember this message
         isProcessingMessageRef.current = true;
         sentMessagesRef.current.add(messageId);
-        
+
         // Clean up old message IDs periodically
         setTimeout(() => {
             sentMessagesRef.current.delete(messageId);
         }, DUPLICATE_PREVENTION_TIMEOUT);
-        
+
         try {
             console.log('Sending message:', trimmedText, 'with ID:', messageId);
-            
+
             // Create user message
             const newChatItem: ChatItem = {
                 sender: "USER",
@@ -621,10 +618,10 @@ const Chat = ({
 
             // Update UI with new message
             setChatLog((prev) => [...prev, newChatItem]);
-            
+
             // Save message to database
             await saveChatMessageToSupabase(newChatItem);
-            
+
             // Clear input field
             setInputValue('');
 

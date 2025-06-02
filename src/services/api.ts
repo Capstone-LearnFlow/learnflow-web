@@ -299,7 +299,6 @@ export const authAPI = {
             });
 
             const data: AuthResponse = await response.json();
-            console.log('Login API response:', data);
             return data;
         } catch (error) {
             console.error('Login API error:', error);
@@ -384,33 +383,33 @@ export const studentAPI = {
 
             const apiData: ApiTreeResponse = await response.json();
 
-            if (apiData.status === 'success' && apiData.data) {
+            if (apiData.status === 'success' && apiData.data && apiData.data.type === 'SUBJECT') {
                 // Check if the root node is a SUBJECT type
-                if (apiData.data.type === 'SUBJECT') {
-                    return createTreeDataFromApi(apiData.data);
-                } else {
-                    // Legacy support: if root is not SUBJECT, wrap it as before
-                    const rootNode = convertApiNodeToNode(apiData.data);
-                    const wrappedSubjectNode: SubjectNode = {
-                        nodeId: '0',
-                        type: 'subject',
-                        content: apiData.data.content || '주제',
-                        children: [rootNode] as ArgNode[]
-                    };
+                // if (apiData.data.type === 'SUBJECT') {
+                return createTreeDataFromApi(apiData.data);
+                // } else {
+                //     // Legacy support: if root is not SUBJECT, wrap it as before
+                //     const rootNode = convertApiNodeToNode(apiData.data);
+                //     const wrappedSubjectNode: SubjectNode = {
+                //         nodeId: '0',
+                //         type: 'subject',
+                //         content: apiData.data.content || '주제',
+                //         children: [rootNode] as ArgNode[]
+                //     };
 
-                    // Create tree data from wrapped subject node
-                    const renderableNodes: RenderableNode[] = [];
-                    if (wrappedSubjectNode.children) {
-                        wrappedSubjectNode.children.forEach(child => {
-                            renderableNodes.push(...collectRenderableNodes(child, 0, wrappedSubjectNode.nodeId));
-                        });
-                    }
+                //     // Create tree data from wrapped subject node
+                //     const renderableNodes: RenderableNode[] = [];
+                //     if (wrappedSubjectNode.children) {
+                //         wrappedSubjectNode.children.forEach(child => {
+                //             renderableNodes.push(...collectRenderableNodes(child, 0, wrappedSubjectNode.nodeId));
+                //         });
+                //     }
 
-                    return {
-                        subject: wrappedSubjectNode,
-                        renderableNodes: renderableNodes
-                    };
-                }
+                //     return {
+                //         subject: wrappedSubjectNode,
+                //         renderableNodes: renderableNodes
+                //     };
+                // }
             } else {
                 throw new Error('Invalid API response format');
             }

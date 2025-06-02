@@ -72,10 +72,6 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
     // Resolve params on component mount
     useEffect(() => {
         params.then(resolvedParams => {
-            console.log('Assignment ID:', resolvedParams.assigmentId);
-            console.log('Parent Node ID:', resolvedParams.parentNodeId);
-            console.log('Node ID:', resolvedParams.nodeId); // 새 노드 추가인 경우 'new'
-
             // Store route params for chat component
             setAssignmentId(resolvedParams.assigmentId);
             setParentNodeId(resolvedParams.parentNodeId);
@@ -122,7 +118,6 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assigmentId: string
 
                 // If it's a question node without an answer, add an empty answer node
                 if (nodeFromTree.type === 'question' && (!nodeFromTree.children || nodeFromTree.children.length === 0)) {
-                    console.log('Question node has no answer, adding empty answer node');
                     const nodeWithAnswer = {
                         ...nodeFromTree,
                         children: [{

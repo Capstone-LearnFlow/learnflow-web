@@ -54,7 +54,6 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
 
                 // Handle specific "main node not found" error
                 if (err instanceof Error && err.name === 'MainNodeNotFoundError') {
-                    console.log('Main node not found, redirecting to create page');
                     router.push(`/research/${assigmentId}/0/new`);
                     return;
                 }
@@ -151,7 +150,6 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
                     } else {
                         y = depthYOffsets.get(nodeData.depth)!;
                     }
-                    console.log(`Node ${nodeData.id} at depth ${nodeData.depth} has parent evidence index ${nodeData.parentEvidenceIndex}(${evidencePosition ? evidencePosition.y : 'null'}), starting y: ${y}`);
                 } else {
                     // Root level nodes
                     y = depthYOffsets.get(nodeData.depth)!;
@@ -165,17 +163,15 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
                 depthYOffsets.set(nodeData.depth, y + nodeHeight + rowGap);
             });
         });
-        console.log('Calculated positions:', newPositions);
 
         setNodePositions(newPositions);
     }, [renderableNodes, positionorigin.x, positionorigin.y, colWidth, rowGap, getNodeRef]);
 
-    // Calculate renderable nodes when tree data is loaded (now simplified!)
+    // Calculate renderable nodes when tree data is loaded
     useLayoutEffect(() => {
         if (treeData?.renderableNodes) {
             // Add parent refs to the pre-processed renderable nodes
             const enrichedNodes = enrichRenderableNodes(treeData.renderableNodes);
-            console.log('Using pre-processed renderable nodes:', enrichedNodes);
             setRenderableNodes(enrichedNodes);
         }
     }, [treeData, enrichRenderableNodes]);

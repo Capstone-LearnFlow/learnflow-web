@@ -133,13 +133,11 @@ const NodeEditor = ({
     // Handler for register button click
     const handleRegisterNode = useCallback(async () => {
         if (!hasChanges) {
-            console.log('No changes to register');
             return;
         }
 
         // Additional validation for argument nodes
         if (node.type === 'argument' && !isArgumentValid(node)) {
-            console.log('Cannot register argument: must have at least one evidence with content');
             return;
         }
 
@@ -165,8 +163,6 @@ const NodeEditor = ({
                     evidences: evidences
                 };
 
-                console.log('Creating main node:', mainNodeData);
-
                 // Call the API to create the main node
                 const response = await fetch(`/api/student/assignments/${assignmentId}/nodes`, {
                     method: 'POST',
@@ -181,7 +177,6 @@ const NodeEditor = ({
                 }
 
                 const result = await response.json();
-                console.log('Node creation result:', result);
 
                 // Navigate back to the assignment page to show the new tree
                 if (result.status === 'success') {
@@ -204,7 +199,6 @@ const NodeEditor = ({
                     timestamp: new Date().toISOString()
                 };
 
-                console.log('Registering node:', nodeData);
                 // TODO: Implement API call for other node types
 
                 // Reset changes state after successful registration
@@ -379,9 +373,6 @@ const NodeEditor = ({
         });
     }, [parentNode, node, autoResize]);
 
-    useEffect(() => {
-        console.log('Node Changed:', node);
-    }, [node]);
 
     return (
         <div className='node_editor'>

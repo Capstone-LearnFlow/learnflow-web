@@ -19,7 +19,6 @@ export async function GET() {
         const headers: HeadersInit = {
             'Cookie': cookieHeader,
         };
-        console.log('Headers:', headers);
 
         // Add Authorization header if token exists
         if (authToken) {
@@ -32,7 +31,6 @@ export async function GET() {
             credentials: 'include',
             cache: 'no-store',
         });
-        console.log('Response from backend:', response);
 
         // If unauthorized, return appropriate error
         if (response.status === 401) {

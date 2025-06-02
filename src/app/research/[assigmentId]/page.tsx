@@ -24,7 +24,6 @@ const Research = ({ params }: { params: Promise<{ assigmentId: string }> }) => {
     // Resolve params on component mount
     useEffect(() => {
         params.then(resolvedParams => {
-            console.log('Assignment ID:', resolvedParams.assigmentId);
             setAssigmentId(resolvedParams.assigmentId);
         });
     }, [params]);

@@ -29,21 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 사용자 인증 상태 확인 (페이지 로드 시)
   useEffect(() => {
     const checkAuthStatus = async () => {
-      // try {
-      //   // 서버에서 현재 사용자 정보 조회
-      //   const response = await apiServices.auth.getCurrentUser();
-
-      //   if (response.success && response.data) {
-      //     setUser(response.data);
-      //     // 세션 스토리지에 사용자 정보 저장
-      //     sessionStorage.setItem('user', JSON.stringify(response.data));
-      //   } else {
-      //     // 인증 실패 시 세션 스토리지 정보 제거
-      //     setUser(null);
-      //     sessionStorage.removeItem('user');
-      //   }
-      // } catch (error) {
-      // console.error('Auth status check error:', error);
       // API 호출 실패 시 세션 스토리지에서 사용자 데이터 조회
       const storedUser = sessionStorage.getItem('user');
       if (storedUser) {
@@ -54,9 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           sessionStorage.removeItem('user');
         }
       }
-      // } finally {
       setIsLoading(false);
-      // }
     };
 
     checkAuthStatus();

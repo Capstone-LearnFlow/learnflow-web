@@ -10,22 +10,12 @@ const Home = () => {
   const router = useRouter();
   const [assignments, setAssignments] = useState<StudentAssignment[]>([]);
 
-  // useEffect(() => {
-  //   if (user) {
-  //     console.log('User is logged in:', user);
-  //   } else {
-  //     router.push('/signin');
-  //   }
-  // }, [user, router]);
-
   useEffect(() => {
     const fetchAssignments = async () => {
       if (user) {
         try {
           const studentAssignments = await apiServices.student.getAssignments();
           setAssignments(studentAssignments);
-
-          console.log('Student assignments:', studentAssignments);
         } catch (error) {
           console.error('Error fetching assignments:', error);
         }
