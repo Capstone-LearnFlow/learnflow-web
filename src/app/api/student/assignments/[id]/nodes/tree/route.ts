@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import {
-    NodeType,
-    ApiNodeType,
-    Node,
-    ArgNode,
-    EvidenceNode,
-    QuestionNode,
-    AnswerNode,
-    SubjectNode,
-    mapApiNodeTypeToNodeType,
-    convertApiNodeToNode,
-    createSubjectNodeFromApi
-} from '../../../../../../../services/api';
+import { ApiNodeType } from '../../../../../../../services/api';
 
 const API_BASE_URL = 'http://100.65.217.64:8080/api';
 
@@ -36,11 +24,6 @@ interface ApiNode {
     evidences: ApiEvidence[];
     children: ApiNode[];
     triggeredByEvidenceId: number | null;
-}
-
-interface ApiTreeResponse {
-    status: string;
-    data: ApiNode;
 }
 
 export async function GET(

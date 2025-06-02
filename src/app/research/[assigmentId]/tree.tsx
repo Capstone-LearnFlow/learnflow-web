@@ -48,6 +48,7 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
             try {
                 setIsLoading(true);
                 const transformedData = await studentAPI.getAssignmentTree(assigmentId);
+                console.log('Fetched tree data:', transformedData);
                 setTreeData(transformedData);
             } catch (err) {
                 console.error('Failed to fetch tree data:', err);
@@ -206,7 +207,7 @@ const Tree = ({ assigmentId }: { assigmentId: string }) => {
 
     return (
         <div className='tree'>
-            <SubjectNode content={treeData.subject.content} />
+            <SubjectNode content={treeData.root.content} />
 
             {renderableNodes.map((nodeData) => {
                 const position = nodePositions.get(nodeData.id) || { x: positionorigin.x + (colWidth * nodeData.depth), y: positionorigin.y };

@@ -109,7 +109,7 @@ export type RenderableNode = {
 };
 
 export type TreeData = {
-    subject: SubjectNode;
+    root: SubjectNode;
     renderableNodes: RenderableNode[];
 };
 
@@ -154,13 +154,34 @@ export const mapApiNodeTypeToNodeType = (apiType: ApiNodeType): NodeType => {
     }
 };
 
+// Helper function to get type initial
+const getTypeInitial = (nodeType: NodeType): string => {
+    switch (nodeType) {
+        case 'argument':
+            return 'a';
+        case 'counterargument':
+            return 'c';
+        case 'evidence':
+            return 'e';
+        case 'question':
+            return 'q';
+        case 'answer':
+            return 'ans';
+        case 'subject':
+            return 's';
+        default:
+            return 'n';
+    }
+};
+
 // Convert API node to component node
 export const convertApiNodeToNode = (apiNode: ApiNode): Node => {
     const nodeType = mapApiNodeTypeToNodeType(apiNode.type);
+    const typeInitial = getTypeInitial(nodeType);
 
     // Create evidence nodes from API evidences
     const evidenceNodes: EvidenceNode[] = apiNode.evidences.map((evidence, index) => ({
-        nodeId: evidence.id.toString(),
+        nodeId: `e-${evidence.id}`,
         type: 'evidence',
         content: evidence.content,
         summary: evidence.summary,
@@ -174,10 +195,13 @@ export const convertApiNodeToNode = (apiNode: ApiNode): Node => {
     // Connect child nodes to appropriate evidence nodes if possible
     if (childNodes.length > 0 && evidenceNodes.length > 0) {
         childNodes.forEach(childNode => {
-            const apiChildNode = apiNode.children.find(c => c.id.toString() === childNode.nodeId);
+            const apiChildNode = apiNode.children.find(c => {
+                const childTypeInitial = getTypeInitial(mapApiNodeTypeToNodeType(c.type));
+                return childNode.nodeId === `${childTypeInitial}-${c.id}`;
+            });
             if (apiChildNode && apiChildNode.triggeredByEvidenceId) {
                 const evidenceIndex = evidenceNodes.findIndex(
-                    e => e.nodeId === apiChildNode.triggeredByEvidenceId?.toString()
+                    e => e.nodeId === `e-${apiChildNode.triggeredByEvidenceId}`
                 );
                 if (evidenceIndex >= 0 && evidenceNodes[evidenceIndex]) {
                     // Initialize children array if it doesn't exist
@@ -192,7 +216,7 @@ export const convertApiNodeToNode = (apiNode: ApiNode): Node => {
     }
 
     return {
-        nodeId: apiNode.id.toString(),
+        nodeId: `${typeInitial}-${apiNode.id}`,
         type: nodeType,
         content: apiNode.content,
         summary: apiNode.summary,
@@ -222,7 +246,7 @@ const collectRenderableNodes = (node: Node | null, depth: number, parentNodeId: 
         });
 
         // Process evidence children to find nested arguments/questions
-        argNode.children.forEach((evidence, evidenceIndex) => {
+        argNode.children.forEach((evidence) => {
             if (evidence.children) {
                 evidence.children.forEach(child => {
                     if (child.type === 'question') {
@@ -260,7 +284,7 @@ export const createSubjectNodeFromApi = (apiNode: ApiNode): SubjectNode => {
     const childNodes = apiNode.children.map(child => convertApiNodeToNode(child));
 
     return {
-        nodeId: apiNode.id.toString(),
+        nodeId: `s-${apiNode.id}`,
         type: 'subject',
         content: apiNode.content || '주제',
         children: childNodes as ArgNode[]
@@ -280,7 +304,7 @@ export const createTreeDataFromApi = (apiNode: ApiNode): TreeData => {
     }
 
     return {
-        subject: subjectNode,
+        root: subjectNode,
         renderableNodes: renderableNodes
     };
 };
@@ -384,32 +408,7 @@ export const studentAPI = {
             const apiData: ApiTreeResponse = await response.json();
 
             if (apiData.status === 'success' && apiData.data && apiData.data.type === 'SUBJECT') {
-                // Check if the root node is a SUBJECT type
-                // if (apiData.data.type === 'SUBJECT') {
                 return createTreeDataFromApi(apiData.data);
-                // } else {
-                //     // Legacy support: if root is not SUBJECT, wrap it as before
-                //     const rootNode = convertApiNodeToNode(apiData.data);
-                //     const wrappedSubjectNode: SubjectNode = {
-                //         nodeId: '0',
-                //         type: 'subject',
-                //         content: apiData.data.content || '주제',
-                //         children: [rootNode] as ArgNode[]
-                //     };
-
-                //     // Create tree data from wrapped subject node
-                //     const renderableNodes: RenderableNode[] = [];
-                //     if (wrappedSubjectNode.children) {
-                //         wrappedSubjectNode.children.forEach(child => {
-                //             renderableNodes.push(...collectRenderableNodes(child, 0, wrappedSubjectNode.nodeId));
-                //         });
-                //     }
-
-                //     return {
-                //         subject: wrappedSubjectNode,
-                //         renderableNodes: renderableNodes
-                //     };
-                // }
             } else {
                 throw new Error('Invalid API response format');
             }
