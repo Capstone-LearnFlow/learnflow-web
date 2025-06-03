@@ -417,6 +417,35 @@ export const studentAPI = {
             throw error;
         }
     },
+
+    // Create response (argument) to question or counterargument
+    createResponse: async (assignmentId: string, targetType: 'NODE' | 'EVIDENCE', targetId: number, content: string, evidences: Array<{ content: string, source: string, url: string }>) => {
+        try {
+            const response = await fetch(`/api/student/assignments/${assignmentId}/responses`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    targetType,
+                    targetId,
+                    content,
+                    evidences
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error creating response: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Create response API error:', error);
+            throw error;
+        }
+    },
 };
 
 const apiServices = {

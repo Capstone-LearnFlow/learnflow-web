@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { NodeType, Node, getNodeTypeName, TreeData } from '../../tree';
+import { studentAPI } from '../../../../../services/api';
 
 interface NodeEditorProps {
     parentNode: Node;
@@ -188,6 +189,46 @@ const NodeEditor = ({
                 } else {
                     throw new Error('Failed to create argument node');
                 }
+            }
+            // For adding argument responses to questions or evidence (from counterarguments)
+            else if ((parentNode.type === 'question' || parentNode.type === 'evidence') && node.nodeId === 'new' && node.type === 'argument') {
+                console.log('Creating argument response for question or evidence');
+                // Extract the numeric ID from the parent node ID (e.g., "q-123" -> 123, "e-456" -> 456)
+                const targetIdMatch = parentNode.nodeId.match(/\d+/);
+                if (!targetIdMatch) {
+                    throw new Error('Invalid parent node ID format');
+                }
+                const targetId = parseInt(targetIdMatch[0], 10);
+
+                // Determine target type based on parent node type
+                const targetType = parentNode.type === 'question' ? 'NODE' : 'EVIDENCE';
+
+                // Format evidences
+                const evidences = node.children
+                    ? node.children.filter(child => child.type === 'evidence').map(child => ({
+                        content: child.content,
+                        source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
+                        url: child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source"
+                    }))
+                    : [];
+
+                // Call the response API
+                const result = await studentAPI.createResponse(
+                    assignmentId,
+                    targetType,
+                    targetId,
+                    node.content,
+                    evidences
+                );
+
+                console.log('Response created successfully:', result);
+
+                // Navigate back to the assignment page
+                if (result.status === 'success') {
+                    router.push(`/research/${assignmentId}`);
+                } else {
+                    throw new Error('Failed to create response');
+                }
             } else {
                 // Prepare data for other node types (not main node)
                 const nodeData = {
@@ -215,7 +256,7 @@ const NodeEditor = ({
             console.error('Error registering node:', error);
             alert('노드 등록에 실패했습니다.');
         }
-    }, [hasChanges, node, parentNode.nodeId, isArgumentValid, setHasChanges, setOriginalNode]);
+    }, [hasChanges, node, parentNode, isArgumentValid, setHasChanges, setOriginalNode, params, router]);
 
     // Textarea auto-resize
     const autoResize = useCallback((textarea: HTMLTextAreaElement) => {
