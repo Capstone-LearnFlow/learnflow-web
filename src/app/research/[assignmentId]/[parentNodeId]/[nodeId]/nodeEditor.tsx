@@ -4,6 +4,19 @@ import { useRouter } from 'next/navigation';
 import { NodeType, Node, getNodeTypeName, TreeData } from '../../tree';
 import { studentAPI } from '../../../../../services/api';
 
+// Define types for AI editor functions
+interface EditingContent {
+    nodeType: NodeType;
+    nodeId: string;
+    mainContent: string;
+    evidences: Array<{ id: string; content: string; index: number }>;
+}
+
+interface EditorUpdates {
+    mainContent?: string;
+    evidences?: Array<{ id: string; content: string; index?: number }>;
+}
+
 interface NodeEditorProps {
     parentNode: Node;
     node: Node;
@@ -14,6 +27,8 @@ interface NodeEditorProps {
     setHasChanges: React.Dispatch<React.SetStateAction<boolean>>;
     setOriginalNode: React.Dispatch<React.SetStateAction<Node | null>>;
     treeData: TreeData | null;
+    getCurrentEditingContent?: () => EditingContent;
+    updateEditorContent?: (updates: EditorUpdates) => void;
 }
 
 const NodeEditor = ({
@@ -25,7 +40,9 @@ const NodeEditor = ({
     originalNode,
     setHasChanges,
     setOriginalNode,
-    treeData
+    treeData,
+    getCurrentEditingContent,
+    updateEditorContent
 }: NodeEditorProps) => {
     const router = useRouter();
 

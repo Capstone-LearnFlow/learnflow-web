@@ -5,9 +5,23 @@ import StreamingMessage from './components/StreamingMessage';
 import { saveChatMessage, loadChatMessages, ChatMessage } from '../../../services/supabase';
 import { useParams } from 'next/navigation';
 import { useAuth } from '../../../engine/Auth';
+import { NodeType } from './tree';
 
 type ChatMode = 'ask' | 'create';
 type ChatItemSender = "USER" | "AI";
+
+// Define types for AI editor functions
+interface EditingContent {
+    nodeType: NodeType;
+    nodeId: string;
+    mainContent: string;
+    evidences: Array<{ id: string; content: string; index: number }>;
+}
+
+interface EditorUpdates {
+    mainContent?: string;
+    evidences?: Array<{ id: string; content: string; index?: number }>;
+}
 
 // Define types for Gemini API responses
 interface WebSource {
@@ -62,6 +76,8 @@ interface ChatProps {
     hideButtons?: boolean; // Optional prop to hide mode toggle buttons
     assignmentId?: string; // Optional prop for assignment ID
     parentNodeId?: string; // Optional prop for parent node ID
+    getCurrentEditingContent?: () => EditingContent; // Function to get current editing content
+    updateEditorContent?: (updates: EditorUpdates) => void; // Function to update editor content
 };
 
 // Type for the assertion form response
@@ -82,7 +98,9 @@ const Chat = ({
     isEditPanelOpen,
     hideButtons = false, // Default to showing buttons
     assignmentId: propAssignmentId,
-    parentNodeId: propParentNodeId
+    parentNodeId: propParentNodeId,
+    getCurrentEditingContent,
+    updateEditorContent
 }: ChatProps) => {
     // Get parameters from route if not provided as props
     const params = useParams<{ assignmentId: string, parentNodeId: string, nodeId: string }>();
@@ -854,6 +872,7 @@ const Chat = ({
                     flex: 1;
                     overflow: hidden;
                 }
+                
                 /* In-chat form styles */
                 .chat__inline-form {
                     margin-top: 20px;
