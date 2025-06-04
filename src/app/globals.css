@@ -151,16 +151,19 @@ button {
 .section--large {
   width: 90%;
   max-width: 1024px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
 }
 
 .section--scroll {
   width: 100%;
   max-width: 100%;
+  padding-left: calc((100% - min(90%, 1024px)) / 2);
+  padding-right: calc((100% - min(90%, 1024px)) / 2);
+  box-sizing: border-box;
   overflow-x: scroll;
   scrollbar-width: none;
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 

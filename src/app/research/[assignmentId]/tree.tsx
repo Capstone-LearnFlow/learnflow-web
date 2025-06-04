@@ -55,7 +55,7 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
 
                 // Handle specific "main node not found" error
                 if (err instanceof Error && err.name === 'MainNodeNotFoundError') {
-                    router.push(`/research/${assignmentId}/0/new`);
+                    router.push(`/research/${assignmentId}/s-0/new`);
                     return;
                 }
 
