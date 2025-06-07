@@ -331,7 +331,7 @@ const Chat = ({
                             }
                         }
 
-                        // Handle citation data (sent after all text chunks)
+                        // Handle citation data from Gemini (sent after all text chunks)
                         if (data.type === 'citations' && data.groundingMetadata) {
                             const { groundingMetadata, segmentMapping } = data;
 
@@ -352,6 +352,16 @@ const Chat = ({
                                         index: index
                                     }));
                                 setStreamingCitations(citations);
+                                
+                                // If we have segment mapping, insert citation references into the text
+                                if (segmentMapping && segmentMapping.length > 0) {
+                                    // Process the text to add inline citations
+                                    fullText = insertInlineCitations(fullText);
+                                    setStreamingMessage(fullText);
+                                    // No auto-scrolling
+                                }
+                            }
+                        }
                         
                         // Handle Perplexity's citation data format
                         if (data.citations || data.search_results) {
@@ -370,15 +380,6 @@ const Chat = ({
                                 });
                                 
                                 setStreamingCitations(citations);
-                            }
-                        }
-                                // If we have segment mapping, insert citation references into the text
-                                if (segmentMapping && segmentMapping.length > 0) {
-                                    // Process the text to add inline citations
-                                    fullText = insertInlineCitations(fullText);
-                                    setStreamingMessage(fullText);
-                                    // No auto-scrolling
-                                }
                             }
                         }
                     } catch (e) {
