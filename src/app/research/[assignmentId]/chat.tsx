@@ -724,11 +724,15 @@ const Chat = ({
         );
     };
     // Render markdown content with proper citation display
-    const renderMarkdown = (message: string) => {
+    const renderMarkdown = (message: string, citations?: Citation[]) => {
+        // Process the message to add citation links if citations are available
+        const processedMessage = citations && citations.length > 0 ? 
+            insertInlineCitations(message, citations) : message;
+            
         return (
             <div className="chat__markdown-content">
                 <ReactMarkdown>
-                    {message}
+                    {processedMessage}
                 </ReactMarkdown>
             </div>
         );
