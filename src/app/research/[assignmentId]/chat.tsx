@@ -662,9 +662,9 @@ const Chat = ({
             // Clear input field
             setInputValue('');
 
-            // Only send to Gemini API in 'ask' mode
+            // Only send to Perplexity API in 'ask' mode
             if (mode === 'ask') {
-                await fetchGeminiResponse(trimmedText);
+                await fetchPerplexityResponse(trimmedText);
             }
         } catch (error) {
             console.error('Error sending message:', error);
@@ -674,7 +674,7 @@ const Chat = ({
                 isProcessingMessageRef.current = false;
             }, 300);
         }
-    }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
+    }, [inputValue, mode, responseStatus, fetchPerplexityResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue.trim() !== '' && responseStatus !== 'streaming') {
             e.preventDefault(); // Prevent default behavior to avoid double submission
