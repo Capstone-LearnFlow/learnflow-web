@@ -253,7 +253,7 @@ const Chat = ({
 
     // Remove additional auto-scroll effects
 
-    const fetchGeminiResponse = useCallback(async (message: string) => {
+    const fetchPerplexityResponse = useCallback(async (message: string) => {
         try {
             // Create a new AbortController for this request
             abortControllerRef.current = new AbortController();
@@ -273,7 +273,7 @@ const Chat = ({
                 }
             ];
 
-            const response = await fetch('/api/gemini', {
+            const response = await fetch('/api/perplexity', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -321,11 +321,11 @@ const Chat = ({
                             fullText += data.text;
                             setStreamingMessage(fullText);
                             // No auto-scrolling
-                        } else if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-                            // Handle the full raw response format
-                            const candidateContent = data.candidates[0].content;
-                            if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
-                                fullText += candidateContent.parts[0].text;
+                        } else if (data.choices && data.choices[0] && data.choices[0].delta) {
+                            // Handle the OpenAI/Perplexity format
+                            const deltaContent = data.choices[0].delta;
+                            if (deltaContent.content) {
+                                fullText += deltaContent.content;
                                 setStreamingMessage(fullText);
                                 // No auto-scrolling
                             }
@@ -344,15 +344,34 @@ const Chat = ({
                             // Extract citations if available
                             if (groundingMetadata.groundingChunks && groundingMetadata.groundingChunks.length > 0) {
                                 citations = groundingMetadata.groundingChunks
-                                    .filter((chunk: GroundingChunk) => chunk.web && chunk.web.uri && chunk.web.title)
-                                    .map((chunk: GroundingChunk, index: number) => ({
+                                    .filter((chunk: any) => chunk.web && chunk.web.uri)
+                                    .map((chunk: any, index: number) => ({
                                         text: `[${index + 1}]`,
                                         url: chunk.web.uri,
-                                        title: chunk.web.title,
+                                        title: chunk.web.title || `Source ${index + 1}`,
                                         index: index
                                     }));
                                 setStreamingCitations(citations);
-
+                        
+                        // Handle Perplexity's citation data format
+                        if (data.citations || data.search_results) {
+                            if (data.citations && data.citations.length > 0) {
+                                const citationUrls = data.citations;
+                                const searchResults = data.search_results || [];
+                                
+                                citations = citationUrls.map((url: string, index: number) => {
+                                    const result = searchResults[index] || {};
+                                    return {
+                                        text: `[${index + 1}]`,
+                                        url: url,
+                                        title: result.title || `Source ${index + 1}`,
+                                        index: index
+                                    };
+                                });
+                                
+                                setStreamingCitations(citations);
+                            }
+                        }
                                 // If we have segment mapping, insert citation references into the text
                                 if (segmentMapping && segmentMapping.length > 0) {
                                     // Process the text to add inline citations
@@ -403,7 +422,7 @@ const Chat = ({
             if (error instanceof DOMException && error.name === 'AbortError') {
                 // Fetch was aborted
             } else {
-                console.error('Error fetching Gemini response:', error);
+                console.error('Error fetching Perplexity response:', error);
                 setResponseStatus('error');
             }
         } finally {
