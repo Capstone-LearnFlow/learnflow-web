@@ -446,6 +446,33 @@ export const studentAPI = {
             throw error;
         }
     },
+
+    // Update node (argument or answer)
+    updateNode: async (assignmentId: string, nodeId: string, content: string, evidences: Array<{ content: string, source: string, url: string }>) => {
+        try {
+            const response = await fetch(`/api/student/assignments/${assignmentId}/nodes/${nodeId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    content,
+                    evidences
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error updating node: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Update node API error:', error);
+            throw error;
+        }
+    },
 };
 
 const apiServices = {

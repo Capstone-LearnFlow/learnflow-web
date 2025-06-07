@@ -230,7 +230,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: strin
             // Update main content if provided
             if (updates.mainContent !== undefined) {
                 updatedNode.content = updates.mainContent;
-                
+
                 // Auto-resize main content textarea
                 setTimeout(() => {
                     const mainTextarea = document.querySelector('.node_editor__node__content') as HTMLTextAreaElement;
@@ -288,8 +288,8 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: strin
                     setHasChanges={setHasChanges}
                     setOriginalNode={setOriginalNode}
                     treeData={treeData}
-                    getCurrentEditingContent={getCurrentEditingContent}
-                    updateEditorContent={updateEditorContent}
+                // getCurrentEditingContent={getCurrentEditingContent}
+                // updateEditorContent={updateEditorContent}
                 />
                 <div className='node_editor__chat'>
                     <div className='btn chat__close_btn' onClick={handleChatClose}></div>

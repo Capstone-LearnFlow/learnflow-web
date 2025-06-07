@@ -1,21 +1,8 @@
 "use client";
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { NodeType, Node, getNodeTypeName, TreeData } from '../../tree';
+import { Node, getNodeTypeName, TreeData } from '../../tree';
 import { studentAPI } from '../../../../../services/api';
-
-// Define types for AI editor functions
-interface EditingContent {
-    nodeType: NodeType;
-    nodeId: string;
-    mainContent: string;
-    evidences: Array<{ id: string; content: string; index: number }>;
-}
-
-interface EditorUpdates {
-    mainContent?: string;
-    evidences?: Array<{ id: string; content: string; index?: number }>;
-}
 
 interface NodeEditorProps {
     parentNode: Node;
@@ -27,8 +14,6 @@ interface NodeEditorProps {
     setHasChanges: React.Dispatch<React.SetStateAction<boolean>>;
     setOriginalNode: React.Dispatch<React.SetStateAction<Node | null>>;
     treeData: TreeData | null;
-    getCurrentEditingContent?: () => EditingContent;
-    updateEditorContent?: (updates: EditorUpdates) => void;
 }
 
 const NodeEditor = ({
@@ -40,30 +25,12 @@ const NodeEditor = ({
     originalNode,
     setHasChanges,
     setOriginalNode,
-    treeData,
-    getCurrentEditingContent,
-    updateEditorContent
+    treeData
 }: NodeEditorProps) => {
     const router = useRouter();
 
-    // Helper function to find a node by ID in the tree
-    const findNodeById = (tree: Node, targetId: string): Node | null => {
-        if (tree.nodeId === targetId) {
-            return tree;
-        }
-
-        if (tree.children) {
-            for (const child of tree.children) {
-                const found = findNodeById(child, targetId);
-                if (found) return found;
-            }
-        }
-
-        return null;
-    };
-
     // Helper function to find parent node of a given nodeId
-    const findParentNode = (tree: Node, targetId: string): Node | null => {
+    const findParentNode = useCallback((tree: Node, targetId: string): Node | null => {
         if (tree.children) {
             for (const child of tree.children) {
                 if (child.nodeId === targetId) {
@@ -74,7 +41,7 @@ const NodeEditor = ({
             }
         }
         return null;
-    };
+    }, []);
 
     // Helper function to check if argument node is valid for registration
     const isArgumentValid = useCallback((currentNode: Node): boolean => {
@@ -246,24 +213,44 @@ const NodeEditor = ({
                 } else {
                     throw new Error('Failed to create response');
                 }
-            } else {
-                // Prepare data for other node types (not main node)
-                const nodeData = {
-                    nodeId: node.nodeId,
-                    type: node.type,
-                    content: node.content,
-                    children: node.children?.map((child: Node) => ({
-                        nodeId: child.nodeId,
-                        type: child.type,
-                        content: child.content,
-                        citation: child.citation,
-                        index: child.index
-                    })) || null,
-                    parentNodeId: parentNode.nodeId,
-                    timestamp: new Date().toISOString()
-                };
+            }
+            // Handle updating existing nodes (argument or answer types)
+            else if (node.nodeId !== 'new' && (node.type === 'argument' || node.type === 'answer')) {
+                // Extract numeric ID from node ID (e.g., "a-123" -> "123")
+                const nodeIdMatch = node.nodeId.match(/\d+/);
+                if (!nodeIdMatch) {
+                    throw new Error('Invalid node ID format for update');
+                }
+                const numericNodeId = nodeIdMatch[0];
 
-                // TODO: Implement API call for other node types
+                // Format evidences for the API
+                const evidences = node.children
+                    ? node.children.filter(child => child.type === 'evidence').map(child => ({
+                        content: child.content,
+                        source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
+                        url: child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source"
+                    }))
+                    : [];
+
+                // Call the update API
+                const result = await studentAPI.updateNode(
+                    assignmentId,
+                    numericNodeId,
+                    node.content,
+                    evidences
+                );
+
+                console.log('Node updated successfully:', result);
+
+                // Navigate back to the assignment page
+                if (result.status === 'success') {
+                    router.push(`/research/${assignmentId}`);
+                } else {
+                    throw new Error('Failed to update node');
+                }
+            } else {
+                // For other cases, just reset the changes state
+                console.log('No API call needed for this node type or state');
 
                 // Reset changes state after successful registration
                 setHasChanges(false);
@@ -393,7 +380,7 @@ const NodeEditor = ({
 
             router.push(`/research/${resolvedParams.assignmentId}/${grandParentId}/${parentNode.nodeId}`);
         });
-    }, [parentNode, params, router]);
+    }, [parentNode, params, router, treeData, findParentNode]);
 
     const handleAddChildNode = useCallback(() => {
         setNode((prevNode: Node) => {
@@ -506,7 +493,9 @@ const NodeEditor = ({
                         )}
                     </div>
                 </div>
-                <div className={`btn node_editor__register_node_btn ${hasChanges ? 'node_editor__register_node_btn--active' : ''}`} onClick={handleRegisterNode}>등록하기</div>
+                <div className={`btn node_editor__register_node_btn ${hasChanges ? 'node_editor__register_node_btn--active' : ''}`} onClick={handleRegisterNode}>
+                    {node.nodeId === 'new' ? '등록하기' : '수정하기'}
+                </div>
             </>)}
         </div>
     );
