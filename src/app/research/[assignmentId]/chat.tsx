@@ -822,17 +822,7 @@ const Chat = ({
                                             </div>
                                         )}
 
-                                        {/* Show citations if available */}
-                                        {item.citations && Array.isArray(item.citations) && item.citations.length > 0 && (
-                                            <div className="chat__citations">
-                                                <span className="chat__citations-title">출처:</span>
-                                                {item.citations.map((citation, idx) => (
-                                                    <span key={idx} className="chat__citation">
-                                                        {renderCitation(citation)}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
+                                        {/* Citation sources section removed as per user request */}
 
                                         {/* Show suggestions */}
                                         {item.suggestions && Array.isArray(item.suggestions) && item.suggestions.length > 0 && (
