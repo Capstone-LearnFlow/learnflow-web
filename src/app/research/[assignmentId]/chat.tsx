@@ -202,10 +202,31 @@ const Chat = ({
             console.error('Error saving chat message to Supabase:', error);
         }
     };
-    // Function to handle citation data without inserting inline citations
-    const insertInlineCitations = (text: string): string => {
-        // No longer inserting inline citations, just return the original text
-        return text;
+    // Function to process text and replace citation numbers with linked citations
+    const insertInlineCitations = (text: string, citations?: Citation[]): string => {
+        if (!citations || citations.length === 0) {
+            return text;
+        }
+
+        // Create a map of citation text to citation object for quick lookup
+        const citationMap = new Map<string, Citation>();
+        citations.forEach(citation => {
+            citationMap.set(citation.text, citation);
+        });
+
+        // Replace all citation references in text with markdown links
+        // Using a regex to match citation patterns like [1], [2], etc.
+        return text.replace(/\[(\d+)\]/g, (match) => {
+            const citation = citationMap.get(match);
+            
+            if (citation && citation.url) {
+                // Return markdown link format for ReactMarkdown to render
+                return `[${match}](${citation.url})`;
+            }
+            
+            // If no matching citation found, return the original text
+            return match;
+        });
     };
     // Function to scroll to the bottom of the chat
     const scrollToBottom = useCallback(() => {
