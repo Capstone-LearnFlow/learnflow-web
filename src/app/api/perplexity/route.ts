@@ -1,5 +1,24 @@
 import { OpenAI } from 'openai';
 import { NextRequest } from 'next/server';
+import { ChatCompletionChunk } from 'openai/resources';
+
+// Define custom types for Perplexity API response
+interface SearchResult {
+  title: string;
+  url: string;
+  date?: string | null;
+}
+
+interface PerplexityResponse extends ChatCompletionChunk {
+  citations?: string[];
+  search_results?: SearchResult[];
+}
+
+// Define type for chat messages
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,14 +38,14 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         try {
           // Prepare contents array with history if available
-          let messages = [];
+          let messages: ChatMessage[] = [];
 
           if (history && Array.isArray(history) && history.length > 0) {
             // Convert from Gemini format to OpenAI format
             messages = history.map(item => ({
               role: item.role === 'user' ? 'user' : 'assistant',
               content: item.parts?.[0]?.text || '',
-            }));
+            } as ChatMessage));
           }
 
           // Add the new user message
@@ -54,16 +73,19 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encoder.encode(JSON.stringify(chunk) + '\n'));
             
             // Check if this chunk contains citation data (at the end of the response)
-            if (chunk.citations || chunk.search_results) {
+            // Cast to our custom type that includes Perplexity-specific fields
+            const perplexityChunk = chunk as unknown as PerplexityResponse;
+            
+            if (perplexityChunk.citations || perplexityChunk.search_results) {
               // Format citation data in a structure similar to what the frontend expects
               const citationData = {
                 type: 'citations',
                 groundingMetadata: {
-                  groundingChunks: (chunk.citations || []).map((citation, index) => ({
+                  groundingChunks: (perplexityChunk.citations || []).map((citation: string, index: number) => ({
                     web: {
                       uri: citation,
-                      title: chunk.search_results && chunk.search_results[index] ? 
-                        chunk.search_results[index].title : `Source ${index + 1}`
+                      title: perplexityChunk.search_results && perplexityChunk.search_results[index] ? 
+                        perplexityChunk.search_results[index].title : `Source ${index + 1}`
                     }
                   }))
                 }
