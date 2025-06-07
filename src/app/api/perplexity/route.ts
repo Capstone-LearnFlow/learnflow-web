@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
           // Call the Perplexity API
           const streamResponse = await client.chat.completions.create({
-            model: 'perplexity/sonar',
+            model: 'sonar',
             messages: messages,
             stream: true,
           });
