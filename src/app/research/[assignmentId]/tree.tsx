@@ -48,10 +48,9 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
             try {
                 setIsLoading(true);
                 const transformedData = await studentAPI.getAssignmentTree(assignmentId);
-                console.log('Fetched tree data:', transformedData);
                 setTreeData(transformedData);
             } catch (err) {
-                console.error('Failed to fetch tree data:', err);
+                // Handle fetch tree data error
 
                 // Handle specific "main node not found" error
                 if (err instanceof Error && err.name === 'MainNodeNotFoundError') {

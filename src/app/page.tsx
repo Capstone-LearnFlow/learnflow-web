@@ -17,7 +17,7 @@ const Home = () => {
           const studentAssignments = await apiServices.student.getAssignments();
           setAssignments(studentAssignments);
         } catch (error) {
-          console.error('Error fetching assignments:', error);
+          // Handle error fetching assignments
         }
       }
     };

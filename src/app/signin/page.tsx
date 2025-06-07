@@ -35,7 +35,7 @@ const Home = () => {
       }
     } catch (error) {
       setError('로그인 중 오류가 발생했습니다.');
-      console.error('Login error:', error);
+      // Handle login error
     }
   };
 

@@ -1,5 +1,4 @@
 // API service connecting to the real API server
-// const API_BASE_URL = 'http://100.65.217.64:8080/api';
 
 // Type definitions
 interface AuthResponse {
@@ -8,18 +7,6 @@ interface AuthResponse {
     data?: unknown;
     token?: string;
 }
-
-// interface Student {
-//     id: string;
-//     name: string;
-//     [key: string]: any; // For additional properties
-// }
-
-// interface Phase {
-//     type: string;
-//     content: string;
-//     [key: string]: any;
-// }
 
 interface ApiResponse<T> {
     success: boolean;
@@ -325,7 +312,7 @@ export const authAPI = {
             const data: AuthResponse = await response.json();
             return data;
         } catch (error) {
-            console.error('Login API error:', error);
+            // Handle login error
             throw error;
         }
     },
@@ -340,7 +327,7 @@ export const authAPI = {
             const data: AuthResponse = await response.json();
             return data;
         } catch (error) {
-            console.error('Logout API error:', error);
+            // Handle logout error
             throw error;
         }
     },
@@ -359,7 +346,7 @@ export const studentAPI = {
             const data: ApiResponse<StudentAssignment[]> = await response.json();
             return data.data; // Extract the data field from the response
         } catch (error) {
-            console.error('Get student assignments API error:', error);
+            // Handle get assignments error
             throw error;
         }
     },
@@ -375,7 +362,7 @@ export const studentAPI = {
             const data: ApiResponse<StudentAssignmentDetail> = await response.json();
             return data.data; // Extract the data field from the response
         } catch (error) {
-            console.error('Get assignment detail API error:', error);
+            // Handle get assignment detail error
             throw error;
         }
     },
@@ -413,7 +400,7 @@ export const studentAPI = {
                 throw new Error('Invalid API response format');
             }
         } catch (error) {
-            console.error('Get assignment tree API error:', error);
+            // Handle get assignment tree error
             throw error;
         }
     },
@@ -442,7 +429,7 @@ export const studentAPI = {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error('Create response API error:', error);
+            // Handle create response error
             throw error;
         }
     },
@@ -469,7 +456,7 @@ export const studentAPI = {
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error('Update node API error:', error);
+            // Handle update node error
             throw error;
         }
     },

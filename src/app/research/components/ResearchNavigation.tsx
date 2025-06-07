@@ -42,12 +42,6 @@ const ResearchNavigation = ({ className, assignmentId }: ResearchNavigationProps
         return `${assignmentDetail.subject}(${assignmentDetail.teacherName} 선생님)`;
     };
 
-    // const getTopicDisplay = () => {
-    //     if (isLoading) return '';
-    //     if (error || !assignmentDetail) return '';
-    //     return assignmentDetail.topic;
-    // };
-
     const getUserDisplay = () => {
         return user?.name || '';
     };

@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           setUser(JSON.parse(storedUser));
         } catch (e) {
-          console.error('Failed to parse user data:', e);
+          // Handle parse error for stored user data
           sessionStorage.removeItem('user');
         }
       }
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      // Handle login error
       return false;
     } finally {
       setIsLoading(false);
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.removeItem('user');
       router.push('/signin'); // 로그아웃 후 로그인 페이지로 리디렉션
     } catch (error) {
-      console.error('Logout error:', error);
+      // Handle logout error
     } finally {
       setIsLoading(false);
     }

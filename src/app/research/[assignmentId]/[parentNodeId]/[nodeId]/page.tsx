@@ -98,7 +98,6 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: strin
                 setIsLoading(true);
 
                 // Fetch tree data from API
-                console.log('Fetching tree data for assignment:', resolvedParams.assignmentId);
                 const fetchedTreeData = await studentAPI.getAssignmentTree(resolvedParams.assignmentId);
                 setTreeData(fetchedTreeData);
 

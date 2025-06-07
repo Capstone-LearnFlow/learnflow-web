@@ -1,8 +1,6 @@
-/* @import "tailwindcss"; */
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-gov-dynamic-subset.min.css");
 
 :root {
-  /* --c-glyph: rgb(0, 0, 0); */
   --c-glyph-gray: rgb(29, 29, 31);
   --c-glyph-gray-alpha: rgba(0, 0, 0, 0.88);
   --c-glyph-gray-secondary: rgb(110, 110, 115);
@@ -197,7 +195,6 @@ button {
   padding: 15px 24px;
   justify-content: center;
   align-items: center;
-  /* gap: 10px; */
   color: var(--c-glyph-gray-secondary-alpha);
   text-align: center;
   font-size: 16px;
@@ -290,7 +287,6 @@ button {
 
 .assignment__title {
   width: 400px;
-  /* height: 45px; */
   flex-shrink: 0;
   color: var(--c-glyph-gray);
   font-size: 20px;
@@ -398,7 +394,6 @@ button {
   left: 12px;
   bottom: 12px;
   display: flex;
-  /* width: 456px; */
   width: calc(100% - 24px);
   height: 52px;
   padding: 0px 8px 0px 24px;
@@ -478,7 +473,6 @@ button {
   width: 100vw;
   min-height: 100vh;
   box-sizing: border-box;
-  /* overflow: scroll; */
   z-index: 0;
 }
 
@@ -701,7 +695,6 @@ button {
   top: -28px;
   width: 8px;
   height: 24px;
-  /* transform: rotate(90deg); */
   background-color: var(--c-key);
   mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="24" viewBox="0 0 8 24" fill="none"><circle cx="4" cy="4" r="4" transform="rotate(90 4 4)" fill="%233E935C"/><rect x="5" y="4" width="20" height="2" transform="rotate(90 5 4)" fill="%233E935C"/></svg>');
   mask-position: center;
@@ -711,7 +704,6 @@ button {
 
 .node_editor__node__content_container {
   display: flex;
-  /* padding-left: 4px; */
   flex-direction: column;
   align-items: flex-start;
   align-self: stretch;

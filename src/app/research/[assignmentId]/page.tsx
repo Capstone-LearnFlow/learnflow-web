@@ -70,7 +70,6 @@ const Research = ({ params }: { params: Promise<{ assignmentId: string }> }) => 
         editData.evidences.forEach((evidence, index) => {
             formattedResponse += `${index + 1}. ${evidence}\n\n`;
         });
-        console.log('Formatted response:', formattedResponse);
 
         // Close the edit panel
         setIsEditPanelOpen(false);

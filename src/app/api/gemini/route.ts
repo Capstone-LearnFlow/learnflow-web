@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
           });
 
           // Process API response
-          // let fullText = '';
           let lastChunk = null;
           let citationData = null;
 
@@ -62,15 +61,6 @@ export async function POST(request: NextRequest) {
 
             // Store the last chunk to extract grounding metadata
             lastChunk = chunk;
-            // Accumulate the text for full response
-            // if (chunk.text) {
-            //   fullText += chunk.text;
-            // } else if (chunk.candidates && chunk.candidates[0] && chunk.candidates[0].content) {
-            //   const candidateContent = chunk.candidates[0].content;
-            //   if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
-            //     fullText += candidateContent.parts[0].text;
-            //   }
-            // }
           }
 
           // Extract citation data if available

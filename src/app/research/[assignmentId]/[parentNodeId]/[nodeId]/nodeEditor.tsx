@@ -165,7 +165,6 @@ const NodeEditor = ({
                 }
 
                 const result = await response.json();
-                console.log('Node created successfully:', result);
 
                 // Navigate back to the assignment page to show the new tree
                 if (result.status === 'success') {
@@ -176,7 +175,6 @@ const NodeEditor = ({
             }
             // For adding argument responses to questions or evidence (from counterarguments)
             else if ((parentNode.type === 'question' || parentNode.type === 'evidence') && node.nodeId === 'new' && node.type === 'argument') {
-                console.log('Creating argument response for question or evidence');
                 // Extract the numeric ID from the parent node ID (e.g., "q-123" -> 123, "e-456" -> 456)
                 const targetIdMatch = parentNode.nodeId.match(/\d+/);
                 if (!targetIdMatch) {
@@ -204,8 +202,6 @@ const NodeEditor = ({
                     node.content,
                     evidences
                 );
-
-                console.log('Response created successfully:', result);
 
                 // Navigate back to the assignment page
                 if (result.status === 'success') {
