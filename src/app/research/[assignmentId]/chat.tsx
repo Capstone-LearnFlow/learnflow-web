@@ -377,7 +377,7 @@ const Chat = ({
                                 // If we have segment mapping, insert citation references into the text
                                 if (segmentMapping && segmentMapping.length > 0) {
                                     // Process the text to add inline citations
-                                    fullText = insertInlineCitations(fullText);
+                                    fullText = insertInlineCitations(fullText, citations);
                                     setStreamingMessage(fullText);
                                     // No auto-scrolling
                                 }
