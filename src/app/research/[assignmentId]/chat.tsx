@@ -765,7 +765,7 @@ const Chat = ({
                             <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
                                 {item.sender === "AI" ? (
                                     <>
-                                        {renderMarkdown(item.message)}
+                                        {renderMarkdown(item.message, item.citations)}
 
                                         {/* Show the assertion form inside AI message */}
                                         {item.hasForm && (
