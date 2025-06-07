@@ -38,25 +38,7 @@ const StreamingMessage = ({
                 </div>
             </div>
             
-            {/* Show citations if available */}
-            {Array.isArray(citations) && citations.length > 0 && (
-                <div className="streaming-message__citations">
-                    <span className="streaming-message__citations-title">출처:</span>
-                    {citations.map((citation, idx) => (
-                        <span key={idx} className="streaming-message__citation">
-                            <a 
-                                href={citation.url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="streaming-message__citation-link"
-                                title={citation.title}
-                            >
-                                {citation.text}
-                            </a>
-                        </span>
-                    ))}
-                </div>
-            )}
+            {/* Citation sources section removed as per user request */}
             
             {/* Show suggestions */}
             {Array.isArray(suggestions) && suggestions.length > 0 && (
