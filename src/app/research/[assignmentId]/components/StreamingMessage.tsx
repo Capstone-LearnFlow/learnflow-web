@@ -22,12 +22,43 @@ const StreamingMessage = ({
     suggestions, 
     onSuggestionClick 
 }: StreamingMessageProps) => {
+    // Function to process text and replace citation numbers with linked citations
+    const insertInlineCitations = (text: string, citations?: Citation[]): string => {
+        if (!citations || citations.length === 0) {
+            return text;
+        }
+
+        // Create a map of citation text to citation object for quick lookup
+        const citationMap = new Map<string, Citation>();
+        citations.forEach(citation => {
+            citationMap.set(citation.text, citation);
+        });
+
+        // Replace all citation references in text with markdown links
+        // Using a regex to match citation patterns like [1], [2], etc.
+        return text.replace(/\[(\d+)\]/g, (match) => {
+            const citation = citationMap.get(match);
+            
+            if (citation && citation.url) {
+                // Return markdown link format for ReactMarkdown to render
+                return `[${match}](${citation.url})`;
+            }
+            
+            // If no matching citation found, return the original text
+            return match;
+        });
+    };
+
+    // Process the content to add citation links if citations are available
+    const processedContent = citations && citations.length > 0 ? 
+        insertInlineCitations(content, citations) : content;
+
     return (
         <div className="streaming-message">
             <div className="streaming-message__content">
                 {content && (
                     <div className="streaming-message__markdown">
-                        <ReactMarkdown>{content}</ReactMarkdown>
+                        <ReactMarkdown>{processedContent}</ReactMarkdown>
                     </div>
                 )}
                 
@@ -38,25 +69,7 @@ const StreamingMessage = ({
                 </div>
             </div>
             
-            {/* Show citations if available */}
-            {Array.isArray(citations) && citations.length > 0 && (
-                <div className="streaming-message__citations">
-                    <span className="streaming-message__citations-title">출처:</span>
-                    {citations.map((citation, idx) => (
-                        <span key={idx} className="streaming-message__citation">
-                            <a 
-                                href={citation.url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="streaming-message__citation-link"
-                                title={citation.title}
-                            >
-                                {citation.text}
-                            </a>
-                        </span>
-                    ))}
-                </div>
-            )}
+            {/* Citation sources section removed as per user request */}
             
             {/* Show suggestions */}
             {Array.isArray(suggestions) && suggestions.length > 0 && (

@@ -202,10 +202,31 @@ const Chat = ({
             console.error('Error saving chat message to Supabase:', error);
         }
     };
-    // Function to handle citation data without inserting inline citations
-    const insertInlineCitations = (text: string): string => {
-        // No longer inserting inline citations, just return the original text
-        return text;
+    // Function to process text and replace citation numbers with linked citations
+    const insertInlineCitations = (text: string, citations?: Citation[]): string => {
+        if (!citations || citations.length === 0) {
+            return text;
+        }
+
+        // Create a map of citation text to citation object for quick lookup
+        const citationMap = new Map<string, Citation>();
+        citations.forEach(citation => {
+            citationMap.set(citation.text, citation);
+        });
+
+        // Replace all citation references in text with markdown links
+        // Using a regex to match citation patterns like [1], [2], etc.
+        return text.replace(/\[(\d+)\]/g, (match) => {
+            const citation = citationMap.get(match);
+            
+            if (citation && citation.url) {
+                // Return markdown link format for ReactMarkdown to render
+                return `[${match}](${citation.url})`;
+            }
+            
+            // If no matching citation found, return the original text
+            return match;
+        });
     };
     // Function to scroll to the bottom of the chat
     const scrollToBottom = useCallback(() => {
@@ -253,7 +274,7 @@ const Chat = ({
 
     // Remove additional auto-scroll effects
 
-    const fetchGeminiResponse = useCallback(async (message: string) => {
+    const fetchPerplexityResponse = useCallback(async (message: string) => {
         try {
             // Create a new AbortController for this request
             abortControllerRef.current = new AbortController();
@@ -273,7 +294,7 @@ const Chat = ({
                 }
             ];
 
-            const response = await fetch('/api/gemini', {
+            const response = await fetch('/api/perplexity', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -321,17 +342,17 @@ const Chat = ({
                             fullText += data.text;
                             setStreamingMessage(fullText);
                             // No auto-scrolling
-                        } else if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-                            // Handle the full raw response format
-                            const candidateContent = data.candidates[0].content;
-                            if (candidateContent.parts && candidateContent.parts[0] && candidateContent.parts[0].text) {
-                                fullText += candidateContent.parts[0].text;
+                        } else if (data.choices && data.choices[0] && data.choices[0].delta) {
+                            // Handle the OpenAI/Perplexity format
+                            const deltaContent = data.choices[0].delta;
+                            if (deltaContent.content) {
+                                fullText += deltaContent.content;
                                 setStreamingMessage(fullText);
                                 // No auto-scrolling
                             }
                         }
 
-                        // Handle citation data (sent after all text chunks)
+                        // Handle citation data from Gemini (sent after all text chunks)
                         if (data.type === 'citations' && data.groundingMetadata) {
                             const { groundingMetadata, segmentMapping } = data;
 
@@ -344,22 +365,42 @@ const Chat = ({
                             // Extract citations if available
                             if (groundingMetadata.groundingChunks && groundingMetadata.groundingChunks.length > 0) {
                                 citations = groundingMetadata.groundingChunks
-                                    .filter((chunk: GroundingChunk) => chunk.web && chunk.web.uri && chunk.web.title)
-                                    .map((chunk: GroundingChunk, index: number) => ({
+                                    .filter((chunk: any) => chunk.web && chunk.web.uri)
+                                    .map((chunk: any, index: number) => ({
                                         text: `[${index + 1}]`,
                                         url: chunk.web.uri,
-                                        title: chunk.web.title,
+                                        title: chunk.web.title || `Source ${index + 1}`,
                                         index: index
                                     }));
                                 setStreamingCitations(citations);
-
+                                
                                 // If we have segment mapping, insert citation references into the text
                                 if (segmentMapping && segmentMapping.length > 0) {
                                     // Process the text to add inline citations
-                                    fullText = insertInlineCitations(fullText);
+                                    fullText = insertInlineCitations(fullText, citations);
                                     setStreamingMessage(fullText);
                                     // No auto-scrolling
                                 }
+                            }
+                        }
+                        
+                        // Handle Perplexity's citation data format
+                        if (data.citations || data.search_results) {
+                            if (data.citations && data.citations.length > 0) {
+                                const citationUrls = data.citations;
+                                const searchResults = data.search_results || [];
+                                
+                                citations = citationUrls.map((url: string, index: number) => {
+                                    const result = searchResults[index] || {};
+                                    return {
+                                        text: `[${index + 1}]`,
+                                        url: url,
+                                        title: result.title || `Source ${index + 1}`,
+                                        index: index
+                                    };
+                                });
+                                
+                                setStreamingCitations(citations);
                             }
                         }
                     } catch (e) {
@@ -403,7 +444,7 @@ const Chat = ({
             if (error instanceof DOMException && error.name === 'AbortError') {
                 // Fetch was aborted
             } else {
-                console.error('Error fetching Gemini response:', error);
+                console.error('Error fetching Perplexity response:', error);
                 setResponseStatus('error');
             }
         } finally {
@@ -643,9 +684,9 @@ const Chat = ({
             // Clear input field
             setInputValue('');
 
-            // Only send to Gemini API in 'ask' mode
+            // Only send to Perplexity API in 'ask' mode
             if (mode === 'ask') {
-                await fetchGeminiResponse(trimmedText);
+                await fetchPerplexityResponse(trimmedText);
             }
         } catch (error) {
             console.error('Error sending message:', error);
@@ -655,7 +696,7 @@ const Chat = ({
                 isProcessingMessageRef.current = false;
             }, 300);
         }
-    }, [inputValue, mode, responseStatus, fetchGeminiResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
+    }, [inputValue, mode, responseStatus, fetchPerplexityResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue.trim() !== '' && responseStatus !== 'streaming') {
             e.preventDefault(); // Prevent default behavior to avoid double submission
@@ -683,11 +724,15 @@ const Chat = ({
         );
     };
     // Render markdown content with proper citation display
-    const renderMarkdown = (message: string) => {
+    const renderMarkdown = (message: string, citations?: Citation[]) => {
+        // Process the message to add citation links if citations are available
+        const processedMessage = citations && citations.length > 0 ? 
+            insertInlineCitations(message, citations) : message;
+            
         return (
             <div className="chat__markdown-content">
                 <ReactMarkdown>
-                    {message}
+                    {processedMessage}
                 </ReactMarkdown>
             </div>
         );
@@ -720,7 +765,7 @@ const Chat = ({
                             <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
                                 {item.sender === "AI" ? (
                                     <>
-                                        {renderMarkdown(item.message)}
+                                        {renderMarkdown(item.message, item.citations)}
 
                                         {/* Show the assertion form inside AI message */}
                                         {item.hasForm && (
@@ -777,17 +822,7 @@ const Chat = ({
                                             </div>
                                         )}
 
-                                        {/* Show citations if available */}
-                                        {item.citations && Array.isArray(item.citations) && item.citations.length > 0 && (
-                                            <div className="chat__citations">
-                                                <span className="chat__citations-title">출처:</span>
-                                                {item.citations.map((citation, idx) => (
-                                                    <span key={idx} className="chat__citation">
-                                                        {renderCitation(citation)}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
+                                        {/* Citation sources section removed as per user request */}
 
                                         {/* Show suggestions */}
                                         {item.suggestions && Array.isArray(item.suggestions) && item.suggestions.length > 0 && (
