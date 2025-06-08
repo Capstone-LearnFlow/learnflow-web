@@ -126,6 +126,7 @@ BEGIN
   WHERE
     cm.assignment_id = p_assignment_id
     AND cm.embedding IS NOT NULL
+    AND cm.sender = 'AI' -- Only retrieve AI messages
     AND 1 - (cm.embedding <=> query_embedding) > match_threshold
   ORDER BY
     cm.embedding <=> query_embedding
