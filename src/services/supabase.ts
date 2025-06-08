@@ -28,10 +28,7 @@ export const generateEmbedding = async (text: string): Promise<number[] | null> 
     return null;
   }
 };
-// Extended ChatMessage interface to include embedding
-export interface ChatMessageWithEmbedding extends ChatMessage {
-  embedding?: number[];
-}
+
 // Types for chat logs
 export interface ChatMessage {
   id?: string;
@@ -51,6 +48,11 @@ export interface ChatMessage {
     title: string;
     index?: number;
   }[];
+}
+
+// Extended ChatMessage interface to include embedding
+export interface ChatMessageWithEmbedding extends ChatMessage {
+  embedding?: number[];
 }
 
 // Function to save a chat message to Supabase
@@ -80,37 +82,6 @@ export const saveChatMessage = async (message: ChatMessage): Promise<{ success: 
         },
       ]);
 
-// Function to search for relevant chat messages using embedding similarity
-export const searchRelevantMessages = async (
-  assignmentId: string,
-  messageText: string,
-  limit: number = 5
-): Promise<{ success: boolean; data?: ChatMessage[]; error?: any }> => {
-  try {
-    // Generate embedding for the query message
-    const embedding = await generateEmbedding(messageText);
-    
-    if (!embedding) {
-      throw new Error('Failed to generate embedding for search query');
-    }
-    
-    // Perform vector similarity search in Supabase
-    const { data, error } = await supabase
-      .rpc('match_chat_messages', {
-        query_embedding: embedding,
-        match_threshold: 0.5, // Adjust threshold as needed
-        match_count: limit,
-        p_assignment_id: assignmentId
-      });
-    
-    if (error) throw error;
-    
-    return { success: true, data: data as ChatMessage[] };
-  } catch (error) {
-    console.error('Error searching relevant chat messages:', error);
-    return { success: false, error };
-  }
-};
     if (error) throw error;
     
     return { success: true };
@@ -147,6 +118,38 @@ export const loadChatMessages = async (
     return { success: true, data: data as ChatMessage[] };
   } catch (error) {
     console.error('Error loading chat messages:', error);
+    return { success: false, error };
+  }
+};
+
+// Function to search for relevant chat messages using embedding similarity
+export const searchRelevantMessages = async (
+  assignmentId: string,
+  messageText: string,
+  limit: number = 5
+): Promise<{ success: boolean; data?: ChatMessage[]; error?: any }> => {
+  try {
+    // Generate embedding for the query message
+    const embedding = await generateEmbedding(messageText);
+    
+    if (!embedding) {
+      throw new Error('Failed to generate embedding for search query');
+    }
+    
+    // Perform vector similarity search in Supabase
+    const { data, error } = await supabase
+      .rpc('match_chat_messages', {
+        query_embedding: embedding,
+        match_threshold: 0.5, // Adjust threshold as needed
+        match_count: limit,
+        p_assignment_id: assignmentId
+      });
+    
+    if (error) throw error;
+    
+    return { success: true, data: data as ChatMessage[] };
+  } catch (error) {
+    console.error('Error searching relevant chat messages:', error);
     return { success: false, error };
   }
 };
