@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 
 // Supabase client configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -8,21 +7,24 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Initialize OpenAI client for embeddings
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
-});
-
-// Function to generate OpenAI embeddings
+// Function to generate OpenAI embeddings using server-side API
 export const generateEmbedding = async (text: string): Promise<number[] | null> => {
   try {
-    const response = await openai.embeddings.create({
-      model: "text-embedding-3-small",
-      input: text,
-      encoding_format: "float",
+    // Call server-side API endpoint instead of directly using OpenAI client
+    const response = await fetch('/api/embedding', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text }),
     });
-    
-    return response.data[0].embedding;
+
+    if (!response.ok) {
+      throw new Error(`Embedding API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.embedding;
   } catch (error) {
     console.error('Error generating embedding:', error);
     return null;
