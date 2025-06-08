@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
+import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       : systemMessage;
 
     // Prepare messages array in the format OpenAI requires
-    const messages = [
+    const messages: ChatCompletionMessageParam[] = [
       { role: "system", content: finalSystemMessage },
       { role: "user", content: text }
     ];
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
         try {
           const streamResponse = await openai.chat.completions.create({
             model: model, // Use the specified model (gpt-4.1-mini for global chat)
-            messages: messages,
+            messages,
             stream: true,
             temperature: 0.7,
           });
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
     // For non-streaming requests with assertion response format
     const response = await openai.chat.completions.create({
       model: model, // Use the specified model
-      messages: messages,
+      messages,
       response_format: {
         "type": "json_schema",
         "json_schema": {
