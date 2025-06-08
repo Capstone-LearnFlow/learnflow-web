@@ -1,23 +1,47 @@
 -- Enable the pgvector extension for vector similarity search
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- Add embedding column to chat_messages table if it doesn't exist
+-- Add embedding column to chat_messages table with proper dimensions
 DO $$
 BEGIN
+  -- First check if the column exists
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                  WHERE table_name = 'chat_messages' 
                  AND column_name = 'embedding') THEN
+    -- Add embedding column with proper dimensions (1536 for text-embedding-3-small model)
     ALTER TABLE chat_messages ADD COLUMN embedding vector(1536);
+  ELSE
+    -- If column exists but is not a vector type with dimensions, recreate it
+    BEGIN
+      -- This will fail if the column is not a vector type or doesn't have dimensions
+      EXECUTE 'ALTER TABLE chat_messages ALTER COLUMN embedding TYPE vector(1536) USING embedding::vector(1536)';
+    EXCEPTION WHEN OTHERS THEN
+      -- If the above fails, drop and recreate the column
+      ALTER TABLE chat_messages DROP COLUMN embedding;
+      ALTER TABLE chat_messages ADD COLUMN embedding vector(1536);
+    END;
   END IF;
 END
 $$;
 
 -- Create index on embedding column for faster similarity search
+-- Only create the index if the embedding column exists and has proper dimensions
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'chat_messages_embedding_idx') THEN
-    CREATE INDEX chat_messages_embedding_idx ON chat_messages USING ivfflat (embedding vector_cosine_ops);
+  -- Verify the column exists and has proper type before creating index
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'chat_messages' 
+    AND column_name = 'embedding'
+  ) THEN
+    -- Check if index already exists
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'chat_messages_embedding_idx') THEN
+      -- Create the index with the proper operator class
+      EXECUTE 'CREATE INDEX chat_messages_embedding_idx ON chat_messages USING ivfflat (embedding vector_cosine_ops)';
+    END IF;
   END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Error creating index: %', SQLERRM;
 END
 $$;
 
