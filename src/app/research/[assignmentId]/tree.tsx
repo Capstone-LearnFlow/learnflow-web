@@ -66,6 +66,9 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
 
         fetchTreeData();
     }, [assignmentId, router]);
+    useEffect(() => {
+        console.log('Tree data changed:', treeData);
+    }, [treeData]);
 
     const positionorigin: { x: number, y: number } = { x: 8, y: 90 };
     const nodeWidth: number = 462;

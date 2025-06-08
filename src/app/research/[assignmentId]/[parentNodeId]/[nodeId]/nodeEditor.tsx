@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Node, getNodeTypeName, TreeData } from '../../tree';
 import { studentAPI } from '../../../../../services/api';
@@ -28,6 +28,7 @@ const NodeEditor = ({
     treeData
 }: NodeEditorProps) => {
     const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
 
     // Helper function to find parent node of a given nodeId
     const findParentNode = useCallback((tree: Node, targetId: string): Node | null => {
@@ -119,7 +120,7 @@ const NodeEditor = ({
 
     // Handler for register button click
     const handleRegisterNode = useCallback(async () => {
-        if (!hasChanges) {
+        if (!hasChanges || isLoading) {
             return;
         }
 
@@ -127,6 +128,8 @@ const NodeEditor = ({
         if (node.type === 'argument' && !isArgumentValid(node)) {
             return;
         }
+
+        setIsLoading(true);
 
         try {
             // Get the assignment ID from params
@@ -255,8 +258,10 @@ const NodeEditor = ({
         } catch (error) {
             console.error('Error registering node:', error);
             alert('노드 등록에 실패했습니다.');
+        } finally {
+            setIsLoading(false);
         }
-    }, [hasChanges, node, parentNode, isArgumentValid, setHasChanges, setOriginalNode, params, router]);
+    }, [hasChanges, isLoading, node, parentNode, isArgumentValid, setHasChanges, setOriginalNode, params, router]);
 
     // Textarea auto-resize
     const autoResize = useCallback((textarea: HTMLTextAreaElement) => {
@@ -489,8 +494,8 @@ const NodeEditor = ({
                         )}
                     </div>
                 </div>
-                <div className={`btn node_editor__register_node_btn ${hasChanges ? 'node_editor__register_node_btn--active' : ''}`} onClick={handleRegisterNode}>
-                    {node.nodeId === 'new' ? '등록하기' : '수정하기'}
+                <div className={`btn node_editor__register_node_btn ${hasChanges ? 'node_editor__register_node_btn--active' : ''} ${isLoading ? 'loading--default' : ''}`} onClick={handleRegisterNode}>
+                    {!isLoading && (node.nodeId === 'new' ? '등록하기' : '수정하기')}
                 </div>
             </>)}
         </div>

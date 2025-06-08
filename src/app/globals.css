@@ -213,6 +213,40 @@ button {
   filter: brightness(0.9) opacity(0.8);
 }
 
+.loading--default {
+  cursor: none;
+  pointer-events: none;
+  text-indent: 1000%;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.loading--default::after {
+  content: '';
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  padding: 0px;
+  margin: 0px;
+  background-color: transparent;
+  border-radius: 50%;
+  border: solid 2px var(--c-fill);
+  border-top: solid 2px transparent;
+  top: calc(50% - 9px);
+  left: calc(50% - 9px);
+  animation: loading 1s linear infinite;
+}
+
+@keyframes loading {
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+
+
 
 
 /* signin */
@@ -752,22 +786,28 @@ button {
 }
 
 .node_editor__register_node_btn {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
+  position: sticky;
+  min-height: 22px;
+  min-width: 4px;
+  right: 0px;
+  transform: translateX(28px) translateY(4px);
+  bottom: 0px;
+  align-self: flex-end;
   z-index: 7;
-  background-color: var(--c-fill-gray-secondary-alpha);
+  /* background-color: var(--c-fill-gray-secondary-alpha); */
+  background-color: var(--c-fill-green);
   color: var(--c-fill);
   opacity: 0;
   pointer-events: none;
   transition: none;
+  text-align: right;
 }
 
 .node_editor__register_node_btn--active {
-  background-color: var(--c-fill-green);
+  /* background-color: var(--c-fill-green); */
   opacity: 1;
   pointer-events: all;
-  transition: all 150ms ease-out;
+  transition: opacity 150ms ease-out;
 }
 
 .node_editor__node--subject {
