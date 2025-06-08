@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import OpenAI from 'openai';
 
 // Supabase client configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -7,6 +8,30 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Initialize OpenAI client for embeddings
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+});
+
+// Function to generate OpenAI embeddings
+export const generateEmbedding = async (text: string): Promise<number[] | null> => {
+  try {
+    const response = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: text,
+      encoding_format: "float",
+    });
+    
+    return response.data[0].embedding;
+  } catch (error) {
+    console.error('Error generating embedding:', error);
+    return null;
+  }
+};
+// Extended ChatMessage interface to include embedding
+export interface ChatMessageWithEmbedding extends ChatMessage {
+  embedding?: number[];
+}
 // Types for chat logs
 export interface ChatMessage {
   id?: string;
@@ -31,6 +56,12 @@ export interface ChatMessage {
 // Function to save a chat message to Supabase
 export const saveChatMessage = async (message: ChatMessage): Promise<{ success: boolean; error?: any }> => {
   try {
+    // Generate embedding for the message
+    let embedding = null;
+    if (message.message.trim()) {
+      embedding = await generateEmbedding(message.message);
+    }
+    
     const { error } = await supabase
       .from('chat_messages')
       .insert([
@@ -45,9 +76,41 @@ export const saveChatMessage = async (message: ChatMessage): Promise<{ success: 
           user_name: message.user_name || null, // Include user name in saved message
           suggestions: message.suggestions || [],
           citations: message.citations || [],
+          embedding: embedding,              // Add embedding to the message
         },
       ]);
 
+// Function to search for relevant chat messages using embedding similarity
+export const searchRelevantMessages = async (
+  assignmentId: string,
+  messageText: string,
+  limit: number = 5
+): Promise<{ success: boolean; data?: ChatMessage[]; error?: any }> => {
+  try {
+    // Generate embedding for the query message
+    const embedding = await generateEmbedding(messageText);
+    
+    if (!embedding) {
+      throw new Error('Failed to generate embedding for search query');
+    }
+    
+    // Perform vector similarity search in Supabase
+    const { data, error } = await supabase
+      .rpc('match_chat_messages', {
+        query_embedding: embedding,
+        match_threshold: 0.5, // Adjust threshold as needed
+        match_count: limit,
+        p_assignment_id: assignmentId
+      });
+    
+    if (error) throw error;
+    
+    return { success: true, data: data as ChatMessage[] };
+  } catch (error) {
+    console.error('Error searching relevant chat messages:', error);
+    return { success: false, error };
+  }
+};
     if (error) throw error;
     
     return { success: true };
