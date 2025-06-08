@@ -1054,8 +1054,8 @@ const Chat = ({
 
                 {/* <div className="chat__input-container"> */}
                 {/* <div className="chat__input-stack"> */}
-                {/* Mode toggle buttons positioned horizontally above input */}
-                {!hideButtons && (
+                {/* Mode toggle buttons positioned horizontally above input - hide in global chat (nodeId='0') */}
+                {!hideButtons && nodeId !== '0' && (
                     <div className="chat__toggle-area">
                         <button
                             className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
