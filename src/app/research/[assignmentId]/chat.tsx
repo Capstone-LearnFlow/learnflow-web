@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useRef, FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import StreamingMessage from './components/StreamingMessage';
-import { saveChatMessage, loadChatMessages, ChatMessage } from '../../../services/supabase';
+import { saveChatMessage, loadChatMessages, searchRelevantMessages, ChatMessage } from '../../../services/supabase';
 import { useParams } from 'next/navigation';
 import { useAuth } from '../../../engine/Auth';
 import { NodeType } from './tree';
@@ -55,6 +55,11 @@ type ChatItem = {
     citations?: Citation[];
     hasForm?: boolean; // To identify if this message should contain a form
     jsonData?: EditableFormData; // To store the JSON data for editing
+    nodeInfo?: {     // Information about the node this message is from (for retrieved messages)
+        nodeId: string;
+        parentNodeId: string;
+        nodeName?: string;
+    };
 };
 
 // Type for API history items
@@ -178,6 +183,46 @@ const Chat = ({
 
         fetchChatLogs();
     }, [assignmentId, parentNodeId, nodeId]);
+
+    // Function to find relevant messages based on embeddings
+    const findRelevantMessages = async (messageText: string): Promise<ChatItem[]> => {
+        // Only search for relevant messages in the global chat
+        if (nodeId !== '0' || !assignmentId) return [];
+
+        try {
+            // Search for relevant messages using embeddings
+            const result = await searchRelevantMessages(assignmentId, messageText, 5);
+            
+            if (result.success && result.data && result.data.length > 0) {
+                // Convert to ChatItem format and add node info
+                return result.data
+                    .filter(message => 
+                        // Filter out messages from the current chat (nodeId '0')
+                        message.node_id !== '0' &&
+                        // Only include relevant messages with high similarity
+                        message.message.trim().length > 0
+                    )
+                    .map(message => ({
+                        sender: message.sender,
+                        message: message.message,
+                        created_at: new Date(message.created_at || Date.now()).getTime(),
+                        mode: message.mode,
+                        suggestions: message.suggestions,
+                        citations: message.citations,
+                        hasForm: false,
+                        nodeInfo: {
+                            nodeId: message.node_id,
+                            parentNodeId: message.parent_node_id,
+                            nodeName: `노드 ${message.node_id}`, // Default node name, could be replaced with actual node name
+                        }
+                    }));
+            }
+        } catch (error) {
+            console.error('Error finding relevant messages:', error);
+        }
+        
+        return [];
+    };
     useEffect(() => {
         setViewStatus(status);
     }, [status]);
@@ -285,6 +330,26 @@ const Chat = ({
             setStreamingSuggestions([]);
             setStreamingCitations([]);
 
+            // For global chat, find relevant messages from other nodes using embeddings
+            let relevantMessages: ChatItem[] = [];
+            if (nodeId === '0') {
+                relevantMessages = await findRelevantMessages(message);
+                
+                // If we found relevant messages, add them to the chat log
+                if (relevantMessages.length > 0) {
+                    // Add an AI message indicating relevant chats were found
+                    const relevantInfoMessage: ChatItem = {
+                        sender: "AI",
+                        message: "다른 노드에서 관련된 대화를 찾았습니다:",
+                        created_at: Date.now(),
+                        mode: mode,
+                    };
+                    
+                    // Add the relevant messages to the chat log
+                    setChatLog(prev => [...prev, relevantInfoMessage, ...relevantMessages]);
+                }
+            }
+
             // Add the new user message to API history
             apiHistoryRef.current = [
                 ...apiHistoryRef.current,
@@ -294,6 +359,24 @@ const Chat = ({
                 }
             ];
 
+            // Add context from relevant messages to the API request if in global chat
+            let contextualHistory = apiHistoryRef.current.slice(0, -1);
+            if (nodeId === '0' && relevantMessages.length > 0) {
+                // Add relevant messages as context for the AI
+                const relevantContext = relevantMessages.map(msg => ({
+                    role: msg.sender.toLowerCase() as 'user' | 'model',
+                    parts: [{ 
+                        text: `[노드 ${msg.nodeInfo?.nodeId}] ${msg.sender === 'USER' ? '사용자' : 'AI'}: ${msg.message}`
+                    }]
+                }));
+                
+                // Insert the relevant context before the latest user message
+                contextualHistory = [
+                    ...apiHistoryRef.current.slice(0, -1),
+                    ...relevantContext
+                ];
+            }
+
             const response = await fetch('/api/perplexity', {
                 method: 'POST',
                 headers: {
@@ -301,7 +384,7 @@ const Chat = ({
                 },
                 body: JSON.stringify({
                     message,
-                    history: apiHistoryRef.current.slice(0, -1) // Send all history except the last message
+                    history: contextualHistory // Send history with relevant context
                 }),
                 signal,
             });
@@ -724,15 +807,20 @@ const Chat = ({
         );
     };
     // Render markdown content with proper citation display
-    const renderMarkdown = (message: string, citations?: Citation[]) => {
+    const renderMarkdown = (message: string, citations?: Citation[], nodeInfo?: ChatItem['nodeInfo']) => {
         // Process the message to add citation links if citations are available
         const processedMessage = citations && citations.length > 0 ? 
             insertInlineCitations(message, citations) : message;
+        
+        // If this is a message from another node, add a prefix to indicate which node it's from
+        const displayMessage = nodeInfo ? 
+            `**노드 ${nodeInfo.nodeId}에서의 대화:**\n\n${processedMessage}` : 
+            processedMessage;
             
         return (
-            <div className="chat__markdown-content">
+            <div className={`chat__markdown-content ${nodeInfo ? 'chat__markdown-content--node-message' : ''}`}>
                 <ReactMarkdown>
-                    {processedMessage}
+                    {displayMessage}
                 </ReactMarkdown>
             </div>
         );
@@ -765,7 +853,7 @@ const Chat = ({
                             <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
                                 {item.sender === "AI" ? (
                                     <>
-                                        {renderMarkdown(item.message, item.citations)}
+                                        {renderMarkdown(item.message, item.citations, item.nodeInfo)}
 
                                         {/* Show the assertion form inside AI message */}
                                         {item.hasForm && (
@@ -1184,6 +1272,15 @@ const Chat = ({
                     max-width: 100%;
                     overflow-x: hidden;
                     white-space: normal;
+                }
+                
+                /* Styling for messages from other nodes */
+                .chat__markdown-content--node-message {
+                    background-color: #f5f9ff;
+                    border-left: 4px solid #4a86e8;
+                    padding: 12px;
+                    margin: 8px 0;
+                    border-radius: 8px;
                 }
                 
                 /* Ensure content doesn't cause horizontal scrolling */
