@@ -50,6 +50,7 @@ export interface ChatMessage {
     title: string;
     index?: number;
   }[];
+  skip_embedding?: boolean; // Flag to skip embedding generation (for global chat)
 }
 
 // Extended ChatMessage interface to include embedding
@@ -60,31 +61,51 @@ export interface ChatMessageWithEmbedding extends ChatMessage {
 // Function to save a chat message to Supabase
 export const saveChatMessage = async (message: ChatMessage): Promise<{ success: boolean; error?: any }> => {
   try {
-    // Generate embedding for the message
-    let embedding = null;
-    if (message.message.trim()) {
-      embedding = await generateEmbedding(message.message);
-    }
-    
-    const { error } = await supabase
+    // Prepare message data without embedding initially
+    const messageData = {
+      assignment_id: message.assignment_id,
+      parent_node_id: message.parent_node_id,
+      node_id: message.node_id,
+      sender: message.sender,
+      message: message.message,
+      mode: message.mode,
+      user_id: message.user_id || null,
+      user_name: message.user_name || null,
+      suggestions: message.suggestions || [],
+      citations: message.citations || [],
+      embedding: null, // Initially null, will be updated later if needed
+    };
+
+    // Insert the message into the database immediately
+    const { error, data } = await supabase
       .from('chat_messages')
-      .insert([
-        {
-          assignment_id: message.assignment_id,
-          parent_node_id: message.parent_node_id,
-          node_id: message.node_id,
-          sender: message.sender,
-          message: message.message,
-          mode: message.mode,
-          user_id: message.user_id || null,    // Include user ID in saved message
-          user_name: message.user_name || null, // Include user name in saved message
-          suggestions: message.suggestions || [],
-          citations: message.citations || [],
-          embedding: embedding,              // Add embedding to the message
-        },
-      ]);
+      .insert([messageData])
+      .select('id');
 
     if (error) throw error;
+
+    // If skip_embedding flag is not set and message is not empty, generate embedding in the background
+    if (!message.skip_embedding && message.message.trim()) {
+      // Use a separate async function to handle embedding generation without blocking
+      (async () => {
+        try {
+          // Generate embedding
+          const embedding = await generateEmbedding(message.message);
+          
+          if (embedding && data && data[0]?.id) {
+            // Update the message with the embedding
+            await supabase
+              .from('chat_messages')
+              .update({ embedding })
+              .eq('id', data[0].id);
+          }
+        } catch (embeddingError) {
+          console.error('Error generating or saving embedding:', embeddingError);
+          // Failure to generate or save embedding doesn't affect the overall success
+          // since the message was already saved
+        }
+      })();
+    }
     
     return { success: true };
   } catch (error) {
