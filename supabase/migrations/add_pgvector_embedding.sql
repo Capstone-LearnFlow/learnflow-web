@@ -127,7 +127,7 @@ BEGIN
     cm.assignment_id = p_assignment_id
     AND cm.embedding IS NOT NULL
     AND cm.sender = 'AI' -- Only retrieve AI messages
-    AND 1 - (cm.embedding <=> query_embedding) > match_threshold
+    -- Removed similarity threshold to always return the most similar message
   ORDER BY
     cm.embedding <=> query_embedding
   LIMIT match_count;
