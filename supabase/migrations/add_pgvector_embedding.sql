@@ -45,6 +45,36 @@ EXCEPTION WHEN OTHERS THEN
 END
 $$;
 
+-- Check and convert json columns to jsonb if needed
+DO $$
+DECLARE
+  suggestions_type text;
+  citations_type text;
+BEGIN
+  -- Get current column types
+  SELECT data_type INTO suggestions_type 
+  FROM information_schema.columns 
+  WHERE table_name = 'chat_messages' AND column_name = 'suggestions';
+  
+  SELECT data_type INTO citations_type 
+  FROM information_schema.columns 
+  WHERE table_name = 'chat_messages' AND column_name = 'citations';
+  
+  -- Convert json to jsonb if needed
+  IF suggestions_type = 'json' THEN
+    ALTER TABLE chat_messages ALTER COLUMN suggestions TYPE jsonb USING suggestions::jsonb;
+    RAISE NOTICE 'Converted suggestions column from json to jsonb';
+  END IF;
+  
+  IF citations_type = 'json' THEN
+    ALTER TABLE chat_messages ALTER COLUMN citations TYPE jsonb USING citations::jsonb;
+    RAISE NOTICE 'Converted citations column from json to jsonb';
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Error checking or converting column types: %', SQLERRM;
+END
+$$;
+
 -- Create function for vector similarity search
 CREATE OR REPLACE FUNCTION match_chat_messages(
   query_embedding vector(1536),
@@ -82,8 +112,14 @@ BEGIN
     cm.mode,
     cm.user_id,
     cm.user_name,
-    cm.suggestions,
-    cm.citations,
+    CASE
+      WHEN pg_typeof(cm.suggestions) = 'json'::regtype THEN cm.suggestions::jsonb
+      ELSE cm.suggestions
+    END AS suggestions,
+    CASE
+      WHEN pg_typeof(cm.citations) = 'json'::regtype THEN cm.citations::jsonb
+      ELSE cm.citations
+    END AS citations,
     1 - (cm.embedding <=> query_embedding) as similarity
   FROM
     chat_messages cm
