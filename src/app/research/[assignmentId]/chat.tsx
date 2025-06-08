@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useRef, FormEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import StreamingMessage from './components/StreamingMessage';
-import { saveChatMessage, loadChatMessages, ChatMessage } from '../../../services/supabase';
+import { saveChatMessage, loadChatMessages, searchRelevantMessages, ChatMessage } from '../../../services/supabase';
 import { useParams } from 'next/navigation';
 import { useAuth } from '../../../engine/Auth';
 import { NodeType } from './tree';
@@ -55,6 +55,11 @@ type ChatItem = {
     citations?: Citation[];
     hasForm?: boolean; // To identify if this message should contain a form
     jsonData?: EditableFormData; // To store the JSON data for editing
+    nodeInfo?: {     // Information about the node this message is from (for retrieved messages)
+        nodeId: string;
+        parentNodeId: string;
+        nodeName?: string;
+    };
 };
 
 // Type for API history items
@@ -178,6 +183,46 @@ const Chat = ({
 
         fetchChatLogs();
     }, [assignmentId, parentNodeId, nodeId]);
+
+    // Function to find relevant messages based on embeddings
+    const findRelevantMessages = async (messageText: string): Promise<ChatItem[]> => {
+        // Only search for relevant messages in the global chat
+        if (nodeId !== '0' || !assignmentId) return [];
+
+        try {
+            // Search for relevant messages using embeddings
+            const result = await searchRelevantMessages(assignmentId, messageText, 5);
+            
+            if (result.success && result.data && result.data.length > 0) {
+                // Convert to ChatItem format and add node info
+                return result.data
+                    .filter(message => 
+                        // Filter out messages from the current chat (nodeId '0')
+                        message.node_id !== '0' &&
+                        // Only include relevant messages with high similarity
+                        message.message.trim().length > 0
+                    )
+                    .map(message => ({
+                        sender: message.sender,
+                        message: message.message,
+                        created_at: new Date(message.created_at || Date.now()).getTime(),
+                        mode: message.mode,
+                        suggestions: message.suggestions,
+                        citations: message.citations,
+                        hasForm: false,
+                        nodeInfo: {
+                            nodeId: message.node_id,
+                            parentNodeId: message.parent_node_id,
+                            nodeName: `노드 ${message.node_id}`, // Default node name, could be replaced with actual node name
+                        }
+                    }));
+            }
+        } catch (error) {
+            console.error('Error finding relevant messages:', error);
+        }
+        
+        return [];
+    };
     useEffect(() => {
         setViewStatus(status);
     }, [status]);
@@ -186,6 +231,9 @@ const Chat = ({
         if (!assignmentId || !nodeId) return;
 
         try {
+            // Don't save embeddings for global chat (nodeId='0')
+            const skipEmbedding = nodeId === '0';
+            
             await saveChatMessage({
                 assignment_id: assignmentId,
                 parent_node_id: parentNodeId,
@@ -196,7 +244,8 @@ const Chat = ({
                 user_id: user?.id,        // Include user ID if available
                 user_name: user?.name,    // Include user name if available
                 suggestions: message.suggestions,
-                citations: message.citations
+                citations: message.citations,
+                skip_embedding: skipEmbedding // Flag to skip embedding generation for global chat
             });
         } catch (error) {
             console.error('Error saving chat message to Supabase:', error);
@@ -274,6 +323,143 @@ const Chat = ({
 
     // Remove additional auto-scroll effects
 
+    // Fetch response from OpenAI (for global chat)
+    const fetchOpenAIResponse = useCallback(async (message: string) => {
+        try {
+            // Create a new AbortController for this request
+            abortControllerRef.current = new AbortController();
+            const signal = abortControllerRef.current.signal;
+
+            setResponseStatus('streaming');
+            setStreamingMessage('');
+            setStreamingSuggestions([]);
+            setStreamingCitations([]);
+
+            // For global chat, find relevant messages from other nodes using embeddings
+            let relevantMessages: ChatItem[] = [];
+            relevantMessages = await findRelevantMessages(message);
+            
+            // If we found relevant messages, add them to the chat log
+            if (relevantMessages.length > 0) {
+                // Add an AI message indicating relevant chats were found
+                const relevantInfoMessage: ChatItem = {
+                    sender: "AI",
+                    message: "다른 노드에서 관련된 대화를 찾았습니다:",
+                    created_at: Date.now(),
+                    mode: mode,
+                };
+                
+                // Add the relevant messages to the chat log
+                setChatLog(prev => [...prev, relevantInfoMessage, ...relevantMessages]);
+            }
+
+            // Add the new user message to API history
+            apiHistoryRef.current = [
+                ...apiHistoryRef.current,
+                {
+                    role: 'user',
+                    parts: [{ text: message }]
+                }
+            ];
+
+            // Add context from relevant messages to the API request
+            let contextualHistory = apiHistoryRef.current.slice(0, -1);
+            if (relevantMessages.length > 0) {
+                // Add relevant messages as context for the AI
+                const relevantContext = relevantMessages.map(msg => ({
+                    role: msg.sender.toLowerCase() as 'user' | 'model',
+                    parts: [{ 
+                        text: `[노드 ${msg.nodeInfo?.nodeId}] ${msg.sender === 'USER' ? '사용자' : 'AI'}: ${msg.message}`
+                    }]
+                }));
+                
+                // Insert the relevant context before the latest user message
+                contextualHistory = [
+                    ...apiHistoryRef.current.slice(0, -1),
+                    ...relevantContext
+                ];
+            }
+
+            // Use OpenAI's gpt-4.1-mini API instead of Perplexity for global chat
+            const response = await fetch('/api/openai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: message,
+                    history: contextualHistory.map(item => 
+                        `${item.role === 'user' ? '사용자' : 'AI'}: ${item.parts[0].text}`
+                    ).join('\n\n'),
+                    stream: true, // Request streaming response
+                    model: 'gpt-4.1-mini' // Specify the model to use
+                }),
+                signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error('Response body is null');
+            }
+
+            const decoder = new TextDecoder();
+            let fullText = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    break;
+                }
+
+                const chunk = decoder.decode(value, { stream: true });
+                fullText += chunk;
+                setStreamingMessage(fullText);
+            }
+
+            // Add the AI response to API history for context in future requests
+            apiHistoryRef.current = [
+                ...apiHistoryRef.current,
+                {
+                    role: 'model',
+                    parts: [{ text: fullText }]
+                }
+            ];
+
+            // Add the AI response to the chat log
+            const aiResponse: ChatItem = {
+                sender: "AI",
+                message: fullText,
+                created_at: Date.now(),
+                mode: mode,
+            };
+
+            setChatLog((prev) => [...prev, aiResponse]);
+            // Save AI response to Supabase
+            await saveChatMessageToSupabase(aiResponse);
+
+            setStreamingMessage('');
+            setResponseStatus('success');
+
+            // Mark that the user has asked at least one question
+            setHasAskedQuestion(true);
+        } catch (error) {
+            if (error instanceof DOMException && error.name === 'AbortError') {
+                // Fetch was aborted
+            } else {
+                console.error('Error fetching OpenAI response:', error);
+                setResponseStatus('error');
+            }
+        } finally {
+            abortControllerRef.current = null;
+        }
+    }, [setChatLog, setStreamingMessage, setStreamingSuggestions, setStreamingCitations, setResponseStatus, setHasAskedQuestion, mode, assignmentId, findRelevantMessages]);
+
+    // Fetch response from Perplexity (for node-specific chats)
     const fetchPerplexityResponse = useCallback(async (message: string) => {
         try {
             // Create a new AbortController for this request
@@ -294,6 +480,8 @@ const Chat = ({
                 }
             ];
 
+            const contextualHistory = apiHistoryRef.current.slice(0, -1);
+
             const response = await fetch('/api/perplexity', {
                 method: 'POST',
                 headers: {
@@ -301,7 +489,7 @@ const Chat = ({
                 },
                 body: JSON.stringify({
                     message,
-                    history: apiHistoryRef.current.slice(0, -1) // Send all history except the last message
+                    history: contextualHistory // Send history context
                 }),
                 signal,
             });
@@ -684,9 +872,16 @@ const Chat = ({
             // Clear input field
             setInputValue('');
 
-            // Only send to Perplexity API in 'ask' mode
+            // Only process in 'ask' mode
             if (mode === 'ask') {
-                await fetchPerplexityResponse(trimmedText);
+                // Use different API based on whether it's the global chat or node-specific chat
+                if (nodeId === '0') {
+                    // Use OpenAI for global chat
+                    await fetchOpenAIResponse(trimmedText);
+                } else {
+                    // Use Perplexity for node-specific chats
+                    await fetchPerplexityResponse(trimmedText);
+                }
             }
         } catch (error) {
             console.error('Error sending message:', error);
@@ -696,7 +891,7 @@ const Chat = ({
                 isProcessingMessageRef.current = false;
             }, 300);
         }
-    }, [inputValue, mode, responseStatus, fetchPerplexityResponse, setChatLog, setInputValue, assignmentId, parentNodeId, nodeId]);
+    }, [inputValue, mode, responseStatus, fetchPerplexityResponse, fetchOpenAIResponse, setChatLog, setInputValue, nodeId]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && inputValue.trim() !== '' && responseStatus !== 'streaming') {
             e.preventDefault(); // Prevent default behavior to avoid double submission
@@ -724,15 +919,20 @@ const Chat = ({
         );
     };
     // Render markdown content with proper citation display
-    const renderMarkdown = (message: string, citations?: Citation[]) => {
+    const renderMarkdown = (message: string, citations?: Citation[], nodeInfo?: ChatItem['nodeInfo']) => {
         // Process the message to add citation links if citations are available
         const processedMessage = citations && citations.length > 0 ? 
             insertInlineCitations(message, citations) : message;
+        
+        // If this is a message from another node, add a prefix to indicate which node it's from
+        const displayMessage = nodeInfo ? 
+            `**노드 ${nodeInfo.nodeId}에서의 대화:**\n\n${processedMessage}` : 
+            processedMessage;
             
         return (
-            <div className="chat__markdown-content">
+            <div className={`chat__markdown-content ${nodeInfo ? 'chat__markdown-content--node-message' : ''}`}>
                 <ReactMarkdown>
-                    {processedMessage}
+                    {displayMessage}
                 </ReactMarkdown>
             </div>
         );
@@ -765,7 +965,7 @@ const Chat = ({
                             <div key={i} className={`chat__stack__item ${item.sender === "USER" && 'chat__stack__item--bubble'}`}>
                                 {item.sender === "AI" ? (
                                     <>
-                                        {renderMarkdown(item.message, item.citations)}
+                                        {renderMarkdown(item.message, item.citations, item.nodeInfo)}
 
                                         {/* Show the assertion form inside AI message */}
                                         {item.hasForm && (
@@ -854,8 +1054,8 @@ const Chat = ({
 
                 {/* <div className="chat__input-container"> */}
                 {/* <div className="chat__input-stack"> */}
-                {/* Mode toggle buttons positioned horizontally above input */}
-                {!hideButtons && (
+                {/* Mode toggle buttons positioned horizontally above input - hide in global chat (nodeId='0') */}
+                {!hideButtons && nodeId !== '0' && (
                     <div className="chat__toggle-area">
                         <button
                             className={`chat__mode-button ${mode === 'ask' ? 'chat__mode-button--active' : ''}`}
@@ -1184,6 +1384,15 @@ const Chat = ({
                     max-width: 100%;
                     overflow-x: hidden;
                     white-space: normal;
+                }
+                
+                /* Styling for messages from other nodes */
+                .chat__markdown-content--node-message {
+                    background-color: #f5f9ff;
+                    border-left: 4px solid #4a86e8;
+                    padding: 12px;
+                    margin: 8px 0;
+                    border-radius: 8px;
                 }
                 
                 /* Ensure content doesn't cause horizontal scrolling */
