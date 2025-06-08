@@ -149,7 +149,7 @@ export const loadChatMessages = async (
 export const searchRelevantMessages = async (
   assignmentId: string,
   messageText: string,
-  limit: number = 5
+  limit: number = 1 // Default to 1, but always override to ensure only 1 result
 ): Promise<{ success: boolean; data?: ChatMessage[]; error?: any }> => {
   try {
     // Generate embedding for the query message
@@ -166,7 +166,7 @@ export const searchRelevantMessages = async (
         .rpc('match_chat_messages', {
           query_embedding: embedding,
           match_threshold: 0.5, // Adjust threshold as needed
-          match_count: limit,
+          match_count: 1, // Always set to 1 to return only the single most relevant message
           p_assignment_id: assignmentId
         });
       
