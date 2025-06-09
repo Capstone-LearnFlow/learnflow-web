@@ -128,7 +128,14 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
     // Track all renderable nodes with their refs and parent relationships
     const [renderableNodes, setRenderableNodes] = useState<RenderableNode[]>([]);
     const [nodePositions, setNodePositions] = useState<Map<string, Position>>(new Map());
+    const [nodeParentEvidencePositions, setNodeParentEvidencePositions] = useState<Map<string, Position>>(new Map());
+    const nodeParentEvidencePositionsRef = useRef<Map<string, Position>>(new Map());
     const nodeRefs = useRef<Map<string, React.RefObject<NodeRef | null>>>(new Map());
+
+    // Update ref whenever state changes
+    useEffect(() => {
+        nodeParentEvidencePositionsRef.current = nodeParentEvidencePositions;
+    }, [nodeParentEvidencePositions]);
 
     // Function to get or create a ref for a specific node
     const getNodeRef = useCallback((nodeId: string): React.RefObject<NodeRef | null> => {
@@ -136,6 +143,21 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
             nodeRefs.current.set(nodeId, React.createRef<NodeRef | null>());
         }
         return nodeRefs.current.get(nodeId)!;
+    }, []);
+
+    // Callback for child components to update their parent evidence positions
+    const updateParentEvidencePosition = useCallback((nodeId: string, position: Position) => {
+        setNodeParentEvidencePositions(prev => {
+            // Only update if the position has actually changed
+            const existingPos = prev.get(nodeId);
+            if (existingPos && existingPos.x === position.x && existingPos.y === position.y) {
+                return prev; // No change, return same map to prevent re-render
+            }
+            
+            const newMap = new Map(prev);
+            newMap.set(nodeId, position);
+            return newMap;
+        });
     }, []);
 
     // Add parent refs to renderable nodes when tree data is loaded
@@ -198,18 +220,23 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
 
                 // If this node has a parent, start at parent's y position
                 if (nodeData.parentRef && nodeData.parentRef.current?.element && typeof nodeData.parentEvidenceIndex === 'number') {
-                    // Get the position of the specific evidence node
-                    const evidencePosition = nodeData.parentRef.current.getEvidencePosition(nodeData.parentEvidenceIndex);
-                    if (evidencePosition) {
-                        // Start at evidence node's y position
-                        y = evidencePosition.y;
-
-                        // Only adjust if this would overlap with siblings at the same depth
-                        const currentDepthY = depthYOffsets.get(nodeData.depth)!;
-                        y = Math.max(y, currentDepthY);
+                    // First try to use the dynamically calculated parent evidence position
+                    const dynamicPosition = nodeParentEvidencePositionsRef.current.get(nodeData.id);
+                    if (dynamicPosition) {
+                        y = dynamicPosition.y;
                     } else {
-                        y = depthYOffsets.get(nodeData.depth)!;
+                        // Fallback to getting position from the ref
+                        const evidencePosition = nodeData.parentRef.current.getEvidencePosition(nodeData.parentEvidenceIndex);
+                        if (evidencePosition) {
+                            y = evidencePosition.y;
+                        } else {
+                            y = depthYOffsets.get(nodeData.depth)!;
+                        }
                     }
+
+                    // Only adjust if this would overlap with siblings at the same depth
+                    const currentDepthY = depthYOffsets.get(nodeData.depth)!;
+                    y = Math.max(y, currentDepthY);
                 } else {
                     // Root level nodes
                     y = depthYOffsets.get(nodeData.depth)!;
@@ -261,6 +288,16 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
         calculatePositions();
     }, [nodeHeights, calculatePositions]);
 
+    // Separate effect to handle parent evidence position updates without causing infinite loops
+    useLayoutEffect(() => {
+        if (nodeParentEvidencePositions.size > 0) {
+            const timeoutId = setTimeout(() => {
+                calculatePositions();
+            }, 100);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [nodeParentEvidencePositions.size, calculatePositions]);
+
     if (isLoading) {
         return (<></>);
     }
@@ -282,11 +319,11 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
             {renderableNodes.map((nodeData) => {
                 const position = nodePositions.get(nodeData.id) || { x: positionorigin.x + (colWidth * nodeData.depth), y: positionorigin.y };
 
-                // Calculate parent evidence position if parent exists
-                let parentEvidencePosition: Position | undefined = undefined;
-                if (nodeData.parentRef && nodeData.parentRef.current && typeof nodeData.parentEvidenceIndex === 'number') {
-                    parentEvidencePosition = nodeData.parentRef.current.getEvidencePosition(nodeData.parentEvidenceIndex) || undefined;
-                }
+                // Pass parent information to child components so they can calculate position dynamically
+                const parentInfo = (nodeData.parentRef && typeof nodeData.parentEvidenceIndex === 'number') ? {
+                    parentRef: nodeData.parentRef,
+                    parentEvidenceIndex: nodeData.parentEvidenceIndex
+                } : undefined;
 
                 if (nodeData.type === 'question') {
                     return (
@@ -295,9 +332,11 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
                             ref={getNodeRef(nodeData.id)}
                             qNode={nodeData.node as QuestionNode}
                             position={position}
-                            parentposition={parentEvidencePosition}
+                            parentInfo={parentInfo}
                             assignmentId={assignmentId}
                             parentNodeId={nodeData.parentNodeId}
+                            updateParentEvidencePosition={updateParentEvidencePosition}
+                            nodeId={nodeData.id}
                         />
                     );
                 } else {
@@ -307,9 +346,11 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
                             ref={getNodeRef(nodeData.id)}
                             argNode={nodeData.node as ArgNode}
                             position={position}
-                            parentposition={parentEvidencePosition}
+                            parentInfo={parentInfo}
                             assignmentId={assignmentId}
                             parentNodeId={nodeData.parentNodeId}
+                            updateParentEvidencePosition={updateParentEvidencePosition}
+                            nodeId={nodeData.id}
                         />
                     );
                 }
@@ -333,18 +374,61 @@ SubjectNode.displayName = 'SubjectNode';
 interface ArgNodeProps {
     argNode: ArgNode,
     position: Position,
-    parentposition?: Position,
+    parentInfo?: {
+        parentRef: React.RefObject<NodeRef | null>,
+        parentEvidenceIndex: number
+    },
     assignmentId: string,
-    parentNodeId: string
+    parentNodeId: string,
+    updateParentEvidencePosition: (nodeId: string, position: Position) => void,
+    nodeId: string
 };
-const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, position, parentposition, assignmentId, parentNodeId }, ref) => {
+const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, position, parentInfo, assignmentId, parentNodeId, updateParentEvidencePosition, nodeId }, ref) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const childRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
     const router = useRouter();
+    const [parentEvidencePosition, setParentEvidencePosition] = useState<Position | undefined>(undefined);
+    const updateParentEvidencePositionRef = useRef(updateParentEvidencePosition);
+    
+    // Update ref when prop changes
+    useEffect(() => {
+        updateParentEvidencePositionRef.current = updateParentEvidencePosition;
+    }, [updateParentEvidencePosition]);
 
     if (argNode.children) {
         childRefs.current = argNode.children.map(() => React.createRef<HTMLDivElement>());
     }
+
+    // Calculate parent evidence position dynamically
+    useEffect(() => {
+        let lastCalculatedPosition: Position | null = null;
+
+        const updateParentPosition = () => {
+            if (parentInfo && parentInfo.parentRef.current) {
+                const evidencePos = parentInfo.parentRef.current.getEvidencePosition(parentInfo.parentEvidenceIndex);
+                if (evidencePos) {
+                    // Only update if position has actually changed
+                    if (!lastCalculatedPosition || 
+                        lastCalculatedPosition.x !== evidencePos.x || 
+                        lastCalculatedPosition.y !== evidencePos.y) {
+                        
+                        console.log(`ArgumentNode ${nodeId}: Parent evidence position updated:`, evidencePos);
+                        setParentEvidencePosition(evidencePos);
+                        updateParentEvidencePositionRef.current(nodeId, evidencePos);
+                        lastCalculatedPosition = evidencePos;
+                    }
+                }
+            }
+        };
+
+        // Update immediately if parent ref is available
+        updateParentPosition();
+
+        // Set up a less frequent check in case the parent renders later
+        const intervalId = setInterval(updateParentPosition, 1000);
+
+        return () => clearInterval(intervalId);
+    }, [parentInfo, nodeId]); // Removed updateParentEvidencePosition from dependencies
 
     const handleNodeBtnClick = () => {
         // Navigate to the node page: /research/[assignmentId]/[parentNodeId]/[nodeId]
@@ -380,7 +464,14 @@ const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, positi
 
     return (
         <div ref={elementRef} className={`tree__node tree__node--${argNode.type}`} style={{ left: position.x, top: position.y }}>
-            {parentposition && <div className='tree__node__link' style={{ height: `${Math.abs(parentposition.y - position.y)}px` }}></div>}
+            {parentEvidencePosition && (
+                <div 
+                    className='tree__node__link' 
+                    style={{ 
+                        height: `${Math.abs(parentEvidencePosition.y - position.y)}px`
+                    }}
+                ></div>
+            )}
             <div className='tree__node__content_container'>
                 <div className='tree__node__title'>{getNodeTypeName(argNode.type)}</div>
                 <div className='tree__node__content'>{argNode.summary || argNode.content}</div>
@@ -419,18 +510,61 @@ EvidenceNode.displayName = 'EvidenceNode';
 interface QuestionNodeProps {
     qNode: QuestionNode,
     position: Position,
-    parentposition?: Position,
+    parentInfo?: {
+        parentRef: React.RefObject<NodeRef | null>,
+        parentEvidenceIndex: number
+    },
     assignmentId: string,
-    parentNodeId: string
+    parentNodeId: string,
+    updateParentEvidencePosition: (nodeId: string, position: Position) => void,
+    nodeId: string
 };
-const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, position, parentposition, assignmentId, parentNodeId }, ref) => {
+const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, position, parentInfo, assignmentId, parentNodeId, updateParentEvidencePosition, nodeId }, ref) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const childRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
     const router = useRouter();
+    const [parentEvidencePosition, setParentEvidencePosition] = useState<Position | undefined>(undefined);
+    const updateParentEvidencePositionRef = useRef(updateParentEvidencePosition);
+    
+    // Update ref when prop changes
+    useEffect(() => {
+        updateParentEvidencePositionRef.current = updateParentEvidencePosition;
+    }, [updateParentEvidencePosition]);
 
     if (qNode.children) {
         childRefs.current = qNode.children.map(() => React.createRef<HTMLDivElement>());
     }
+
+    // Calculate parent evidence position dynamically
+    useEffect(() => {
+        let lastCalculatedPosition: Position | null = null;
+
+        const updateParentPosition = () => {
+            if (parentInfo && parentInfo.parentRef.current) {
+                const evidencePos = parentInfo.parentRef.current.getEvidencePosition(parentInfo.parentEvidenceIndex);
+                if (evidencePos) {
+                    // Only update if position has actually changed
+                    if (!lastCalculatedPosition || 
+                        lastCalculatedPosition.x !== evidencePos.x || 
+                        lastCalculatedPosition.y !== evidencePos.y) {
+                        
+                        console.log(`QuestionNode ${nodeId}: Parent evidence position updated:`, evidencePos);
+                        setParentEvidencePosition(evidencePos);
+                        updateParentEvidencePositionRef.current(nodeId, evidencePos);
+                        lastCalculatedPosition = evidencePos;
+                    }
+                }
+            }
+        };
+
+        // Update immediately if parent ref is available
+        updateParentPosition();
+
+        // Set up a less frequent check in case the parent renders later
+        const intervalId = setInterval(updateParentPosition, 1000);
+
+        return () => clearInterval(intervalId);
+    }, [parentInfo, nodeId]); // Removed updateParentEvidencePosition from dependencies
 
     const handleNodeBtnClick = () => {
         // Navigate to the node page: /research/[assignmentId]/[parentNodeId]/[nodeId]
@@ -451,7 +585,14 @@ const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, pos
 
     return (
         <div ref={elementRef} className='tree__node tree__node--question' style={{ left: position.x, top: position.y }}>
-            {parentposition && <div className='tree__node__link' style={{ height: `${Math.abs(parentposition.y - position.y)}px` }}></div>}
+            {parentEvidencePosition && (
+                <div 
+                    className='tree__node__link' 
+                    style={{ 
+                        height: `${Math.abs(parentEvidencePosition.y - position.y)}px`
+                    }}
+                ></div>
+            )}
             <div className='tree__node__content_container'>
                 <div className='tree__node__title'>예상 질문</div>
                 <div className='tree__node__content'>{qNode.summary || qNode.content}</div>
