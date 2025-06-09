@@ -40,32 +40,81 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Fetch tree data from API
+    // Helper function to compare tree data for changes
+    const compareTreeData = useCallback((oldData: TreeData | null, newData: TreeData): boolean => {
+        if (!oldData) return true; // First load, always update
+
+        // Compare serialized data to detect changes
+        try {
+            const oldSerialized = JSON.stringify(oldData);
+            const newSerialized = JSON.stringify(newData);
+            return oldSerialized !== newSerialized;
+        } catch {
+            // If serialization fails, assume data has changed
+            return true;
+        }
+    }, []);
+
+    // Fetch tree data from API with periodic updates
     useEffect(() => {
-        const fetchTreeData = async () => {
-            if (!assignmentId) return;
+        let timeoutId: NodeJS.Timeout;
+        let isComponentMounted = true;
+
+        const fetchTreeData = async (isInitialLoad = false) => {
+            if (!assignmentId || !isComponentMounted) return;
 
             try {
-                setIsLoading(true);
+                if (isInitialLoad) {
+                    setIsLoading(true);
+                }
                 const transformedData = await studentAPI.getAssignmentTree(assignmentId);
-                setTreeData(transformedData);
-            } catch (err) {
-                // Handle fetch tree data error
 
+                if (isComponentMounted) {
+                    // Only update if data has actually changed
+                    if (compareTreeData(treeData, transformedData)) {
+                        setTreeData(transformedData);
+                        if (!isInitialLoad) {
+                            console.log('Tree data updated:', transformedData);
+                        }
+                    }
+                }
+            } catch (err) {
+                if (!isComponentMounted) return;
+
+                // Handle fetch tree data error
                 // Handle specific "main node not found" error
                 if (err instanceof Error && err.name === 'MainNodeNotFoundError') {
                     router.push(`/research/${assignmentId}/s-0/new`);
                     return;
                 }
 
-                setError(err instanceof Error ? err.message : 'Unknown error occurred');
+                if (isInitialLoad) {
+                    setError(err instanceof Error ? err.message : 'Unknown error occurred');
+                }
             } finally {
-                setIsLoading(false);
+                if (isInitialLoad && isComponentMounted) {
+                    setIsLoading(false);
+                }
+
+                // Schedule next fetch after 5-10 seconds (random to avoid synchronized requests)
+                if (isComponentMounted) {
+                    const delay = Math.random() * 5000 + 5000; // 5-10 seconds
+                    timeoutId = setTimeout(() => fetchTreeData(false), delay);
+                }
             }
         };
 
-        fetchTreeData();
-    }, [assignmentId, router]);
+        // Initial fetch
+        fetchTreeData(true);
+
+        // Cleanup function
+        return () => {
+            isComponentMounted = false;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
+    }, [assignmentId, router, compareTreeData, treeData]);
     useEffect(() => {
         console.log('Tree data changed:', treeData);
     }, [treeData]);
