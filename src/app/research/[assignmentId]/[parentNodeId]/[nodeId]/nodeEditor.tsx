@@ -135,80 +135,45 @@ const NodeEditor = ({
         }
     }, []);
 
-    // Function to call Cerebras API to generate formatted citations
-    const generateFormattedCitations = useCallback(async (
-        chatHistory: string, 
-        citations: Array<{title: string, url: string, index: number}>
-    ) => {
+    // Function to extract top 3 citations from chat messages
+    const extractTopCitations = useCallback(async (assignmentId: string, parentNodeId: string, nodeId: string) => {
         try {
-            // Create a message that includes chat history and citations
-            const citationsText = citations.map(c => 
-                `[${c.index + 1}] ${c.title}: ${c.url}`
-            ).join('\n');
+            // Get chat messages
+            const result = await loadChatMessages(assignmentId, parentNodeId, nodeId);
             
-            const message = `
-Chat History:
-${chatHistory}
-
-Citations:
-${citationsText}
-`;
-
-            // Call Cerebras API
-            const response = await fetch('/api/cerebras', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    text: message,
-                    systemPrompt: "아래 주어진 채팅 내용과 인용(Citations)을 바탕으로, 각 인용에 대해 [title](url) 형식의 마크다운 링크를 생성해주세요. 제목은 간결하고 의미가 명확해야 합니다. 응답은 [title](url) 형식으로만 제공해주세요. 다른 설명이나 부가 정보는 필요하지 않습니다."
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Cerebras API error: ${response.status}`);
-            }
-
-            // Read and process the streaming response
-            const reader = response.body?.getReader();
-            if (!reader) {
-                throw new Error('Response body is null');
-            }
-
-            const decoder = new TextDecoder();
-            let fullText = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                fullText += decoder.decode(value, { stream: true });
-            }
-
-            // Process the response to remove content before </think>
-            const thinkTagIndex = fullText.indexOf('</think>');
-            if (thinkTagIndex !== -1) {
-                // Remove everything up to and including </think>
-                fullText = fullText.substring(thinkTagIndex + '</think>'.length).trim();
-            }
-
-            // Parse the markdown links
-            const links: {[key: number]: string} = {};
-            const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-            let match;
-            let index = 0;
-            
-            while ((match = linkRegex.exec(fullText)) !== null) {
-                if (citations[index]) {
-                    links[citations[index].index] = match[0]; // Store the full [title](url) format
-                    index++;
+            if (result.success && result.data) {
+                // Extract all citations from chat messages
+                const allCitations: {text: string, url: string, title: string}[] = [];
+                
+                // Collect all citations from all messages
+                result.data.forEach(message => {
+                    if (message.citations && message.citations.length > 0) {
+                        allCitations.push(...message.citations);
+                    }
+                });
+                
+                // Get only top 3 unique citations (based on URL)
+                const uniqueUrls = new Set<string>();
+                const topCitations: {text: string, url: string, title: string}[] = [];
+                
+                for (const citation of allCitations) {
+                    if (!uniqueUrls.has(citation.url) && topCitations.length < 3) {
+                        uniqueUrls.add(citation.url);
+                        topCitations.push(citation);
+                    }
+                    
+                    // Stop after we have 3 unique citations
+                    if (topCitations.length >= 3) break;
                 }
+                
+                console.log('Extracted top citations:', topCitations);
+                return topCitations;
             }
-
-            return links;
+            
+            return [];
         } catch (error) {
-            console.error('Error generating formatted citations:', error);
-            return {};
+            console.error('Error extracting citations from chat:', error);
+            return [];
         }
     }, []);
 
@@ -238,31 +203,16 @@ ${citationsText}
                 node.nodeId === 'new' ? 'new-node' : node.nodeId
             );
             
-            console.log('Starting node registration with Cerebras API integration...');
+            console.log('Starting node registration with top citations extraction...');
             
-            // Prepare citations from node's evidence children
-            let allCitations: Array<{title: string, url: string, index: number}> = [];
-            if (node.children) {
-                node.children.forEach((child, idx) => {
-                    if (child.type === 'evidence' && child.citation && child.citation.length > 0) {
-                        allCitations.push({
-                            title: child.citation[0], // Use first citation as title
-                            url: child.citation.length > 1 ? child.citation[1] : child.citation[0], // Use second citation as URL if available
-                            index: idx
-                        });
-                    }
-                });
-            }
+            // Extract top 3 citations from chat
+            const topCitations = await extractTopCitations(
+                assignmentId,
+                parentNodeId,
+                node.nodeId === 'new' ? 'new-node' : node.nodeId
+            );
             
-            console.log('Collected citations:', allCitations);
-            
-            // Generate formatted citations using Cerebras API - await the result
-            let formattedCitations: {[key: number]: string} = {};
-            if (allCitations.length > 0) {
-                console.log('Calling Cerebras API to generate formatted citations...');
-                formattedCitations = await generateFormattedCitations(chatHistory, allCitations);
-                console.log('Cerebras API response:', formattedCitations);
-            }
+            console.log('Top citations extracted:', topCitations);
 
             // For main node creation (when parentNodeId is '0' and nodeId is 'new')
             // This handles adding an argument to a subject
@@ -270,20 +220,20 @@ ${citationsText}
                 // Format data according to the API requirements for main node
                 const evidences = node.children
                     ? node.children.filter(child => child.type === 'evidence').map(child => {
-                        // Get the index for this child to find its formatted citation
                         const childIndex = child.index ? child.index - 1 : 0;
                         
-                        // Try to get the formatted citation from Cerebras API result
-                        // If not available, use original citation or fallback
-                        const citationUrl = formattedCitations[childIndex] || 
+                        // Try to use a citation from our top 3 citations if available
+                        // Otherwise use the original citation or fallback
+                        const citation = childIndex < topCitations.length ? 
+                            `[${topCitations[childIndex].title}](${topCitations[childIndex].url})` : 
                             (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source");
                         
-                        console.log(`Evidence ${childIndex} - Using citation URL:`, citationUrl);
+                        console.log(`Evidence ${childIndex} - Using citation:`, citation);
                         
                         return {
                             content: child.content,
                             source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                            url: citationUrl
+                            url: citation
                         };
                     })
                     : [];
@@ -331,20 +281,20 @@ ${citationsText}
                 // Format evidences
                 const evidences = node.children
                     ? node.children.filter(child => child.type === 'evidence').map(child => {
-                        // Get the index for this child to find its formatted citation
                         const childIndex = child.index ? child.index - 1 : 0;
                         
-                        // Try to get the formatted citation from Cerebras API result
-                        // If not available, use original citation or fallback
-                        const citationUrl = formattedCitations[childIndex] || 
+                        // Try to use a citation from our top 3 citations if available
+                        // Otherwise use the original citation or fallback
+                        const citation = childIndex < topCitations.length ? 
+                            `[${topCitations[childIndex].title}](${topCitations[childIndex].url})` : 
                             (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source");
                         
-                        console.log(`Evidence ${childIndex} - Using citation URL:`, citationUrl);
+                        console.log(`Evidence ${childIndex} - Using citation:`, citation);
                         
                         return {
                             content: child.content,
                             source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                            url: citationUrl
+                            url: citation
                         };
                     })
                     : [];
@@ -377,20 +327,20 @@ ${citationsText}
                 // Format evidences for the API
                 const evidences = node.children
                     ? node.children.filter(child => child.type === 'evidence').map(child => {
-                        // Get the index for this child to find its formatted citation
                         const childIndex = child.index ? child.index - 1 : 0;
                         
-                        // Try to get the formatted citation from Cerebras API result
-                        // If not available, use original citation or fallback
-                        const citationUrl = formattedCitations[childIndex] || 
+                        // Try to use a citation from our top 3 citations if available
+                        // Otherwise use the original citation or fallback
+                        const citation = childIndex < topCitations.length ? 
+                            `[${topCitations[childIndex].title}](${topCitations[childIndex].url})` : 
                             (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source");
                         
-                        console.log(`Evidence ${childIndex} - Using citation URL:`, citationUrl);
+                        console.log(`Evidence ${childIndex} - Using citation:`, citation);
                         
                         return {
                             content: child.content,
                             source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                            url: citationUrl
+                            url: citation
                         };
                     })
                     : [];
