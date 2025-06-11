@@ -269,8 +269,9 @@ const Chat = ({
             const citation = citationMap.get(match);
             
             if (citation && citation.url) {
-                // Return markdown link format for ReactMarkdown to render
-                return `[${match}](${citation.url})`;
+                // Generate markdown link with title instead of citation number
+                // Format: [title](url)
+                return `[${citation.title}](${citation.url})`;
             }
             
             // If no matching citation found, return the original text
