@@ -961,9 +961,11 @@ const Chat = ({
                 // Use different API based on whether it's the global chat or node-specific chat
                 if (nodeId === '0') {
                     // Use OpenAI for global chat
+                    console.log('Using OpenAI API with gpt-4.1-mini for assignment chat');
                     await fetchOpenAIResponse(trimmedText);
                 } else {
                     // Use Perplexity for node-specific chats
+                    console.log('Using Perplexity API with sonar model for node chat');
                     await fetchPerplexityResponse(trimmedText);
                 }
             }
