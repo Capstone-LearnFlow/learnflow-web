@@ -837,8 +837,8 @@ const Chat = ({
             // First ensure edit panel is closed before submitting
             setIsEditPanelOpen(false);
 
-            // Then send data to OpenAI
-            sendAssertionToOpenAI(assertion, evidence);
+            // Then send data to Cerebras API
+            sendAssertionToCerebras(assertion, evidence);
 
             // Clear active form after submission
         }
