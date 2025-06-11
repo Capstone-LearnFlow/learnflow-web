@@ -601,16 +601,15 @@ const NodeEditor = ({
                                             onKeyDown={(e) => handleChildKeyDown(child.nodeId, e)}
                                         ></textarea>
                                     )}
-                                    {/* Citation display */}
+                                    {/* Citation display - only show URLs, not source labels */}
                                     {child.citation && Array.isArray(child.citation) && child.citation.length > 0 ? (
-                                        <>
-                                            <div className='node_editor__node__title'>출처</div>
-                                            <div className='node_editor__node__content'>
-                                                {child.citation.map((cite: string, index: number) => (
+                                        <div className='node_editor__node__content'>
+                                            {child.citation
+                                                .filter(cite => cite !== "출처") // Filter out source labels
+                                                .map((cite: string, index: number) => (
                                                     <ReactMarkdown key={index}>{cite}</ReactMarkdown>
                                                 ))}
-                                            </div>
-                                        </>
+                                        </div>
                                     ) : null}
                                 </div>
                                 {node.type === 'counterargument' && (
