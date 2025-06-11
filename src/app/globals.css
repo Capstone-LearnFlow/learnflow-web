@@ -624,6 +624,7 @@ button {
   top: 0px;
   left: 0px;
   min-width: 0px;
+  max-width: none;
   width: fit-content;
   padding: 16px 24px;
   border-radius: 18px;
