@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
     // Create an encoder for streaming responses
     const encoder = new TextEncoder();
 
-    // Configure Perplexity API client (using OpenAI key for demonstration)
+    // Configure Perplexity API client
     const client = new OpenAI({
       baseURL: process.env.PPLX_BASE_URL || 'https://api.perplexity.ai',
-      apiKey: process.env.OPENAI_API_KEY, // Use OpenAI key for demonstration
+      apiKey: process.env.PPLX_API_KEY || process.env.OPENAI_API_KEY, // Use Perplexity API key first, fallback to OpenAI if needed
     });
 
     // Create transform stream for API responses
