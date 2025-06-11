@@ -238,6 +238,8 @@ ${citationsText}
                 node.nodeId === 'new' ? 'new-node' : node.nodeId
             );
             
+            console.log('Starting node registration with Cerebras API integration...');
+            
             // Prepare citations from node's evidence children
             let allCitations: Array<{title: string, url: string, index: number}> = [];
             if (node.children) {
@@ -252,10 +254,15 @@ ${citationsText}
                 });
             }
             
-            // Generate formatted citations using Cerebras API
-            const formattedCitations = allCitations.length > 0 
-                ? await generateFormattedCitations(chatHistory, allCitations)
-                : {};
+            console.log('Collected citations:', allCitations);
+            
+            // Generate formatted citations using Cerebras API - await the result
+            let formattedCitations: {[key: number]: string} = {};
+            if (allCitations.length > 0) {
+                console.log('Calling Cerebras API to generate formatted citations...');
+                formattedCitations = await generateFormattedCitations(chatHistory, allCitations);
+                console.log('Cerebras API response:', formattedCitations);
+            }
 
             // For main node creation (when parentNodeId is '0' and nodeId is 'new')
             // This handles adding an argument to a subject
@@ -263,13 +270,20 @@ ${citationsText}
                 // Format data according to the API requirements for main node
                 const evidences = node.children
                     ? node.children.filter(child => child.type === 'evidence').map(child => {
+                        // Get the index for this child to find its formatted citation
                         const childIndex = child.index ? child.index - 1 : 0;
-                        const formattedCitation = formattedCitations[childIndex] || '';
+                        
+                        // Try to get the formatted citation from Cerebras API result
+                        // If not available, use original citation or fallback
+                        const citationUrl = formattedCitations[childIndex] || 
+                            (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source");
+                        
+                        console.log(`Evidence ${childIndex} - Using citation URL:`, citationUrl);
                         
                         return {
                             content: child.content,
                             source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                            url: formattedCitation || (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source")
+                            url: citationUrl
                         };
                     })
                     : [];
@@ -317,13 +331,20 @@ ${citationsText}
                 // Format evidences
                 const evidences = node.children
                     ? node.children.filter(child => child.type === 'evidence').map(child => {
+                        // Get the index for this child to find its formatted citation
                         const childIndex = child.index ? child.index - 1 : 0;
-                        const formattedCitation = formattedCitations[childIndex] || '';
+                        
+                        // Try to get the formatted citation from Cerebras API result
+                        // If not available, use original citation or fallback
+                        const citationUrl = formattedCitations[childIndex] || 
+                            (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source");
+                        
+                        console.log(`Evidence ${childIndex} - Using citation URL:`, citationUrl);
                         
                         return {
                             content: child.content,
                             source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                            url: formattedCitation || (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source")
+                            url: citationUrl
                         };
                     })
                     : [];
@@ -356,13 +377,20 @@ ${citationsText}
                 // Format evidences for the API
                 const evidences = node.children
                     ? node.children.filter(child => child.type === 'evidence').map(child => {
+                        // Get the index for this child to find its formatted citation
                         const childIndex = child.index ? child.index - 1 : 0;
-                        const formattedCitation = formattedCitations[childIndex] || '';
+                        
+                        // Try to get the formatted citation from Cerebras API result
+                        // If not available, use original citation or fallback
+                        const citationUrl = formattedCitations[childIndex] || 
+                            (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source");
+                        
+                        console.log(`Evidence ${childIndex} - Using citation URL:`, citationUrl);
                         
                         return {
                             content: child.content,
                             source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                            url: formattedCitation || (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source")
+                            url: citationUrl
                         };
                     })
                     : [];
