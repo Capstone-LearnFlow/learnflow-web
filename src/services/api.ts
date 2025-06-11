@@ -184,13 +184,6 @@ export const convertApiNodeToNode = (apiNode: ApiNode): Node => {
             citations.push(evidence.url.trim());
         }
 
-        // Debug log for citation processing
-        console.log(`Processing evidence ${evidence.id}:`, {
-            source: evidence.source,
-            url: evidence.url,
-            citations: citations
-        });
-
         return {
             nodeId: `e-${evidence.id}`,
             type: 'evidence',

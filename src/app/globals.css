@@ -510,6 +510,17 @@ button {
   z-index: 0;
 }
 
+.tree__cover {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--c-fill-gray-quaternary-alpha);
+  backdrop-filter: saturate(180%) blur(20px);
+  z-index: 50;
+}
+
 .tree__node {
   --c-key: var(--c-glyph-gray);
   --c-bg: var(--c-fill-tertiary);
