@@ -3,6 +3,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Node, getNodeTypeName, TreeData } from '../../tree';
 import { studentAPI } from '../../../../../services/api';
+import { loadChatMessages } from '../../../../../services/supabase';
 
 interface NodeEditorProps {
     parentNode: Node;
@@ -118,6 +119,99 @@ const NodeEditor = ({
         setHasChanges(hasNodeChanges);
     }, [node, checkForChanges, setHasChanges]);
 
+    // Function to fetch chat history for the current node
+    const fetchChatHistory = useCallback(async (assignmentId: string, parentNodeId: string, nodeId: string) => {
+        try {
+            const result = await loadChatMessages(assignmentId, parentNodeId, nodeId);
+            if (result.success && result.data) {
+                return result.data.map(message => 
+                    `${message.sender === 'USER' ? '사용자' : 'AI'}: ${message.message}`
+                ).join('\n\n');
+            }
+            return '';
+        } catch (error) {
+            console.error('Error fetching chat history:', error);
+            return '';
+        }
+    }, []);
+
+    // Function to call Cerebras API to generate formatted citations
+    const generateFormattedCitations = useCallback(async (
+        chatHistory: string, 
+        citations: Array<{title: string, url: string, index: number}>
+    ) => {
+        try {
+            // Create a message that includes chat history and citations
+            const citationsText = citations.map(c => 
+                `[${c.index + 1}] ${c.title}: ${c.url}`
+            ).join('\n');
+            
+            const message = `
+Chat History:
+${chatHistory}
+
+Citations:
+${citationsText}
+`;
+
+            // Call Cerebras API
+            const response = await fetch('/api/cerebras', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: message,
+                    systemPrompt: "아래 주어진 채팅 내용과 인용(Citations)을 바탕으로, 각 인용에 대해 [title](url) 형식의 마크다운 링크를 생성해주세요. 제목은 간결하고 의미가 명확해야 합니다. 응답은 [title](url) 형식으로만 제공해주세요. 다른 설명이나 부가 정보는 필요하지 않습니다."
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Cerebras API error: ${response.status}`);
+            }
+
+            // Read and process the streaming response
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error('Response body is null');
+            }
+
+            const decoder = new TextDecoder();
+            let fullText = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                fullText += decoder.decode(value, { stream: true });
+            }
+
+            // Process the response to remove content before </think>
+            const thinkTagIndex = fullText.indexOf('</think>');
+            if (thinkTagIndex !== -1) {
+                // Remove everything up to and including </think>
+                fullText = fullText.substring(thinkTagIndex + '</think>'.length).trim();
+            }
+
+            // Parse the markdown links
+            const links: {[key: number]: string} = {};
+            const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+            let match;
+            let index = 0;
+            
+            while ((match = linkRegex.exec(fullText)) !== null) {
+                if (citations[index]) {
+                    links[citations[index].index] = match[0]; // Store the full [title](url) format
+                    index++;
+                }
+            }
+
+            return links;
+        } catch (error) {
+            console.error('Error generating formatted citations:', error);
+            return {};
+        }
+    }, []);
+
     // Handler for register button click
     const handleRegisterNode = useCallback(async () => {
         if (!hasChanges || isLoading) {
@@ -135,17 +229,49 @@ const NodeEditor = ({
             // Get the assignment ID from params
             const resolvedParams = await params;
             const assignmentId = resolvedParams.assignmentId;
+            const parentNodeId = resolvedParams.parentNodeId;
+            
+            // Fetch chat history for this node
+            const chatHistory = await fetchChatHistory(
+                assignmentId,
+                parentNodeId,
+                node.nodeId === 'new' ? 'new-node' : node.nodeId
+            );
+            
+            // Prepare citations from node's evidence children
+            let allCitations: Array<{title: string, url: string, index: number}> = [];
+            if (node.children) {
+                node.children.forEach((child, idx) => {
+                    if (child.type === 'evidence' && child.citation && child.citation.length > 0) {
+                        allCitations.push({
+                            title: child.citation[0], // Use first citation as title
+                            url: child.citation.length > 1 ? child.citation[1] : child.citation[0], // Use second citation as URL if available
+                            index: idx
+                        });
+                    }
+                });
+            }
+            
+            // Generate formatted citations using Cerebras API
+            const formattedCitations = allCitations.length > 0 
+                ? await generateFormattedCitations(chatHistory, allCitations)
+                : {};
 
             // For main node creation (when parentNodeId is '0' and nodeId is 'new')
             // This handles adding an argument to a subject
             if (parentNode.type === 'subject' && node.nodeId === 'new' && node.type === 'argument') {
                 // Format data according to the API requirements for main node
                 const evidences = node.children
-                    ? node.children.filter(child => child.type === 'evidence').map(child => ({
-                        content: child.content,
-                        source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                        url: child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source"
-                    }))
+                    ? node.children.filter(child => child.type === 'evidence').map(child => {
+                        const childIndex = child.index ? child.index - 1 : 0;
+                        const formattedCitation = formattedCitations[childIndex] || '';
+                        
+                        return {
+                            content: child.content,
+                            source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
+                            url: formattedCitation || (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source")
+                        };
+                    })
                     : [];
 
                 const mainNodeData = {
@@ -190,11 +316,16 @@ const NodeEditor = ({
 
                 // Format evidences
                 const evidences = node.children
-                    ? node.children.filter(child => child.type === 'evidence').map(child => ({
-                        content: child.content,
-                        source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                        url: child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source"
-                    }))
+                    ? node.children.filter(child => child.type === 'evidence').map(child => {
+                        const childIndex = child.index ? child.index - 1 : 0;
+                        const formattedCitation = formattedCitations[childIndex] || '';
+                        
+                        return {
+                            content: child.content,
+                            source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
+                            url: formattedCitation || (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source")
+                        };
+                    })
                     : [];
 
                 // Call the response API
@@ -224,11 +355,16 @@ const NodeEditor = ({
 
                 // Format evidences for the API
                 const evidences = node.children
-                    ? node.children.filter(child => child.type === 'evidence').map(child => ({
-                        content: child.content,
-                        source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                        url: child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source"
-                    }))
+                    ? node.children.filter(child => child.type === 'evidence').map(child => {
+                        const childIndex = child.index ? child.index - 1 : 0;
+                        const formattedCitation = formattedCitations[childIndex] || '';
+                        
+                        return {
+                            content: child.content,
+                            source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
+                            url: formattedCitation || (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source")
+                        };
+                    })
                     : [];
 
                 // Call the update API
