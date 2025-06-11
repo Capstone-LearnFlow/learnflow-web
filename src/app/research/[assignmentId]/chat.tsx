@@ -231,8 +231,8 @@ const Chat = ({
         if (!assignmentId || !nodeId) return;
 
         try {
-            // Don't save embeddings for global chat (nodeId='0')
-            const skipEmbedding = nodeId === '0';
+            // Don't save embeddings for global chat (nodeId='0') or parent node pages (parentNodeId !== '0')
+            const skipEmbedding = nodeId === '0' || parentNodeId !== '0';
             
             await saveChatMessage({
                 assignment_id: assignmentId,
