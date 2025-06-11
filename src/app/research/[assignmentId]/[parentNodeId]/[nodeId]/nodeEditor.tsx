@@ -477,12 +477,16 @@ const NodeEditor = ({
                                             onKeyDown={(e) => handleChildKeyDown(child.nodeId, e)}
                                         ></textarea>
                                     )}
-                                    {(child.citation && child.citation.length > 0) && (<>
-                                        <div className='node_editor__node__title'>출처</div>
-                                        {child.citation.map((cite: string, index: number) => (
-                                            <a className='node_editor__node__content' key={index} href={cite} target='_blank' rel='noopener noreferrer'>{cite}</a>
-                                        ))}
-                                    </>)}
+                                    {/* Citation display */}
+                                    {child.citation && Array.isArray(child.citation) && child.citation.length > 0 ? (
+                                        <>
+                                            <div className='node_editor__node__title'>출처</div>
+                                            {child.citation.map((cite: string, index: number) => (
+                                                <a className='node_editor__node__content' key={index} href={cite} target='_blank' rel='noopener noreferrer'>{cite}</a>
+                                            ))}
+                                        </>
+                                    ) : null
+                                    }
                                 </div>
                                 {node.type === 'counterargument' && (
                                     <div className='btn node_editor__node__add_argument_btn' onClick={() => handleAddArgumentToEvidence(child.nodeId)}></div>

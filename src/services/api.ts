@@ -167,14 +167,40 @@ export const convertApiNodeToNode = (apiNode: ApiNode): Node => {
     const typeInitial = getTypeInitial(nodeType);
 
     // Create evidence nodes from API evidences
-    const evidenceNodes: EvidenceNode[] = apiNode.evidences.map((evidence, index) => ({
-        nodeId: `e-${evidence.id}`,
-        type: 'evidence',
-        content: evidence.content,
-        summary: evidence.summary,
-        index: index + 1,
-        children: null
-    }));
+    const evidenceNodes: EvidenceNode[] = apiNode.evidences.map((evidence, index) => {
+        // Create citation array from source and url if they exist
+        const citations: string[] = [];
+
+        // Add source if it exists and is not empty
+        if (evidence.source && evidence.source.trim() !== '' && evidence.source !== 'null') {
+            citations.push(evidence.source.trim());
+        }
+
+        // Add URL if it exists, is not empty, and is different from source
+        if (evidence.url &&
+            evidence.url.trim() !== '' &&
+            evidence.url !== 'null' &&
+            evidence.url.trim() !== evidence.source?.trim()) {
+            citations.push(evidence.url.trim());
+        }
+
+        // Debug log for citation processing
+        console.log(`Processing evidence ${evidence.id}:`, {
+            source: evidence.source,
+            url: evidence.url,
+            citations: citations
+        });
+
+        return {
+            nodeId: `e-${evidence.id}`,
+            type: 'evidence',
+            content: evidence.content,
+            summary: evidence.summary,
+            citation: citations.length > 0 ? citations : undefined,
+            index: index + 1,
+            children: null
+        };
+    });
 
     // Create child nodes (recursively)
     const childNodes = apiNode.children.map(child => convertApiNodeToNode(child));
