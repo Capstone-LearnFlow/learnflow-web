@@ -270,9 +270,9 @@ const Chat = ({
             const citation = citationMap.get(match);
             
             if (citation && citation.url) {
-                // Generate markdown link with title instead of citation number
-                // Format: [title](url)
-                return `[${citation.title}](${citation.url})`;
+                // Keep numbered citation format instead of showing full title
+                // Format: [1](url) instead of [title](url)
+                return `[${match}](${citation.url})`;
             }
             
             // If no matching citation found, return the original text
