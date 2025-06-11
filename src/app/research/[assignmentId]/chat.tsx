@@ -484,6 +484,7 @@ const Chat = ({
 
             const contextualHistory = apiHistoryRef.current.slice(0, -1);
 
+            // Make sure we're using the Perplexity API endpoint, not OpenAI
             const response = await fetch('/api/perplexity', {
                 method: 'POST',
                 headers: {
