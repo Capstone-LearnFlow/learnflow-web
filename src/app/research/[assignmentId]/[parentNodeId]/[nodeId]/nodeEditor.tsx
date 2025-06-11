@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Node, getNodeTypeName, TreeData } from '../../tree';
 import { studentAPI } from '../../../../../services/api';
 import { loadChatMessages } from '../../../../../services/supabase';
+import ReactMarkdown from 'react-markdown';
 
 interface NodeEditorProps {
     parentNode: Node;
@@ -591,16 +592,14 @@ const NodeEditor = ({
                                             onKeyDown={(e) => handleChildKeyDown(child.nodeId, e)}
                                         ></textarea>
                                     )}
-                                    {/* Citation display */}
+                                    {/* Citation display - only render URL as markdown and hide source */}
                                     {child.citation && Array.isArray(child.citation) && child.citation.length > 0 ? (
-                                        <>
-                                            <div className='node_editor__node__title'>출처</div>
+                                        <div className='node_editor__node__content'>
                                             {child.citation.map((cite: string, index: number) => (
-                                                <a className='node_editor__node__content' key={index} href={cite} target='_blank' rel='noopener noreferrer'>{cite}</a>
+                                                <ReactMarkdown key={index}>{cite}</ReactMarkdown>
                                             ))}
-                                        </>
-                                    ) : null
-                                    }
+                                        </div>
+                                    ) : null}
                                 </div>
                                 {node.type === 'counterargument' && (
                                     <div className='btn node_editor__node__add_argument_btn' onClick={() => handleAddArgumentToEvidence(child.nodeId)}></div>
