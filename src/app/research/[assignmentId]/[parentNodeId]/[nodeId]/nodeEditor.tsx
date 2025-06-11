@@ -226,7 +226,7 @@ const NodeEditor = ({
                         // Try to use a citation from our top 3 citations if available
                         // Otherwise use the original citation or fallback
                         const citation = childIndex < topCitations.length ? 
-                            `[${topCitations[childIndex].title}](${topCitations[childIndex].url})` : 
+                            topCitations[childIndex].url : 
                             (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source");
                         
                         console.log(`Evidence ${childIndex} - Using citation:`, citation);
