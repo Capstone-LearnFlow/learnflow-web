@@ -294,7 +294,7 @@ const NodeEditor = ({
                         
                         return {
                             content: child.content,
-                            source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
+                            source: "",
                             url: citation
                         };
                     })
