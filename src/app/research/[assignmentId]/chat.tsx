@@ -187,7 +187,8 @@ const Chat = ({
     // Function to find relevant messages based on embeddings
     const findRelevantMessages = async (messageText: string): Promise<ChatItem[]> => {
         // Only search for relevant messages in the global chat
-        if (nodeId !== '0' || !assignmentId) return [];
+        // Skip for node-specific chats (nodeId !== '0') and parent node pages (parentNodeId !== '0')
+        if (nodeId !== '0' || parentNodeId !== '0' || !assignmentId) return [];
 
         try {
             // Search for relevant messages using embeddings
