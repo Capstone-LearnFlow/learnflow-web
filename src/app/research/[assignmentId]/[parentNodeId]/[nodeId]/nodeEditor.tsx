@@ -224,10 +224,13 @@ const NodeEditor = ({
                         const childIndex = child.index ? child.index - 1 : 0;
                         
                         // Try to use a citation from our top 3 citations if available
-                        // Otherwise use the original citation or fallback
+                        // Otherwise use the original citation or fallback, making sure to skip "출처" entries
                         const citation = childIndex < topCitations.length ? 
                             topCitations[childIndex].url : 
-                            (child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source");
+                            (child.citation && child.citation.length > 0 ? 
+                                (child.citation[0] === "출처" && child.citation.length > 1 ? 
+                                    child.citation[1] : child.citation[0]) : 
+                                "https://example.com/source");
                         
                         console.log(`Evidence ${childIndex} - Using citation:`, citation);
                         
