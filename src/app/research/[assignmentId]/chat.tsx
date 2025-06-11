@@ -641,69 +641,138 @@ const Chat = ({
         }
     }, [setChatLog, setStreamingMessage, setStreamingSuggestions, setStreamingCitations, setResponseStatus, setHasAskedQuestion, mode, assignmentId, parentNodeId, nodeId]);
 
-    // Function to send an assertion to OpenAI API - modified to directly open edit panel
-    const sendAssertionToOpenAI = async (assertionText: string, evidenceText: string) => {
+    // Function to send an assertion to Cerebras API
+    const sendAssertionToCerebras = async (assertionText: string, evidenceText: string) => {
         try {
             setIsSubmitting(true);
 
             // Combine the texts for API request (but don't add to chat)
             const displayText = `주장: ${assertionText}\n\n근거: ${evidenceText}`;
 
-            // Call OpenAI API
-            const response = await fetch('/api/openai', {
+            // Call Cerebras API
+            const response = await fetch('/api/cerebras', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    text: `${displayText}\n\n${apiHistoryRef.current.map(item => `${item.role === 'user' ? '사용자' : 'AI'}: ${item.parts[0].text}`).join('\n\n')}`
+                    text: displayText,
+                    history: apiHistoryRef.current.map(item => 
+                        `${item.role === 'user' ? '사용자' : 'AI'}: ${item.parts[0].text}`
+                    ).join('\n\n'),
+                    systemPrompt: "학생이 간략하게 정리한 주장 및 근거들을 AI와의 채팅 기록을 참고하여 정교하고 상세한 내러티브로 확장하십시오.\n\n# Steps\n\n1. **주제 이해**: 학생이 제시한 주장을 파악하고, 관련된 맥락을 이해합니다.\n2. **채팅 기록 분석**: 주어진 AI와의 채팅 기록을 검토하여 학생의 주장과 근거를 강화하거나 보완할 수 있는 요소를 찾습니다.\n3. **근거 구성**: 적절하고 근거가 있는 최대 3개의 세부 근거를 개발합니다. 이때, 다양한 관점이나 자료를 활용하여 근거의 깊이를 더합니다.\n4. **논리적 흐름 구성**: 주장을 중심으로 관련된 근거들이 자연스럽고 설득력 있게 연결되도록 합니다.\n5. **재검토**: 최종 정리를 검토하여 일관성과 정확성을 유지합니다.\n\n# Output Format\n\n- **주장**: 간결하고 명료하게 주제를 요약한 주장 문장.\n- **근거**: 최대 3개의 근거를 자세히 설명하며, 각각의 근거는 새로운 문단으로 나눕니다."
                 }),
             });
 
             if (!response.ok) {
-                throw new Error(`OpenAI API error: ${response.status}`);
+                throw new Error(`Cerebras API error: ${response.status}`);
             }
 
-            // Parse the response data with error handling
-            const responseText = await response.text();
+            // Read and process the streaming response
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error('Response body is null');
+            }
 
+            const decoder = new TextDecoder();
+            let fullText = '';
+            let citations: Citation[] = [];
+
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    break;
+                }
+
+                const chunk = decoder.decode(value, { stream: true });
+                
+                // Process the chunk to look for JSON data and text
+                const jsonStrings = chunk.split('\n').filter(str => str.trim());
+
+                for (const jsonStr of jsonStrings) {
+                    try {
+                        // Try to parse as JSON (for citation data)
+                        const data = JSON.parse(jsonStr);
+                        
+                        // Handle citation data
+                        if (data.type === 'citations' && data.groundingMetadata) {
+                            const { groundingMetadata } = data;
+                            
+                            // Extract citations if available
+                            if (groundingMetadata.groundingChunks && groundingMetadata.groundingChunks.length > 0) {
+                                citations = groundingMetadata.groundingChunks
+                                    .filter((chunk: any) => chunk.web && chunk.web.uri)
+                                    .map((chunk: any, index: number) => ({
+                                        text: `[${index + 1}]`,
+                                        url: chunk.web.uri,
+                                        title: chunk.web.title || `Source ${index + 1}`,
+                                        index: index
+                                    }));
+                            }
+                        }
+                    } catch (e) {
+                        // Not JSON, treat as text content
+                        fullText += jsonStr;
+                    }
+                }
+            }
+
+            // Process the response to remove content before </think>
+            const thinkTagIndex = fullText.indexOf('</think>');
+            if (thinkTagIndex !== -1) {
+                // Remove everything up to and including </think>
+                fullText = fullText.substring(thinkTagIndex + '</think>'.length).trim();
+            }
+
+            // Parse the result to get assertion and evidences
             try {
-                // Try to parse the response - it might be a string representation of JSON
-                let parsedData;
-
-                try {
-                    // First attempt to parse the response text
-                    parsedData = JSON.parse(responseText);
-
-                    // If parsedData is a string (doubly stringified JSON), parse it again
-                    if (typeof parsedData === 'string') {
-                        try {
-                            parsedData = JSON.parse(parsedData);
-                        } catch (innerErr) {
-                            console.error("Error parsing inner JSON string:", innerErr);
+                // Try to structure the response as assertion and evidences
+                const lines = fullText.split('\n').filter(line => line.trim());
+                
+                // Find the assertion (first non-empty line or paragraph)
+                let assertion = '';
+                let evidences: string[] = [];
+                let currentEvidence = '';
+                let inAssertionSection = true;
+                
+                for (const line of lines) {
+                    // Simple heuristic: if we find a line that looks like a heading for evidences, 
+                    // we've moved from assertion to evidences
+                    if (line.toLowerCase().includes('근거') || line.toLowerCase().includes('evidence')) {
+                        inAssertionSection = false;
+                        continue;
+                    }
+                    
+                    if (inAssertionSection) {
+                        if (assertion) assertion += '\n';
+                        assertion += line;
+                    } else {
+                        // Check if this is a new evidence point (starts with number or bullet)
+                        if (line.match(/^(\d+\.|\*|\-)\s/) && currentEvidence) {
+                            evidences.push(currentEvidence);
+                            currentEvidence = line;
+                        } else {
+                            if (currentEvidence) currentEvidence += '\n';
+                            currentEvidence += line;
                         }
                     }
-                } catch (parseErr) {
-                    console.error("Error in initial JSON parsing:", parseErr);
-                    throw new Error("Failed to parse response");
+                }
+                
+                // Add the last evidence if there is one
+                if (currentEvidence) {
+                    evidences.push(currentEvidence);
+                }
+                
+                // If we couldn't parse properly, just use the whole text as the assertion
+                if (!assertion && !evidences.length) {
+                    assertion = fullText;
                 }
 
-                // Validate the structure
-                if (!parsedData || typeof parsedData !== 'object') {
-                    console.error("Invalid data format after parsing:", parsedData);
-                    throw new Error('Invalid response format - not an object');
-                }
-
-                // Check if expected properties exist
-                if (!('assertion' in parsedData) || !('evidences' in parsedData)) {
-                    console.error("Missing required fields in response:", parsedData);
-                    throw new Error('Invalid response format - missing required fields');
-                }
-
-                // Create a safe data object with proper defaults
+                // Create data object
                 const safeData: AssertionResponse = {
-                    assertion: parsedData.assertion || '주장 내용이 없습니다.',
-                    evidences: Array.isArray(parsedData.evidences) ? parsedData.evidences : []
+                    assertion: assertion || '주장 내용이 없습니다.',
+                    evidences: evidences.length > 0 ? evidences : []
                 };
 
                 // Directly set the edit data and open the edit panel
@@ -715,9 +784,21 @@ const Chat = ({
                 // Open the edit panel
                 setIsEditPanelOpen(true);
 
-                // Keep form values (removed reset logic)
+                // Store citations for later use when saving to backend
+                if (citations.length > 0) {
+                    // Store citations in a way accessible to the editor component
+                    if (updateEditorContent && getCurrentEditingContent) {
+                        // This will be used when the node is saved
+                        const currentContent = getCurrentEditingContent();
+                        updateEditorContent({
+                            ...currentContent,
+                            // Store citations in a format that can be used when saving the node
+                            mainContent: assertion
+                        });
+                    }
+                }
             } catch (parseError) {
-                console.error('Error parsing response:', parseError);
+                console.error('Error parsing Cerebras response:', parseError);
                 // Show error message in chat
                 const errorMessage: ChatItem = {
                     sender: "AI",
@@ -729,7 +810,7 @@ const Chat = ({
                 await saveChatMessageToSupabase(errorMessage);
             }
         } catch (error) {
-            console.error('Error calling OpenAI API:', error);
+            console.error('Error calling Cerebras API:', error);
             // Show error message in chat
             const errorMessage: ChatItem = {
                 sender: "AI",
