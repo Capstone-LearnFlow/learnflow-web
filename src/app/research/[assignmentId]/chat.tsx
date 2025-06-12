@@ -382,7 +382,7 @@ const Chat = ({
                 ];
             }
 
-            // Use OpenAI's gpt-4.1-mini API instead of Perplexity for global chat
+            // Use OpenAI's gpt-4.1 API instead of Perplexity for global chat
             const response = await fetch('/api/openai', {
                 method: 'POST',
                 headers: {
@@ -394,7 +394,7 @@ const Chat = ({
                         `${item.role === 'user' ? '사용자' : 'AI'}: ${item.parts[0].text}`
                     ).join('\n\n'),
                     stream: true, // Request streaming response
-                    model: 'gpt-4.1-mini' // Specify the model to use
+                    model: 'gpt-4.1' // Specify the model to use
                 }),
                 signal,
             });
@@ -961,7 +961,7 @@ const Chat = ({
                 // Use different API based on whether it's the global chat or node-specific chat
                 if (nodeId === '0') {
                     // Use OpenAI for global chat
-                    console.log('Using OpenAI API with gpt-4.1-mini for assignment chat');
+                    console.log('Using OpenAI API with gpt-4.1 for assignment chat');
                     await fetchOpenAIResponse(trimmedText);
                 } else {
                     // Use Perplexity for node-specific chats

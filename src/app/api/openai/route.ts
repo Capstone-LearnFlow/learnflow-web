@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       (async () => {
         try {
           const streamResponse = await openai.chat.completions.create({
-            model: model, // Use the specified model (gpt-4.1-mini for global chat)
+            model: model, // Use the specified model (gpt-4.1 for global chat)
             messages,
             stream: true,
             temperature: 0.7,
