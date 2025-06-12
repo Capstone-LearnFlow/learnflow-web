@@ -41,6 +41,7 @@ const StreamingMessage = ({
             
             if (citation && citation.url) {
                 // Return markdown link format for ReactMarkdown to render
+                // Keep the numbered citation format [1], [2], etc. instead of using title
                 return `[${match}](${citation.url})`;
             }
             

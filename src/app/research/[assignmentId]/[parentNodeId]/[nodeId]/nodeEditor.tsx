@@ -3,6 +3,8 @@ import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Node, getNodeTypeName, TreeData } from '../../tree';
 import { studentAPI } from '../../../../../services/api';
+import { loadChatMessages, updateChatMessageNodeIds } from '../../../../../services/supabase';
+import ReactMarkdown from 'react-markdown';
 
 interface NodeEditorProps {
     parentNode: Node;
@@ -128,6 +130,64 @@ const NodeEditor = ({
         setHasChanges(hasNodeChanges);
     }, [node, checkForChanges, setHasChanges]);
 
+    // Function to fetch chat history for the current node
+    const fetchChatHistory = useCallback(async (assignmentId: string, parentNodeId: string, nodeId: string) => {
+        try {
+            const result = await loadChatMessages(assignmentId, parentNodeId, nodeId);
+            if (result.success && result.data) {
+                return result.data.map(message => 
+                    `${message.sender === 'USER' ? '사용자' : 'AI'}: ${message.message}`
+                ).join('\n\n');
+            }
+            return '';
+        } catch (error) {
+            console.error('Error fetching chat history:', error);
+            return '';
+        }
+    }, []);
+
+    // Function to extract top 3 citations from chat messages
+    const extractTopCitations = useCallback(async (assignmentId: string, parentNodeId: string, nodeId: string) => {
+        try {
+            // Get chat messages
+            const result = await loadChatMessages(assignmentId, parentNodeId, nodeId);
+            
+            if (result.success && result.data) {
+                // Extract all citations from chat messages
+                const allCitations: {text: string, url: string, title: string}[] = [];
+                
+                // Collect all citations from all messages
+                result.data.forEach(message => {
+                    if (message.citations && message.citations.length > 0) {
+                        allCitations.push(...message.citations);
+                    }
+                });
+                
+                // Get only top 3 unique citations (based on URL)
+                const uniqueUrls = new Set<string>();
+                const topCitations: {text: string, url: string, title: string}[] = [];
+                
+                for (const citation of allCitations) {
+                    if (!uniqueUrls.has(citation.url) && topCitations.length < 3) {
+                        uniqueUrls.add(citation.url);
+                        topCitations.push(citation);
+                    }
+                    
+                    // Stop after we have 3 unique citations
+                    if (topCitations.length >= 3) break;
+                }
+                
+                console.log('Extracted top citations:', topCitations);
+                return topCitations;
+            }
+            
+            return [];
+        } catch (error) {
+            console.error('Error extracting citations from chat:', error);
+            return [];
+        }
+    }, []);
+
     // Handler for register button click
     const handleRegisterNode = useCallback(async () => {
         if (!hasChanges || isLoading) {
@@ -145,17 +205,51 @@ const NodeEditor = ({
             // Get the assignment ID from params
             const resolvedParams = await params;
             const assignmentId = resolvedParams.assignmentId;
+            const parentNodeId = resolvedParams.parentNodeId;
+            
+            // Fetch chat history for this node
+            const chatHistory = await fetchChatHistory(
+                assignmentId,
+                parentNodeId,
+                node.nodeId === 'new' ? 'new-node' : node.nodeId
+            );
+            
+            console.log('Starting node registration with top citations extraction...');
+            
+            // Extract top 3 citations from chat
+            const topCitations = await extractTopCitations(
+                assignmentId,
+                parentNodeId,
+                node.nodeId === 'new' ? 'new-node' : node.nodeId
+            );
+            
+            console.log('Top citations extracted:', topCitations);
 
             // For main node creation (when parentNodeId is '0' and nodeId is 'new')
             // This handles adding an argument to a subject
             if (parentNode.type === 'subject' && node.nodeId === 'new' && node.type === 'argument') {
                 // Format data according to the API requirements for main node
                 const evidences = node.children
-                    ? node.children.filter(child => child.type === 'evidence').map(child => ({
-                        content: child.content,
-                        source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                        url: child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source"
-                    }))
+                    ? node.children.filter(child => child.type === 'evidence').map(child => {
+                        const childIndex = child.index ? child.index - 1 : 0;
+                        
+                        // Try to use a citation from our top 3 citations if available
+                        // Otherwise use the original citation or fallback, making sure to skip "출처" entries
+                        const citation = childIndex < topCitations.length ? 
+                            topCitations[childIndex].url : 
+                            (child.citation && child.citation.length > 0 ? 
+                                (child.citation[0] === "출처" && child.citation.length > 1 ? 
+                                    child.citation[1] : child.citation[0]) : 
+                                "https://example.com/source");
+                        
+                        console.log(`Evidence ${childIndex} - Using citation:`, citation);
+                        
+                        return {
+                            content: child.content,
+                            source: "",
+                            url: citation
+                        };
+                    })
                     : [];
 
                 const mainNodeData = {
@@ -180,7 +274,14 @@ const NodeEditor = ({
                 const result = await response.json();
 
                 // Navigate back to the assignment page to show the new tree
-                if (result.status === 'success') {
+                if (result.status === 'success' && result.data && result.data.nodeId) {
+                    // Update chat message nodeIds from "new-node" to the actual nodeId
+                    await updateChatMessageNodeIds(
+                        assignmentId,
+                        parentNodeId,
+                        `a-${result.data.nodeId}`
+                    );
+                    
                     router.push(`/research/${assignmentId}`);
                 } else {
                     throw new Error('Failed to create argument node');
@@ -200,11 +301,26 @@ const NodeEditor = ({
 
                 // Format evidences
                 const evidences = node.children
-                    ? node.children.filter(child => child.type === 'evidence').map(child => ({
-                        content: child.content,
-                        source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                        url: child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source"
-                    }))
+                    ? node.children.filter(child => child.type === 'evidence').map(child => {
+                        const childIndex = child.index ? child.index - 1 : 0;
+                        
+                        // Try to use a citation from our top 3 citations if available
+                        // Otherwise use the original citation or fallback, making sure to skip "출처" entries
+                        const citation = childIndex < topCitations.length ? 
+                            topCitations[childIndex].url : 
+                            (child.citation && child.citation.length > 0 ? 
+                                (child.citation[0] === "출처" && child.citation.length > 1 ? 
+                                    child.citation[1] : child.citation[0]) : 
+                                "https://example.com/source");
+                        
+                        console.log(`Evidence ${childIndex} - Using citation:`, citation);
+                        
+                        return {
+                            content: child.content,
+                            source: "",
+                            url: citation
+                        };
+                    })
                     : [];
 
                 // Call the response API
@@ -217,7 +333,14 @@ const NodeEditor = ({
                 );
 
                 // Navigate back to the assignment page
-                if (result.status === 'success') {
+                if (result.status === 'success' && result.data && result.data.nodeId) {
+                    // Update chat message nodeIds from "new-node" to the actual nodeId
+                    await updateChatMessageNodeIds(
+                        assignmentId,
+                        parentNodeId,
+                        `a-${result.data.nodeId}`
+                    );
+                    
                     router.push(`/research/${assignmentId}`);
                 } else {
                     throw new Error('Failed to create response');
@@ -248,7 +371,14 @@ const NodeEditor = ({
                 );
 
                 // Navigate back to the assignment page
-                if (result.status === 'success') {
+                if (result.status === 'success' && result.data && result.data.nodeId) {
+                    // Update chat message nodeIds from "new-node" to the actual nodeId
+                    await updateChatMessageNodeIds(
+                        assignmentId,
+                        parentNodeId,
+                        `ans-${result.data.nodeId}`
+                    );
+                    
                     router.push(`/research/${assignmentId}`);
                 } else {
                     throw new Error('Failed to create answer');
@@ -265,11 +395,26 @@ const NodeEditor = ({
 
                 // Format evidences for the API
                 const evidences = node.children
-                    ? node.children.filter(child => child.type === 'evidence').map(child => ({
-                        content: child.content,
-                        source: child.citation && child.citation.length > 0 ? child.citation[0] : "출처",
-                        url: child.citation && child.citation.length > 0 ? child.citation[0] : "https://example.com/source"
-                    }))
+                    ? node.children.filter(child => child.type === 'evidence').map(child => {
+                        const childIndex = child.index ? child.index - 1 : 0;
+                        
+                        // Try to use a citation from our top 3 citations if available
+                        // Otherwise use the original citation or fallback, making sure to skip "출처" entries
+                        const citation = childIndex < topCitations.length ? 
+                            topCitations[childIndex].url : 
+                            (child.citation && child.citation.length > 0 ? 
+                                (child.citation[0] === "출처" && child.citation.length > 1 ? 
+                                    child.citation[1] : child.citation[0]) : 
+                                "https://example.com/source");
+                        
+                        console.log(`Evidence ${childIndex} - Using citation:`, citation);
+                        
+                        return {
+                            content: child.content,
+                            source: "",
+                            url: citation
+                        };
+                    })
                     : [];
 
                 // Call the update API
@@ -283,7 +428,18 @@ const NodeEditor = ({
                 console.log('Node updated successfully:', result);
 
                 // Navigate back to the assignment page
-                if (result.status === 'success') {
+                if (result.status === 'success' && result.data && result.data.nodeId) {
+                    // If nodeId has changed, update chat message nodeIds
+                    const newNodeId = `a-${result.data.nodeId}`;
+                    if (newNodeId !== node.nodeId) {
+                        await updateChatMessageNodeIds(
+                            assignmentId,
+                            parentNodeId,
+                            newNodeId,
+                            node.nodeId  // Original nodeId
+                        );
+                    }
+                    
                     router.push(`/research/${assignmentId}`);
                 } else {
                     throw new Error('Failed to update node');
@@ -319,7 +475,18 @@ const NodeEditor = ({
                     console.log('Answer updated successfully:', result);
 
                     // Navigate back to the assignment page
-                    if (result.status === 'success') {
+                    if (result.status === 'success' && result.data && result.data.nodeId) {
+                        // If nodeId has changed, update chat message nodeIds
+                        const newNodeId = `ans-${result.data.nodeId}`;
+                        if (newNodeId !== modifiedAnswer.nodeId) {
+                            await updateChatMessageNodeIds(
+                                assignmentId,
+                                parentNodeId,
+                                newNodeId,
+                                modifiedAnswer.nodeId
+                            );
+                        }
+                        
                         router.push(`/research/${assignmentId}`);
                     } else {
                         throw new Error('Failed to update answer');
@@ -351,7 +518,18 @@ const NodeEditor = ({
                 console.log('Answer updated successfully:', result);
 
                 // Navigate back to the assignment page
-                if (result.status === 'success') {
+                if (result.status === 'success' && result.data && result.data.nodeId) {
+                    // If nodeId has changed, update chat message nodeIds
+                    const newNodeId = `ans-${result.data.nodeId}`;
+                    if (newNodeId !== node.nodeId) {
+                        await updateChatMessageNodeIds(
+                            assignmentId,
+                            parentNodeId,
+                            newNodeId,
+                            node.nodeId  // Original nodeId
+                        );
+                    }
+                    
                     router.push(`/research/${assignmentId}`);
                 } else {
                     throw new Error('Failed to update answer');
@@ -586,16 +764,45 @@ const NodeEditor = ({
                                             onKeyDown={(e) => handleChildKeyDown(child.nodeId, e)}
                                         ></textarea>
                                     )}
-                                    {/* Citation display */}
+                                    {/* Citation display - show numbered references as hyperlinks */}
                                     {child.citation && Array.isArray(child.citation) && child.citation.length > 0 ? (
                                         <>
                                             <div className='node_editor__node__title'>출처</div>
-                                            {child.citation.map((cite: string, index: number) => (
-                                                <a className='node_editor__node__content' key={index} href={cite} target='_blank' rel='noopener noreferrer'>{cite}</a>
-                                            ))}
+                                            <div className='node_editor__node__content'>
+                                                {(() => {
+                                                    // Calculate citation index based on all previous citations
+                                                    // Get citation count from all previous children
+                                                    let citationStartIndex = 0;
+                                                    if (node.children) {
+                                                        for (const prevChild of node.children) {
+                                                            // Stop when we reach the current child
+                                                            if (prevChild.nodeId === child.nodeId) {
+                                                                break;
+                                                            }
+                                                            // Count citations from previous children
+                                                            if (prevChild.citation && Array.isArray(prevChild.citation)) {
+                                                                citationStartIndex += prevChild.citation.filter(cite => cite !== "출처").length;
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    return child.citation
+                                                        .filter(cite => cite !== "출처") // Filter out source labels
+                                                        .map((cite: string, index: number) => (
+                                                            <a 
+                                                                key={index} 
+                                                                href={cite} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                style={{ marginRight: '8px', textDecoration: 'none' }}
+                                                            >
+                                                                [{citationStartIndex + index + 1}]
+                                                            </a>
+                                                        ));
+                                                })()}
+                                            </div>
                                         </>
-                                    ) : null
-                                    }
+                                    ) : null}
                                 </div>
                                 {node.type === 'counterargument' && (
                                     <div className='btn node_editor__node__add_argument_btn' onClick={() => handleAddArgumentToEvidence(child.nodeId)}></div>

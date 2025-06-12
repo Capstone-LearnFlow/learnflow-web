@@ -298,7 +298,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: strin
                     <Chat
                         status='open'
                         isClosable={false}
-                        nodeId={node.nodeId === 'new' ? '0' : node.nodeId || '0'}
+                        nodeId={node.nodeId === 'new' ? 'new-node' : node.nodeId || '0'}
                         mode={mode}
                         setMode={setMode}
                         setIsEditPanelOpen={setIsEditPanelOpen}
