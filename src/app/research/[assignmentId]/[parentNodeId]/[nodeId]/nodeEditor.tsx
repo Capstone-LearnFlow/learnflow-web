@@ -3,7 +3,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Node, getNodeTypeName, TreeData } from '../../tree';
 import { studentAPI } from '../../../../../services/api';
-import { loadChatMessages } from '../../../../../services/supabase';
+import { loadChatMessages, updateChatMessageNodeIds } from '../../../../../services/supabase';
 import ReactMarkdown from 'react-markdown';
 
 interface NodeEditorProps {
