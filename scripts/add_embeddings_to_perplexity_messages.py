@@ -50,23 +50,28 @@ def generate_embedding(text: str) -> List[float]:
 
 def get_messages_without_embeddings() -> List[Dict[str, Any]]:
     """
-    Fetch messages from Supabase that don't have embeddings.
+    Fetch Perplexity messages from Supabase that don't have embeddings.
     
     Returns:
-        List[Dict[str, Any]]: List of messages without embeddings
+        List[Dict[str, Any]]: List of Perplexity messages without embeddings
     """
     try:
-        # Query for messages with NULL embedding (specifically Perplexity messages)
+        # Query for Perplexity messages with NULL embedding
+        # We filter for AI messages (sender = 'AI') as these are the responses that need embeddings
+        # We can further filter based on specific nodes or patterns if needed
         response = supabase.table("chat_messages") \
-            .select("id, message, sender") \
+            .select("id, message, sender, node_id, parent_node_id, assignment_id") \
+            .eq("sender", "AI") \
             .is_("embedding", "null") \
+            .not_.eq("message", "") \
+            .order("created_at", {"ascending": False}) \
             .execute()
         
         if not response.data:
-            print("No messages found without embeddings.")
+            print("No Perplexity messages found without embeddings.")
             return []
         
-        print(f"Found {len(response.data)} messages without embeddings.")
+        print(f"Found {len(response.data)} Perplexity messages without embeddings.")
         return response.data
     except Exception as e:
         print(f"Error fetching messages: {e}")
@@ -96,13 +101,13 @@ def update_message_with_embedding(message_id: str, embedding: List[float]) -> bo
 
 def process_messages():
     """
-    Main function to process messages without embeddings.
+    Main function to process Perplexity messages without embeddings.
     """
-    # Get messages without embeddings
+    # Get Perplexity messages without embeddings
     messages = get_messages_without_embeddings()
     
     if not messages:
-        print("No messages to process.")
+        print("No Perplexity messages to process.")
         return
     
     success_count = 0
@@ -112,17 +117,12 @@ def process_messages():
     for message in messages:
         message_id = message["id"]
         message_text = message["message"]
-        sender = message["sender"]
+        node_id = message.get("node_id", "unknown")
         
-        # Skip empty messages
+        # Skip empty messages (although we already filtered these in the query)
         if not message_text or message_text.strip() == "":
             print(f"Skipping empty message with ID {message_id}")
             continue
-        
-        # Skip user messages (optional, uncomment if you only want to embed AI messages)
-        # if sender != "AI":
-        #     print(f"Skipping user message with ID {message_id}")
-        #     continue
         
         print(f"Processing message {message_id}...")
         
