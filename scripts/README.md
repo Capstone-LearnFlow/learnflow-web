@@ -4,7 +4,7 @@ This directory contains utility scripts for the LearnFlow application.
 
 ## add_embeddings_to_perplexity_messages.py
 
-This script finds existing Perplexity chat messages in the Supabase database that don't have embeddings, generates OpenAI embeddings for them, and updates the records.
+This script specifically addresses the issue with Perplexity API responses not having embeddings in the Supabase database. It finds existing AI responses that lack embeddings, generates OpenAI text embeddings for them, and updates the records to enable semantic search functionality.
 
 ### Prerequisites
 
@@ -47,9 +47,11 @@ python scripts/add_embeddings_to_perplexity_messages.py
 
 The script will:
 1. Connect to your Supabase database
-2. Find chat messages with NULL embeddings
-3. Generate OpenAI embeddings for each message
+2. Find AI responses with NULL embeddings (specifically targeting Perplexity responses)
+3. Generate OpenAI text-embedding-3-small embeddings for each message
 4. Update the message records with the new embeddings
+
+This allows these messages to be included in semantic searches and recommendations throughout the application.
 
 ### Output
 
