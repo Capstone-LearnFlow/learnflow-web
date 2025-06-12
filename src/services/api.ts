@@ -46,7 +46,7 @@ export interface StudentAssignmentDetail {
 
 // Tree API Types
 export type NodeType = 'argument' | 'evidence' | 'counterargument' | 'question' | 'answer' | 'subject';
-export type ApiNodeType = 'CLAIM' | 'COUNTER' | 'SUBJECT';
+export type ApiNodeType = 'CLAIM' | 'COUNTER' | 'SUBJECT' | 'QUESTION';
 
 export type Node = {
     nodeId: string;
@@ -136,6 +136,8 @@ export const mapApiNodeTypeToNodeType = (apiType: ApiNodeType): NodeType => {
             return 'counterargument';
         case 'SUBJECT':
             return 'subject';
+        case 'QUESTION':
+            return 'question';
         default:
             return 'argument';
     }
