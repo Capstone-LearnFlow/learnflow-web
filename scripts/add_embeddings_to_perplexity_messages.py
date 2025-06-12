@@ -1,6 +1,6 @@
 import os
 import sys
-import openai
+from openai import OpenAI
 import json
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -23,8 +23,8 @@ if not SUPABASE_URL or not SUPABASE_KEY or not OPENAI_API_KEY:
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Initialize OpenAI client
-openai.api_key = OPENAI_API_KEY
+# Initialize OpenAI client (using v1.0.0+ client-based approach)
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 def generate_embedding(text: str) -> List[float]:
     """
@@ -37,12 +37,14 @@ def generate_embedding(text: str) -> List[float]:
         List[float]: The embedding vector
     """
     try:
-        response = openai.Embedding.create(
+        # Using new OpenAI client format (v1.0.0+)
+        response = openai_client.embeddings.create(
             model="text-embedding-3-small",
             input=text,
             encoding_format="float"
         )
-        embedding = response["data"][0]["embedding"]
+        # Access data using object properties instead of dictionary keys
+        embedding = response.data[0].embedding
         return embedding
     except Exception as e:
         print(f"Error generating embedding: {e}")
