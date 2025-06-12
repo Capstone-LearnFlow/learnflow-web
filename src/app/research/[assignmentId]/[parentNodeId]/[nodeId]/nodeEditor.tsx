@@ -769,19 +769,37 @@ const NodeEditor = ({
                                         <>
                                             <div className='node_editor__node__title'>출처</div>
                                             <div className='node_editor__node__content'>
-                                                {child.citation
-                                                    .filter(cite => cite !== "출처") // Filter out source labels
-                                                    .map((cite: string, index: number) => (
-                                                        <a 
-                                                            key={index} 
-                                                            href={cite} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            style={{ marginRight: '8px', textDecoration: 'none' }}
-                                                        >
-                                                            [{index + 1}]
-                                                        </a>
-                                                    ))}
+                                                {(() => {
+                                                    // Calculate citation index based on all previous citations
+                                                    // Get citation count from all previous children
+                                                    let citationStartIndex = 0;
+                                                    if (node.children) {
+                                                        for (const prevChild of node.children) {
+                                                            // Stop when we reach the current child
+                                                            if (prevChild.nodeId === child.nodeId) {
+                                                                break;
+                                                            }
+                                                            // Count citations from previous children
+                                                            if (prevChild.citation && Array.isArray(prevChild.citation)) {
+                                                                citationStartIndex += prevChild.citation.filter(cite => cite !== "출처").length;
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    return child.citation
+                                                        .filter(cite => cite !== "출처") // Filter out source labels
+                                                        .map((cite: string, index: number) => (
+                                                            <a 
+                                                                key={index} 
+                                                                href={cite} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                style={{ marginRight: '8px', textDecoration: 'none' }}
+                                                            >
+                                                                [{citationStartIndex + index + 1}]
+                                                            </a>
+                                                        ));
+                                                })()}
                                             </div>
                                         </>
                                     ) : null}
