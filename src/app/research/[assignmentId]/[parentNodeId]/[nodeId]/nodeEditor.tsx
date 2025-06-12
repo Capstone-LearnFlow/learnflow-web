@@ -731,7 +731,7 @@ const NodeEditor = ({
                                             onKeyDown={(e) => handleChildKeyDown(child.nodeId, e)}
                                         ></textarea>
                                     )}
-                                    {/* Citation display - keep source heading but only show URLs in content */}
+                                    {/* Citation display - show numbered references as hyperlinks */}
                                     {child.citation && Array.isArray(child.citation) && child.citation.length > 0 ? (
                                         <>
                                             <div className='node_editor__node__title'>출처</div>
@@ -739,7 +739,15 @@ const NodeEditor = ({
                                                 {child.citation
                                                     .filter(cite => cite !== "출처") // Filter out source labels
                                                     .map((cite: string, index: number) => (
-                                                        <ReactMarkdown key={index}>{cite}</ReactMarkdown>
+                                                        <a 
+                                                            key={index} 
+                                                            href={cite} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            style={{ marginRight: '8px', textDecoration: 'none' }}
+                                                        >
+                                                            [{index + 1}]
+                                                        </a>
                                                     ))}
                                             </div>
                                         </>
