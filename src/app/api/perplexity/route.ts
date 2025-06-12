@@ -16,7 +16,7 @@ interface PerplexityResponse extends ChatCompletionChunk {
 }
 
 // Define type for chat messages
-interface ChatMessage {
+interface PerplexityChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
@@ -43,14 +43,14 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         try {
           // Prepare contents array with history if available
-          let messages: ChatMessage[] = [];
+          let messages: PerplexityChatMessage[] = [];
 
           if (history && Array.isArray(history) && history.length > 0) {
             // Convert from Gemini format to OpenAI format
             messages = history.map(item => ({
               role: item.role === 'user' ? 'user' : 'assistant',
               content: item.parts?.[0]?.text || '',
-            } as ChatMessage));
+            } as PerplexityChatMessage));
           }
 
           // Add the new user message
