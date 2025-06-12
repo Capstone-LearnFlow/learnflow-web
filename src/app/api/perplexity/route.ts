@@ -1,6 +1,7 @@
 import { OpenAI } from 'openai';
 import { NextRequest } from 'next/server';
 import { ChatCompletionChunk } from 'openai/resources';
+import { saveChatMessage, ChatMessage } from '../../../services/supabase';
 
 // Define custom types for Perplexity API response
 interface SearchResult {
@@ -22,10 +23,14 @@ interface ChatMessage {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, history } = await request.json();
+    const { message, history, assignmentId, parentNodeId, nodeId, userId, userName } = await request.json();
 
     // Create an encoder for streaming responses
     const encoder = new TextEncoder();
+    
+    // Variable to accumulate the full response for embedding
+    let fullResponseText = '';
+    let citationsData: any[] = [];
 
     // Configure Perplexity API client
     const client = new OpenAI({
@@ -77,6 +82,14 @@ export async function POST(request: NextRequest) {
             // Cast to our custom type that includes Perplexity-specific fields
             const perplexityChunk = chunk as unknown as PerplexityResponse;
             
+            // Accumulate text content for embedding
+            if (perplexityChunk.choices && 
+                perplexityChunk.choices[0] && 
+                perplexityChunk.choices[0].delta && 
+                perplexityChunk.choices[0].delta.content) {
+              fullResponseText += perplexityChunk.choices[0].delta.content;
+            }
+            
             if (perplexityChunk.citations || perplexityChunk.search_results) {
               // Format citation data in a structure similar to what the frontend expects
               const citationData = {
@@ -92,8 +105,39 @@ export async function POST(request: NextRequest) {
                 }
               };
               
+              // Save citations for later use
+              citationsData = (perplexityChunk.citations || []).map((citation: string, index: number) => ({
+                text: `[${index + 1}]`,
+                url: citation,
+                title: perplexityChunk.search_results && perplexityChunk.search_results[index] ? 
+                  perplexityChunk.search_results[index].title : `Source ${index + 1}`,
+                index
+              }));
+              
               // Send citation data
               controller.enqueue(encoder.encode(JSON.stringify(citationData) + '\n'));
+            }
+          }
+          
+          // Save the complete response to Supabase with embedding if we have valid parameters
+          if (fullResponseText && assignmentId && parentNodeId && nodeId) {
+            try {
+              // Save the AI message to Supabase
+              await saveChatMessage({
+                assignment_id: assignmentId,
+                parent_node_id: parentNodeId,
+                node_id: nodeId,
+                sender: 'AI',
+                message: fullResponseText,
+                mode: 'ask',
+                user_id: userId,
+                user_name: userName,
+                citations: citationsData,
+                skip_embedding: false // Ensure embedding is generated
+              });
+            } catch (saveError) {
+              console.error('Error saving Perplexity response to Supabase:', saveError);
+              // Continue with response even if save fails
             }
           }
 
