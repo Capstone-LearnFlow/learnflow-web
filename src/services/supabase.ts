@@ -210,3 +210,26 @@ export const deleteChatMessages = async (
     return { success: false, error };
   }
 };
+
+// Function to update chat message nodeIds from "new-node" to the actual nodeId
+export const updateChatMessageNodeIds = async (
+  assignmentId: string,
+  parentNodeId: string,
+  newNodeId: string
+): Promise<{ success: boolean; error?: any }> => {
+  try {
+    const { error } = await supabase
+      .from('chat_messages')
+      .update({ node_id: newNodeId })
+      .eq('assignment_id', assignmentId)
+      .eq('parent_node_id', parentNodeId)
+      .eq('node_id', 'new-node');
+
+    if (error) throw error;
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating chat message nodeIds:', error);
+    return { success: false, error };
+  }
+};
