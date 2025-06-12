@@ -274,7 +274,14 @@ const NodeEditor = ({
                 const result = await response.json();
 
                 // Navigate back to the assignment page to show the new tree
-                if (result.status === 'success') {
+                if (result.status === 'success' && result.data && result.data.nodeId) {
+                    // Update chat message nodeIds from "new-node" to the actual nodeId
+                    await updateChatMessageNodeIds(
+                        assignmentId,
+                        parentNodeId,
+                        `a-${result.data.nodeId}`
+                    );
+                    
                     router.push(`/research/${assignmentId}`);
                 } else {
                     throw new Error('Failed to create argument node');
