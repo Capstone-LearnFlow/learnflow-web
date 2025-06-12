@@ -10,9 +10,11 @@ This script adds OpenAI text embeddings to all messages in the Supabase database
 
 - Python 3.8 or higher
 - Required Python packages:
-  - `openai`
+  - `openai>=1.0.0` (compatible with the new OpenAI SDK v1.0.0+)
   - `supabase`
   - `python-dotenv`
+
+> **Important**: This script uses the new OpenAI Python SDK v1.0.0+ client-based approach. Make sure you have the latest version installed: `pip install openai --upgrade`
 
 ### Installation
 
@@ -24,7 +26,7 @@ This script adds OpenAI text embeddings to all messages in the Supabase database
 
 2. Install the required packages:
    ```bash
-   pip install openai supabase python-dotenv
+   pip install openai>=1.0.0 supabase python-dotenv
    ```
 
 ### Configuration
