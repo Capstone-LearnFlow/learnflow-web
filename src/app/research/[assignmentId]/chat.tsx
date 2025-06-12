@@ -341,19 +341,19 @@ const Chat = ({
             let relevantMessages: ChatItem[] = [];
             relevantMessages = await findRelevantMessages(message);
             
-            // If we found relevant messages, add them to the chat log
-            if (relevantMessages.length > 0) {
-                // Add an AI message indicating relevant chats were found
-                const relevantInfoMessage: ChatItem = {
-                    sender: "AI",
-                    message: "다른 노드에서 관련된 대화를 찾았습니다:",
-                    created_at: Date.now(),
-                    mode: mode,
-                };
-                
-                // Add the relevant messages to the chat log
-                setChatLog(prev => [...prev, relevantInfoMessage, ...relevantMessages]);
-            }
+    // If we found relevant messages, add them to the chat log
+    if (relevantMessages.length > 0) {
+        // Add an AI message indicating relevant content was found
+        const relevantInfoMessage: ChatItem = {
+            sender: "AI",
+            message: "다른 노드에서 관련된 내용을 찾았습니다:",
+            created_at: Date.now(),
+            mode: mode,
+        };
+        
+        // Add the relevant messages to the chat log
+        setChatLog(prev => [...prev, relevantInfoMessage, ...relevantMessages]);
+    }
 
             // Add the new user message to API history
             apiHistoryRef.current = [
@@ -1010,13 +1010,16 @@ const Chat = ({
         const processedMessage = citations && citations.length > 0 ? 
             insertInlineCitations(message, citations) : message;
         
-        // If this is a message from another node, add a prefix to indicate which node it's from
-        const displayMessage = nodeInfo ? 
-            `**노드 ${nodeInfo.nodeId}에서의 대화:**\n\n${processedMessage}` : 
-            processedMessage;
+        // Display the content directly without prefix
+        const displayMessage = processedMessage;
             
         return (
             <div className={`chat__markdown-content ${nodeInfo ? 'chat__markdown-content--node-message' : ''}`}>
+                {nodeInfo && (
+                    <div className="chat__node-reference">
+                        노드 {nodeInfo.nodeId}
+                    </div>
+                )}
                 <ReactMarkdown>
                     {displayMessage}
                 </ReactMarkdown>
@@ -1479,6 +1482,21 @@ const Chat = ({
                     padding: 12px;
                     margin: 8px 0;
                     border-radius: 8px;
+                    position: relative;
+                }
+                
+                /* Node reference badge styling */
+                .chat__node-reference {
+                    position: absolute;
+                    top: -8px;
+                    right: 12px;
+                    background-color: #4a86e8;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: bold;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
                 }
                 
                 /* Ensure content doesn't cause horizontal scrolling */
