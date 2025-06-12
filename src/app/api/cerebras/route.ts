@@ -1,12 +1,6 @@
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Define types for chat messages
-interface ChatMessage {
-  role: string;
-  content: string;
-}
-
 // Citation type
 interface Citation {
   text: string;
@@ -32,8 +26,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Prepare messages array
-    const messages: ChatMessage[] = [
-      { role: "system", content: systemPrompt || '' }
+    const messages: Array<{ role: 'system' | 'user' | 'assistant', content: string }> = [
+      { role: "system" as const, content: systemPrompt || '' }
     ];
 
     // Add history if provided
@@ -41,14 +35,14 @@ export async function POST(request: NextRequest) {
       messages.push(...history.map((msg: string) => {
         // Extract role and content from the message format "ROLE: content"
         const parts = msg.split(': ');
-        const role = parts[0].toLowerCase() === '사용자' ? 'user' : 'assistant';
+        const role = parts[0].toLowerCase() === '사용자' ? 'user' as const : 'assistant' as const;
         const content = parts.slice(1).join(': ');
         return { role, content };
       }));
     }
 
     // Add the current user message
-    messages.push({ role: "user", content: text });
+    messages.push({ role: "user" as const, content: text });
 
     // Create encoder for streaming
     const encoder = new TextEncoder();
@@ -81,10 +75,11 @@ export async function POST(request: NextRequest) {
 
         // Process stream chunks
         for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content || '';
+          // Type assertion for chunk structure
+          const content = (chunk as any).choices?.[0]?.delta?.content || '';
           if (content) {
             fullText += content;
-            
+
             // Check if we've passed the </think> tag - only process content after this tag
             if (!passedThinkTag) {
               const thinkTagIndex = fullText.indexOf('</think>');
@@ -92,7 +87,7 @@ export async function POST(request: NextRequest) {
                 passedThinkTag = true;
                 // Keep only the content after </think>
                 fullText = fullText.substring(thinkTagIndex + '</think>'.length);
-                
+
                 // Send the first content after removing the think tag
                 await writer.write(encoder.encode(fullText));
               }
@@ -109,7 +104,7 @@ export async function POST(request: NextRequest) {
         // For now, we'll look for URLs in the text
         const urlRegex = /https?:\/\/[^\s)]+/g;
         const urls = fullText.match(urlRegex) || [];
-        
+
         if (urls.length > 0) {
           // Create citation objects with placeholder titles
           // In a real implementation, we would fetch titles or use titles provided by the model
@@ -119,7 +114,7 @@ export async function POST(request: NextRequest) {
             title: `Source ${index + 1}`,
             index
           }));
-          
+
           // Send citation data in the same format as Perplexity API
           const citationData = {
             type: 'citations',
@@ -132,7 +127,7 @@ export async function POST(request: NextRequest) {
               }))
             }
           };
-          
+
           await writer.write(encoder.encode('\n' + JSON.stringify(citationData)));
         }
 
