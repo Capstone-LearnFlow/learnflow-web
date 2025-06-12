@@ -518,7 +518,18 @@ const NodeEditor = ({
                 console.log('Answer updated successfully:', result);
 
                 // Navigate back to the assignment page
-                if (result.status === 'success') {
+                if (result.status === 'success' && result.data && result.data.nodeId) {
+                    // If nodeId has changed, update chat message nodeIds
+                    const newNodeId = `ans-${result.data.nodeId}`;
+                    if (newNodeId !== node.nodeId) {
+                        await updateChatMessageNodeIds(
+                            assignmentId,
+                            parentNodeId,
+                            newNodeId,
+                            node.nodeId  // Original nodeId
+                        );
+                    }
+                    
                     router.push(`/research/${assignmentId}`);
                 } else {
                     throw new Error('Failed to update answer');
