@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
           // Add system message
           messages.unshift({
             role: 'system',
-            content: 'You are a helpful assistant.',
+            content: '중학생에게 설명하듯이 친절하고 쉽게 설명해 주세요. ' +
+              '답변은 한국어로 작성해 주세요. ' ,
           });
 
           // Call the Perplexity API
