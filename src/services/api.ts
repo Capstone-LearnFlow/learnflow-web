@@ -46,7 +46,7 @@ export interface StudentAssignmentDetail {
 
 // Tree API Types
 export type NodeType = 'argument' | 'evidence' | 'counterargument' | 'question' | 'answer' | 'subject';
-export type ApiNodeType = 'CLAIM' | 'COUNTER' | 'SUBJECT';
+export type ApiNodeType = 'CLAIM' | 'COUNTER' | 'SUBJECT' | 'QUESTION' | 'ANSWER';
 
 export type Node = {
     nodeId: string;
@@ -136,6 +136,10 @@ export const mapApiNodeTypeToNodeType = (apiType: ApiNodeType): NodeType => {
             return 'counterargument';
         case 'SUBJECT':
             return 'subject';
+        case 'QUESTION':
+            return 'question';
+        case 'ANSWER':
+            return 'answer';
         default:
             return 'argument';
     }
@@ -183,13 +187,6 @@ export const convertApiNodeToNode = (apiNode: ApiNode): Node => {
             evidence.url.trim() !== evidence.source?.trim()) {
             citations.push(evidence.url.trim());
         }
-
-        // Debug log for citation processing
-        console.log(`Processing evidence ${evidence.id}:`, {
-            source: evidence.source,
-            url: evidence.url,
-            citations: citations
-        });
 
         return {
             nodeId: `e-${evidence.id}`,

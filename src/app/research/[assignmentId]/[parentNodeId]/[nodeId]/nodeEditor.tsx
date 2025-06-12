@@ -46,40 +46,50 @@ const NodeEditor = ({
         return null;
     }, []);
 
-    // Helper function to check if argument node is valid for registration
-    const isArgumentValid = useCallback((currentNode: Node): boolean => {
-        if (currentNode.type !== 'argument') {
-            return true; // Non-argument nodes don't need this validation
-        }
-
-        // Argument must have content
+    // Helper function to check if node is valid for registration
+    const isNodeValid = useCallback((currentNode: Node): boolean => {
+        // All nodes must have content
         if (currentNode.content.trim() === '') {
             return false;
         }
 
-        // Argument must have at least one evidence with non-empty content
-        if (!currentNode.children || currentNode.children.length === 0) {
-            return false;
+        // For argument nodes, must have at least one evidence with non-empty content
+        if (currentNode.type === 'argument') {
+            if (!currentNode.children || currentNode.children.length === 0) {
+                return false;
+            }
+
+            const validEvidences = currentNode.children.filter((child: Node) =>
+                child.type === 'evidence' && child.content.trim() !== ''
+            );
+
+            return validEvidences.length > 0;
         }
 
-        const validEvidences = currentNode.children.filter((child: Node) =>
-            child.type === 'evidence' && child.content.trim() !== ''
-        );
+        // For answer nodes, only content is required (no evidences needed)
+        if (currentNode.type === 'answer') {
+            return true; // Content check already done above
+        }
 
-        return validEvidences.length > 0;
+        return true; // Other node types don't need special validation
     }, []);
 
     // Helper function to check if current node has changes
     const checkForChanges = useCallback((currentNode: Node): boolean => {
-        // Check if argument is valid first
-        if (!isArgumentValid(currentNode)) {
-            return false; // Invalid arguments cannot be registered
+        // Check if node is valid first
+        if (!isNodeValid(currentNode)) {
+            return false; // Invalid nodes cannot be registered
         }
 
         // If it's a new node, always has changes if content is not empty or has children
         if (currentNode.nodeId === 'new') {
             return currentNode.content.trim() !== '' ||
                 (currentNode.children && currentNode.children.some((child: Node) => child.content.trim() !== '')) || false;
+        }
+
+        // For nodes with new children (e.g., question with new answer)
+        if (currentNode.children && currentNode.children.some((child: Node) => child.nodeId === 'new' && child.content.trim() !== '')) {
+            return true;
         }
 
         // If no original node to compare, consider unchanged
@@ -112,7 +122,7 @@ const NodeEditor = ({
         }
 
         return false;
-    }, [originalNode, isArgumentValid]);
+    }, [originalNode, isNodeValid]);
 
     // Check for changes whenever node changes
     useEffect(() => {
@@ -184,8 +194,8 @@ const NodeEditor = ({
             return;
         }
 
-        // Additional validation for argument nodes
-        if (node.type === 'argument' && !isArgumentValid(node)) {
+        // Additional validation for nodes
+        if (!isNodeValid(node)) {
             return;
         }
 
@@ -322,8 +332,39 @@ const NodeEditor = ({
                     throw new Error('Failed to create response');
                 }
             }
-            // Handle updating existing nodes (argument or answer types)
-            else if (node.nodeId !== 'new' && (node.type === 'argument' || node.type === 'answer')) {
+            // For adding answer responses to questions (when parent is evidence and current node is question with new answer)
+            else if (parentNode.type === 'evidence' && node.type === 'question' && node.children && node.children.some(child => child.nodeId === 'new' && child.type === 'answer')) {
+                // Extract the numeric ID from the question node ID (e.g., "q-123" -> 123)
+                const targetIdMatch = node.nodeId.match(/\d+/);
+                if (!targetIdMatch) {
+                    throw new Error('Invalid question node ID format');
+                }
+                const targetId = parseInt(targetIdMatch[0], 10);
+
+                // Find the new answer content
+                const newAnswer = node.children.find(child => child.nodeId === 'new' && child.type === 'answer');
+                if (!newAnswer || !newAnswer.content.trim()) {
+                    throw new Error('Answer content is required');
+                }
+
+                // For question answers, targetType is NODE and no evidences are needed
+                const result = await studentAPI.createResponse(
+                    assignmentId,
+                    'NODE',
+                    targetId,
+                    newAnswer.content,
+                    [] // No evidences for question answers
+                );
+
+                // Navigate back to the assignment page
+                if (result.status === 'success') {
+                    router.push(`/research/${assignmentId}`);
+                } else {
+                    throw new Error('Failed to create answer');
+                }
+            }
+            // Handle updating existing argument nodes
+            else if (node.nodeId !== 'new' && node.type === 'argument') {
                 // Extract numeric ID from node ID (e.g., "a-123" -> "123")
                 const nodeIdMatch = node.nodeId.match(/\d+/);
                 if (!nodeIdMatch) {
@@ -371,6 +412,74 @@ const NodeEditor = ({
                 } else {
                     throw new Error('Failed to update node');
                 }
+            }
+            // Handle updating existing answer nodes within a question
+            else if (node.type === 'question' && node.children && node.children.some(child => child.type === 'answer' && child.nodeId !== 'new')) {
+                // Find the existing answer that has been modified
+                const modifiedAnswer = node.children.find(child =>
+                    child.type === 'answer' &&
+                    child.nodeId !== 'new' &&
+                    originalNode?.children?.find(origChild =>
+                        origChild.nodeId === child.nodeId && origChild.content !== child.content
+                    )
+                );
+
+                if (modifiedAnswer) {
+                    // Extract numeric ID from answer node ID (e.g., "ans-123" -> "123")
+                    const nodeIdMatch = modifiedAnswer.nodeId.match(/\d+/);
+                    if (!nodeIdMatch) {
+                        throw new Error('Invalid answer node ID format for update');
+                    }
+                    const numericNodeId = nodeIdMatch[0];
+
+                    // Call the update API for answer (no evidences needed)
+                    const result = await studentAPI.updateNode(
+                        assignmentId,
+                        numericNodeId,
+                        modifiedAnswer.content,
+                        [] // No evidences for answer nodes
+                    );
+
+                    console.log('Answer updated successfully:', result);
+
+                    // Navigate back to the assignment page
+                    if (result.status === 'success') {
+                        router.push(`/research/${assignmentId}`);
+                    } else {
+                        throw new Error('Failed to update answer');
+                    }
+                } else {
+                    console.log('No modified answer found');
+                    // Reset changes state
+                    setHasChanges(false);
+                    setOriginalNode(JSON.parse(JSON.stringify(node)));
+                }
+            }
+            // Handle updating existing answer nodes
+            else if (node.nodeId !== 'new' && node.type === 'answer') {
+                // Extract numeric ID from node ID (e.g., "ans-123" -> "123")
+                const nodeIdMatch = node.nodeId.match(/\d+/);
+                if (!nodeIdMatch) {
+                    throw new Error('Invalid node ID format for update');
+                }
+                const numericNodeId = nodeIdMatch[0];
+
+                // Call the update API for answer (no evidences needed)
+                const result = await studentAPI.updateNode(
+                    assignmentId,
+                    numericNodeId,
+                    node.content,
+                    [] // No evidences for answer nodes
+                );
+
+                console.log('Answer updated successfully:', result);
+
+                // Navigate back to the assignment page
+                if (result.status === 'success') {
+                    router.push(`/research/${assignmentId}`);
+                } else {
+                    throw new Error('Failed to update answer');
+                }
             } else {
                 // For other cases, just reset the changes state
                 console.log('No API call needed for this node type or state');
@@ -385,7 +494,7 @@ const NodeEditor = ({
         } finally {
             setIsLoading(false);
         }
-    }, [hasChanges, isLoading, node, parentNode, isArgumentValid, setHasChanges, setOriginalNode, params, router]);
+    }, [hasChanges, isLoading, node, parentNode, isNodeValid, setHasChanges, setOriginalNode, params, router]);
 
     // Textarea auto-resize
     const autoResize = useCallback((textarea: HTMLTextAreaElement) => {
@@ -626,7 +735,18 @@ const NodeEditor = ({
                     </div>
                 </div>
                 <div className={`btn node_editor__register_node_btn ${hasChanges ? 'node_editor__register_node_btn--active' : ''} ${isLoading ? 'loading--default' : ''}`} onClick={handleRegisterNode}>
-                    {!isLoading && (node.nodeId === 'new' ? '등록하기' : '수정하기')}
+                    {!isLoading && (() => {
+                        // If current node is new, show "등록하기"
+                        if (node.nodeId === 'new') {
+                            return '등록하기';
+                        }
+                        // If current node has new children (e.g., question with new answer), show "등록하기"
+                        if (node.children && node.children.some(child => child.nodeId === 'new')) {
+                            return '등록하기';
+                        }
+                        // Otherwise, show "수정하기"
+                        return '수정하기';
+                    })()}
                 </div>
             </>)}
         </div>

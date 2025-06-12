@@ -132,6 +132,15 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
     const nodeParentEvidencePositionsRef = useRef<Map<string, Position>>(new Map());
     const nodeRefs = useRef<Map<string, React.RefObject<NodeRef | null>>>(new Map());
 
+    // Force re-render trigger for position updates
+    const [forceUpdateCounter, setForceUpdateCounter] = useState<number>(0);
+
+    // Adaptive update interval management
+    const [isPositionStable, setIsPositionStable] = useState<boolean>(false);
+    const [lastPositionChange, setLastPositionChange] = useState<number>(Date.now());
+    const stableThresholdMs = 3000; // 3 seconds without change = stable
+    const lastPositionsRef = useRef<Map<string, Position>>(new Map());
+
     // Update ref whenever state changes
     useEffect(() => {
         nodeParentEvidencePositionsRef.current = nodeParentEvidencePositions;
@@ -153,12 +162,58 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
             if (existingPos && existingPos.x === position.x && existingPos.y === position.y) {
                 return prev; // No change, return same map to prevent re-render
             }
-            
+
             const newMap = new Map(prev);
             newMap.set(nodeId, position);
             return newMap;
         });
     }, []);
+
+    // Force position recalculation for all nodes
+    const forcePositionUpdate = useCallback(() => {
+        setForceUpdateCounter(prev => prev + 1);
+    }, []);
+
+    // Check if positions have stabilized
+    const checkPositionStability = useCallback((newPositions: Map<string, Position>) => {
+        let hasChanged = false;
+
+        // Compare with last known positions
+        if (lastPositionsRef.current.size !== newPositions.size) {
+            hasChanged = true;
+        } else {
+            for (const [nodeId, position] of Array.from(newPositions.entries())) {
+                const lastPosition = lastPositionsRef.current.get(nodeId);
+                if (!lastPosition ||
+                    Math.abs(lastPosition.x - position.x) > 1 ||
+                    Math.abs(lastPosition.y - position.y) > 1) {
+                    hasChanged = true;
+                    break;
+                }
+            }
+        }
+
+        if (hasChanged) {
+            setLastPositionChange(Date.now());
+            setIsPositionStable(false);
+            // Update reference positions
+            lastPositionsRef.current = new Map(newPositions);
+        }
+    }, []);
+
+    // Monitor position stability
+    useEffect(() => {
+        const checkStability = () => {
+            const timeSinceLastChange = Date.now() - lastPositionChange;
+            if (timeSinceLastChange > stableThresholdMs && !isPositionStable) {
+                setIsPositionStable(true);
+                console.log('Positions stabilized, switching to slower update interval');
+            }
+        };
+
+        const intervalId = setInterval(checkStability, 1000);
+        return () => clearInterval(intervalId);
+    }, [lastPositionChange, isPositionStable, stableThresholdMs]);
 
     // Add parent refs to renderable nodes when tree data is loaded
     const enrichRenderableNodes = useCallback((nodes: RenderableNode[]): RenderableNode[] => {
@@ -189,70 +244,84 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
         });
     }, [getNodeRef]);
 
-    // Calculate positions for all nodes
+    // Calculate positions for all nodes with proper depth ordering and multiple passes
     const calculatePositions = useCallback((): void => {
         if (renderableNodes.length === 0) return;
 
+        const maxDepth = Math.max(...renderableNodes.map(n => n.depth));
         const newPositions = new Map<string, Position>();
-        const depthYOffsets = new Map<number, number>();
 
-        // Initialize depth starting positions
-        for (let depth = 0; depth <= Math.max(...renderableNodes.map(n => n.depth)); depth++) {
-            depthYOffsets.set(depth, positionorigin.y);
-        }
+        // Multiple passes to handle deep nesting properly
+        for (let pass = 0; pass < 3; pass++) {
+            const depthYOffsets = new Map<number, number>();
 
-        // Process nodes in order (breadth-first by depth)
-        const nodesByDepth = new Map<number, RenderableNode[]>();
-        renderableNodes.forEach(node => {
-            if (!nodesByDepth.has(node.depth)) {
-                nodesByDepth.set(node.depth, []);
+            // Initialize depth starting positions
+            for (let depth = 0; depth <= maxDepth; depth++) {
+                depthYOffsets.set(depth, positionorigin.y);
             }
-            nodesByDepth.get(node.depth)!.push(node);
-        });
 
-        // Process each depth level
-        Array.from(nodesByDepth.keys()).sort((a, b) => a - b).forEach(depth => {
-            const nodesAtDepth = nodesByDepth.get(depth)!;
+            // Group nodes by depth for sequential processing
+            const nodesByDepth = new Map<number, RenderableNode[]>();
+            renderableNodes.forEach(node => {
+                if (!nodesByDepth.has(node.depth)) {
+                    nodesByDepth.set(node.depth, []);
+                }
+                nodesByDepth.get(node.depth)!.push(node);
+            });
 
-            nodesAtDepth.forEach(nodeData => {
-                const x = positionorigin.x + (colWidth * nodeData.depth);
-                let y;
+            // Process each depth level sequentially
+            Array.from(nodesByDepth.keys()).sort((a, b) => a - b).forEach(depth => {
+                const nodesAtDepth = nodesByDepth.get(depth)!;
 
-                // If this node has a parent, start at parent's y position
-                if (nodeData.parentRef && nodeData.parentRef.current?.element && typeof nodeData.parentEvidenceIndex === 'number') {
-                    // First try to use the dynamically calculated parent evidence position
-                    const dynamicPosition = nodeParentEvidencePositionsRef.current.get(nodeData.id);
-                    if (dynamicPosition) {
-                        y = dynamicPosition.y;
-                    } else {
-                        // Fallback to getting position from the ref
-                        const evidencePosition = nodeData.parentRef.current.getEvidencePosition(nodeData.parentEvidenceIndex);
-                        if (evidencePosition) {
-                            y = evidencePosition.y;
+                nodesAtDepth.forEach(nodeData => {
+                    const x = positionorigin.x + (colWidth * nodeData.depth);
+                    let y;
+
+                    // If this node has a parent, try to position it relative to parent evidence
+                    if (nodeData.parentRef && typeof nodeData.parentEvidenceIndex === 'number') {
+                        let parentEvidenceY = null;
+
+                        // First check dynamic position
+                        const dynamicPosition = nodeParentEvidencePositionsRef.current.get(nodeData.id);
+                        if (dynamicPosition) {
+                            parentEvidenceY = dynamicPosition.y;
+                        } else if (nodeData.parentRef.current?.element) {
+                            // Try to get evidence position from parent
+                            const evidencePosition = nodeData.parentRef.current.getEvidencePosition(nodeData.parentEvidenceIndex);
+                            if (evidencePosition) {
+                                parentEvidenceY = evidencePosition.y;
+                            }
+                        }
+
+                        if (parentEvidenceY !== null) {
+                            y = parentEvidenceY;
+                            // Ensure no overlap with siblings at same depth
+                            const currentDepthY = depthYOffsets.get(nodeData.depth)!;
+                            y = Math.max(y, currentDepthY);
                         } else {
+                            // Parent not ready, use depth offset
                             y = depthYOffsets.get(nodeData.depth)!;
                         }
+                    } else {
+                        // Root level nodes
+                        y = depthYOffsets.get(nodeData.depth)!;
                     }
 
-                    // Only adjust if this would overlap with siblings at the same depth
-                    const currentDepthY = depthYOffsets.get(nodeData.depth)!;
-                    y = Math.max(y, currentDepthY);
-                } else {
-                    // Root level nodes
-                    y = depthYOffsets.get(nodeData.depth)!;
-                }
+                    newPositions.set(nodeData.id, { x, y });
 
-                newPositions.set(nodeData.id, { x, y });
-
-                // Update the y offset for this depth to ensure siblings don't overlap
-                const nodeRef = getNodeRef(nodeData.id);
-                const nodeHeight = nodeRef.current?.getHeight() || 200; // Fallback height
-                depthYOffsets.set(nodeData.depth, y + nodeHeight + rowGap);
+                    // Update depth offset for next sibling
+                    const nodeRef = getNodeRef(nodeData.id);
+                    const nodeHeight = nodeRef.current?.getHeight() || 200;
+                    depthYOffsets.set(nodeData.depth, y + nodeHeight + rowGap);
+                });
             });
-        });
+        }
 
         setNodePositions(newPositions);
-    }, [renderableNodes, positionorigin.x, positionorigin.y, colWidth, rowGap, getNodeRef]);
+
+        // Check if positions have stabilized
+        checkPositionStability(newPositions);
+    }, [renderableNodes, positionorigin.x, positionorigin.y, colWidth, rowGap, getNodeRef, checkPositionStability]);
 
     // Calculate renderable nodes when tree data is loaded
     useLayoutEffect(() => {
@@ -271,32 +340,70 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
             // Add parent refs to the pre-processed renderable nodes
             const enrichedNodes = enrichRenderableNodes(treeData.renderableNodes);
             setRenderableNodes(enrichedNodes);
+
+            // Clear position maps for fresh calculation
+            setNodePositions(new Map());
+            setNodeParentEvidencePositions(new Map());
+
+            // Reset stability tracking for new data
+            setIsPositionStable(false);
+            setLastPositionChange(Date.now());
+            lastPositionsRef.current.clear();
         }
     }, [treeData, enrichRenderableNodes, router, assignmentId]);
 
-    // Calculate positions after nodes are collected and rendered
+    // Initial position calculation after nodes are set
     useLayoutEffect(() => {
         if (renderableNodes.length > 0) {
-            const timeoutId = setTimeout(calculatePositions, 1);
-            return () => clearTimeout(timeoutId);
-        }
-    }, [renderableNodes, calculatePositions]);
-
-    // Recalculate positions when node refs are updated
-    const nodeHeights = renderableNodes.map(n => getNodeRef(n.id).current?.getHeight()).join(',');
-    useLayoutEffect(() => {
-        calculatePositions();
-    }, [nodeHeights, calculatePositions]);
-
-    // Separate effect to handle parent evidence position updates without causing infinite loops
-    useLayoutEffect(() => {
-        if (nodeParentEvidencePositions.size > 0) {
+            // Small delay to ensure DOM elements are ready
             const timeoutId = setTimeout(() => {
                 calculatePositions();
             }, 100);
             return () => clearTimeout(timeoutId);
         }
-    }, [nodeParentEvidencePositions.size, calculatePositions]);
+    }, [renderableNodes, calculatePositions]);
+
+    // Recalculate positions when force update is triggered with adaptive timing
+    useLayoutEffect(() => {
+        if (forceUpdateCounter > 0 && renderableNodes.length > 0) {
+            const delay = isPositionStable ? 100 : 50; // Longer delay when stable
+            const timeoutId = setTimeout(() => {
+                calculatePositions();
+            }, delay);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [forceUpdateCounter, calculatePositions, renderableNodes.length, isPositionStable]);
+
+    // Recalculate when parent evidence positions change with adaptive timing
+    useLayoutEffect(() => {
+        if (nodeParentEvidencePositions.size > 0) {
+            const delay = isPositionStable ? 100 : 10; // Longer delay when stable
+            const timeoutId = setTimeout(() => {
+                calculatePositions();
+                // Trigger another update after position calculation to handle deeper nesting
+                if (!isPositionStable) {
+                    setTimeout(() => {
+                        forcePositionUpdate();
+                    }, 10);
+                }
+            }, delay);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [nodeParentEvidencePositions.size, calculatePositions, forcePositionUpdate, isPositionStable]);
+
+    // Adaptive periodic position updates
+    useEffect(() => {
+        if (renderableNodes.length > 0) {
+            // Use adaptive interval based on position stability
+            const interval = isPositionStable ? 10000 : 100;
+
+            const intervalId = setInterval(() => {
+                forcePositionUpdate();
+            }, interval);
+
+            return () => clearInterval(intervalId);
+        }
+    }, [renderableNodes.length, forcePositionUpdate, isPositionStable]);
 
     if (isLoading) {
         return (<></>);
@@ -314,6 +421,7 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
 
     return (
         <div className='tree'>
+            {!isPositionStable && (<div className='tree__cover'></div>)}
             <SubjectNode content={treeData.root.content} />
 
             {renderableNodes.map((nodeData) => {
@@ -337,6 +445,7 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
                             parentNodeId={nodeData.parentNodeId}
                             updateParentEvidencePosition={updateParentEvidencePosition}
                             nodeId={nodeData.id}
+                            forceUpdateCounter={forceUpdateCounter}
                         />
                     );
                 } else {
@@ -351,6 +460,7 @@ const Tree = ({ assignmentId }: { assignmentId: string }) => {
                             parentNodeId={nodeData.parentNodeId}
                             updateParentEvidencePosition={updateParentEvidencePosition}
                             nodeId={nodeData.id}
+                            forceUpdateCounter={forceUpdateCounter}
                         />
                     );
                 }
@@ -381,15 +491,25 @@ interface ArgNodeProps {
     assignmentId: string,
     parentNodeId: string,
     updateParentEvidencePosition: (nodeId: string, position: Position) => void,
-    nodeId: string
+    nodeId: string,
+    forceUpdateCounter: number
 };
-const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, position, parentInfo, assignmentId, parentNodeId, updateParentEvidencePosition, nodeId }, ref) => {
+const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({
+    argNode,
+    position,
+    parentInfo,
+    assignmentId,
+    parentNodeId,
+    updateParentEvidencePosition,
+    nodeId,
+    forceUpdateCounter
+}, ref) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const childRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
     const router = useRouter();
     const [parentEvidencePosition, setParentEvidencePosition] = useState<Position | undefined>(undefined);
     const updateParentEvidencePositionRef = useRef(updateParentEvidencePosition);
-    
+
     // Update ref when prop changes
     useEffect(() => {
         updateParentEvidencePositionRef.current = updateParentEvidencePosition;
@@ -399,36 +519,33 @@ const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, positi
         childRefs.current = argNode.children.map(() => React.createRef<HTMLDivElement>());
     }
 
-    // Calculate parent evidence position dynamically
+    // Calculate parent evidence position dynamically with adaptive timing
     useEffect(() => {
-        let lastCalculatedPosition: Position | null = null;
-
         const updateParentPosition = () => {
             if (parentInfo && parentInfo.parentRef.current) {
                 const evidencePos = parentInfo.parentRef.current.getEvidencePosition(parentInfo.parentEvidenceIndex);
                 if (evidencePos) {
-                    // Only update if position has actually changed
-                    if (!lastCalculatedPosition || 
-                        lastCalculatedPosition.x !== evidencePos.x || 
-                        lastCalculatedPosition.y !== evidencePos.y) {
-                        
-                        console.log(`ArgumentNode ${nodeId}: Parent evidence position updated:`, evidencePos);
-                        setParentEvidencePosition(evidencePos);
-                        updateParentEvidencePositionRef.current(nodeId, evidencePos);
-                        lastCalculatedPosition = evidencePos;
-                    }
+                    setParentEvidencePosition(evidencePos);
+                    updateParentEvidencePositionRef.current(nodeId, evidencePos);
                 }
             }
         };
 
-        // Update immediately if parent ref is available
+        // Update immediately
         updateParentPosition();
 
-        // Set up a less frequent check in case the parent renders later
-        const intervalId = setInterval(updateParentPosition, 1000);
+        // Set up adaptive retries - fewer retries when positions are likely stable
+        const baseDelays = [50, 200, 500, 1000];
+        const adaptiveDelays = forceUpdateCounter < 5 ? baseDelays : [200, 1000]; // Fewer retries after initial settling
 
-        return () => clearInterval(intervalId);
-    }, [parentInfo, nodeId]); // Removed updateParentEvidencePosition from dependencies
+        const timeouts = adaptiveDelays.map((delay) =>
+            setTimeout(updateParentPosition, delay)
+        );
+
+        return () => {
+            timeouts.forEach(timeout => clearTimeout(timeout));
+        };
+    }, [parentInfo, nodeId, forceUpdateCounter]); // ArgumentNode adaptive timing
 
     const handleNodeBtnClick = () => {
         // Navigate to the node page: /research/[assignmentId]/[parentNodeId]/[nodeId]
@@ -465,9 +582,9 @@ const ArgumentNode = forwardRef<NodeRef | null, ArgNodeProps>(({ argNode, positi
     return (
         <div ref={elementRef} className={`tree__node tree__node--${argNode.type}`} style={{ left: position.x, top: position.y }}>
             {parentEvidencePosition && (
-                <div 
-                    className='tree__node__link' 
-                    style={{ 
+                <div
+                    className='tree__node__link'
+                    style={{
                         height: `${Math.abs(parentEvidencePosition.y - position.y)}px`
                     }}
                 ></div>
@@ -517,15 +634,25 @@ interface QuestionNodeProps {
     assignmentId: string,
     parentNodeId: string,
     updateParentEvidencePosition: (nodeId: string, position: Position) => void,
-    nodeId: string
+    nodeId: string,
+    forceUpdateCounter: number
 };
-const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, position, parentInfo, assignmentId, parentNodeId, updateParentEvidencePosition, nodeId }, ref) => {
+const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({
+    qNode,
+    position,
+    parentInfo,
+    assignmentId,
+    parentNodeId,
+    updateParentEvidencePosition,
+    nodeId,
+    forceUpdateCounter
+}, ref) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const childRefs = useRef<React.RefObject<HTMLDivElement | null>[]>([]);
     const router = useRouter();
     const [parentEvidencePosition, setParentEvidencePosition] = useState<Position | undefined>(undefined);
     const updateParentEvidencePositionRef = useRef(updateParentEvidencePosition);
-    
+
     // Update ref when prop changes
     useEffect(() => {
         updateParentEvidencePositionRef.current = updateParentEvidencePosition;
@@ -535,36 +662,33 @@ const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, pos
         childRefs.current = qNode.children.map(() => React.createRef<HTMLDivElement>());
     }
 
-    // Calculate parent evidence position dynamically
+    // Calculate parent evidence position dynamically with improved timing
     useEffect(() => {
-        let lastCalculatedPosition: Position | null = null;
-
         const updateParentPosition = () => {
             if (parentInfo && parentInfo.parentRef.current) {
                 const evidencePos = parentInfo.parentRef.current.getEvidencePosition(parentInfo.parentEvidenceIndex);
                 if (evidencePos) {
-                    // Only update if position has actually changed
-                    if (!lastCalculatedPosition || 
-                        lastCalculatedPosition.x !== evidencePos.x || 
-                        lastCalculatedPosition.y !== evidencePos.y) {
-                        
-                        console.log(`QuestionNode ${nodeId}: Parent evidence position updated:`, evidencePos);
-                        setParentEvidencePosition(evidencePos);
-                        updateParentEvidencePositionRef.current(nodeId, evidencePos);
-                        lastCalculatedPosition = evidencePos;
-                    }
+                    setParentEvidencePosition(evidencePos);
+                    updateParentEvidencePositionRef.current(nodeId, evidencePos);
                 }
             }
         };
 
-        // Update immediately if parent ref is available
+        // Update immediately
         updateParentPosition();
 
-        // Set up a less frequent check in case the parent renders later
-        const intervalId = setInterval(updateParentPosition, 1000);
+        // Set up adaptive retries - fewer retries when positions are likely stable
+        const baseDelays = [50, 200, 500, 1000];
+        const adaptiveDelays = forceUpdateCounter < 5 ? baseDelays : [200, 1000]; // Fewer retries after initial settling
 
-        return () => clearInterval(intervalId);
-    }, [parentInfo, nodeId]); // Removed updateParentEvidencePosition from dependencies
+        const timeouts = adaptiveDelays.map((delay) =>
+            setTimeout(updateParentPosition, delay)
+        );
+
+        return () => {
+            timeouts.forEach(timeout => clearTimeout(timeout));
+        };
+    }, [parentInfo, nodeId, forceUpdateCounter]); // QuestionNode adaptive timing
 
     const handleNodeBtnClick = () => {
         // Navigate to the node page: /research/[assignmentId]/[parentNodeId]/[nodeId]
@@ -586,9 +710,9 @@ const QuestionNode = forwardRef<NodeRef | null, QuestionNodeProps>(({ qNode, pos
     return (
         <div ref={elementRef} className='tree__node tree__node--question' style={{ left: position.x, top: position.y }}>
             {parentEvidencePosition && (
-                <div 
-                    className='tree__node__link' 
-                    style={{ 
+                <div
+                    className='tree__node__link'
+                    style={{
                         height: `${Math.abs(parentEvidencePosition.y - position.y)}px`
                     }}
                 ></div>

@@ -33,6 +33,8 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: strin
     // Chat related state
     const [mode, setMode] = useState<ChatMode>('ask');
     const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false);
+    // const [editData, setEditData] = useState<EditableFormData | null>(null);
+    // const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
     const [editData, setEditData] = useState<EditableFormData | null>(null);
     const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
     const [hasChanges, setHasChanges] = useState<boolean>(false);
@@ -58,7 +60,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: strin
     });
 
     // Helper function to find a node by ID in the tree
-    const findNodeById = (tree: Node, targetId: string): Node | null => {
+    const findNodeById = useCallback((tree: Node, targetId: string): Node | null => {
         if (tree.nodeId === targetId) {
             return tree;
         }
@@ -71,7 +73,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: strin
         }
 
         return null;
-    };
+    }, []);
 
     // Helper function to determine node type for new nodes based on parent type
     const getNewNodeType = (parentType: NodeType): NodeType => {
@@ -122,7 +124,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: strin
     }, [params, router]);
 
     // Helper function to process nodes after tree data is loaded
-    const processNodes = async (resolvedParams: { assignmentId: string, parentNodeId: string, nodeId: string }, fetchedTreeData: TreeData) => {
+    const processNodes = useCallback(async (resolvedParams: { assignmentId: string, parentNodeId: string, nodeId: string }, fetchedTreeData: TreeData) => {
         // Handle special case for root node (parentNodeId === '0')
         let parentNodeFromTree: Node;
 
@@ -189,7 +191,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: strin
                 setOriginalNode(JSON.parse(JSON.stringify(nodeFromTree))); // Deep copy for comparison
             }
         }
-    };
+    }, [router, findNodeById]);
 
     // Handler for chat close button
     const handleChatClose = useCallback(() => {
@@ -224,7 +226,7 @@ const NodeEditorContainer = ({ params }: { params: Promise<{ assignmentId: strin
     // Function to update editor content from AI suggestions
     const updateEditorContent = useCallback((updates: EditorUpdates) => {
         setNode(prevNode => {
-            let updatedNode = { ...prevNode };
+            const updatedNode = { ...prevNode };
 
             // Update main content if provided
             if (updates.mainContent !== undefined) {
